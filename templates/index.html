@@ -11,6 +11,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0-rc.3/bundles/skinview3d.bundle.js"></script>
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8470357358025733"
     crossorigin="anonymous"></script>
   <style>
@@ -2778,6 +2779,7 @@
         <button id="ADM-TAB-LOGS" class="tab" onclick="admT('logs')">Audit Logs</button>
         <button id="ADM-TAB-FORUMS" class="tab" onclick="admT('forums')">Forums</button>
         <button id="ADM-TAB-TICKETS" class="tab" onclick="admT('tickets')">Tickets</button>
+        <button id="ADM-TAB-CHAT" class="tab" onclick="admT('chat')">Staff Chat</button>
         <button id="ADM-TAB-EVENTS" class="tab" onclick="admT('events')">Events</button>
         <button id="ADM-TAB-MGMT" class="tab" onclick="admT('mgmt')">Controls</button>
       </div>
@@ -2851,6 +2853,34 @@
         </div>
 
         <!-- Events Management -->
+        <div id="ADM-CHAT" style="display:none">
+          <div style="display:grid;grid-template-columns:220px 1fr;gap:15px;height:600px">
+            <!-- Sidebar -->
+            <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <div class="stitle" style="margin:0">Channels</div>
+                <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()" style="display:none">+</button>
+              </div>
+              <div id="CHAT-CHANNELS" style="display:flex;flex-direction:column;gap:5px"></div>
+            </div>
+            <!-- Chat Area -->
+            <div class="p" style="display:flex;flex-direction:column;padding:0;overflow:hidden;border-color:var(--bd2)">
+              <div id="CHAT-HEAD-WRAP" style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center">
+                <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
+                <div id="CHAT-STATUS" style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
+                  <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
+                  <span id="CHAT-STATE">Connecting...</span>
+                </div>
+              </div>
+              <div id="CHAT-MESSAGES" style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px"></div>
+              <div style="padding:15px;border-top:1px solid var(--bd);display:flex;gap:10px">
+                <input id="CHAT-INP" class="inp" placeholder="Message staff..." onkeydown="if(event.key==='Enter')sendStaffMsg()">
+                <button class="btn" onclick="sendStaffMsg()">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="ADM-EVENTS" style="display:none">
           <div class="p">
             <div class="stitle">Event Management</div>
@@ -4363,7 +4393,7 @@
     // HELLCORE NEXUS (ADMIN SETTINGS)
     // ════════════════════════════════════════════════════
     function admT(t) {
-      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'EVENTS', 'TERM', 'MGMT'].forEach(k => {
+      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'TERM', 'MGMT'].forEach(k => {
         const el = I('ADM-' + k); if (el) el.style.display = k === t.toUpperCase() ? 'block' : 'none';
         const tab = I('ADM-TAB-' + k); if (tab) tab.className = 'tab' + (k === t.toUpperCase() ? ' ON' : '');
       });
@@ -4373,6 +4403,121 @@
       if (t === 'events') loadNexusEvents();
       if (t === 'forums') loadNexusForums();
       if (t === 'tickets') loadNexusTickets();
+      if (t === 'chat') loadNexusChat();
+      else stopChatPoll();
+    }
+
+    let CHAT_POLL = null, CUR_CHAN = null;
+    async function loadNexusChat() {
+      if (ME?.role === 'founder') I('CHAT-CREATE-BTN').style.display = 'block';
+      try {
+        const chans = await API('/api/staff/channels');
+        const el = I('CHAT-CHANNELS');
+        el.innerHTML = chans.map(c => `<div class="p bxs CH-ITM" id="CH-${c.id}" style="cursor:pointer;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;background:${CUR_CHAN===c.id?'var(--p2)':'transparent'}" onclick="setStaffChan(${c.id},'${esc(c.name)}')">
+          <span>${esc(c.name)}</span>
+          ${ME?.role==='founder' && c.name !== '#staff-hub' ? `<span style="color:var(--r2);font-size:12px;cursor:pointer" onclick="event.stopPropagation();admDelChatChan(${c.id})">×</span>` : ''}
+        </div>`).join('');
+        if (!CUR_CHAN && chans.length) setStaffChan(chans[0].id, chans[0].name);
+        else if (CUR_CHAN) updateChatHighlights();
+        startChatPoll();
+      } catch(e){}
+    }
+
+    function setStaffChan(id, name) {
+      if (CUR_CHAN === id && I('CHAT-MESSAGES').innerHTML !== "") return;
+      CUR_CHAN = id; I('CHAT-HEAD').textContent = name;
+      loadChatMsgs();
+      updateChatHighlights();
+    }
+
+    function updateChatHighlights() {
+      document.querySelectorAll('.CH-ITM').forEach(d => {
+        d.style.background = (d.id === 'CH-'+CUR_CHAN) ? 'var(--p2)' : 'transparent';
+      });
+    }
+
+    async function loadChatMsgs() {
+      if (!CUR_CHAN) return;
+      try {
+        const msgs = await API(`/api/staff/channels/${CUR_CHAN}/messages`);
+        const el = I('CHAT-MESSAGES'), wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
+        el.innerHTML = msgs.map(m => `
+          <div style="display:flex;flex-direction:column;align-items:${m.author_id===ME.id?'flex-end':'flex-start'}">
+            <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px">
+              <b>${esc(m.username)}</b> <span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
+              · ${fmtD(m.created_at)}
+            </div>
+            <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;background:${m.author_id===ME.id?'var(--g)':'var(--p1)'};color:${m.author_id===ME.id?'#000':'#fff'};border-radius:12px;${m.author_id===ME.id?'border-bottom-right-radius:2px':'border-bottom-left-radius:2px'}">
+              ${esc(m.content)}
+            </div>
+          </div>
+        `).join('') || '<div class="empty">No messages. Pull the trigger on some chat!</div>';
+        if (wasAtBottom) el.scrollTop = el.scrollHeight;
+      } catch(e){}
+    }
+
+    function startChatPoll() { 
+      initPusher();
+      stopChatPoll(); 
+      // Manual backup poll every 10s instead of 1.5s
+      CHAT_POLL = setInterval(loadChatMsgs, 10000); 
+    }
+    function stopChatPoll() { if(CHAT_POLL) clearInterval(CHAT_POLL); CHAT_POLL = null; }
+
+    let PUSHER_INST = null, P_CHAN = null;
+    function initPusher() {
+      if (PUSHER_INST) return;
+      try {
+        PUSHER_INST = new Pusher('0546780f85fe17efd982', { cluster: 'ap3' });
+        
+        // Status updates
+        PUSHER_INST.connection.bind('state_change', function(states) {
+          I('CHAT-STATE').textContent = states.current.charAt(0).toUpperCase() + states.current.slice(1);
+          I('CHAT-DOT').style.background = states.current === 'connected' ? '#4ade80' : '#f87171';
+        });
+
+        P_CHAN = PUSHER_INST.subscribe('staff-chat');
+        P_CHAN.bind('new-message', function(data) {
+          console.log('Chat Event:', data);
+          // Use Number() to ensure we match correctly regardless of string/int types
+          if (Number(data.channel_id) === Number(CUR_CHAN)) {
+             loadChatMsgs(); 
+          }
+        });
+      } catch(e) { console.error('Pusher error:', e); }
+
+    }
+
+    async function sendStaffMsg() {
+      const c = V('CHAT-INP').trim(); if(!c || !CUR_CHAN) return;
+      SV('CHAT-INP','');
+      
+      // Optimistic UI: Add message locally first
+      const el = I('CHAT-MESSAGES');
+      const tempDiv = document.createElement('div');
+      tempDiv.style = "display:flex;flex-direction:column;align-items:flex-end;opacity:0.6";
+      tempDiv.innerHTML = `
+        <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px"><b>${esc(ME.username)}</b> [PENDING...]</div>
+        <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;background:var(--g);color:#000;border-radius:12px;border-bottom-right-radius:2px">
+          ${esc(c)}
+        </div>
+      `;
+      el.appendChild(tempDiv);
+      el.scrollTop = el.scrollHeight;
+
+      try {
+        await API(`/api/staff/channels/${CUR_CHAN}/messages`, { method: 'POST', body: { content: c } });
+        loadChatMsgs();
+      } catch(e){ toast('err', e.message); loadChatMsgs(); }
+    }
+
+    async function admCreateChatChan() {
+      const name = prompt('Channel Name (e.g. #dev-only)'); if(!name) return;
+      try { await API('/api/staff/channels', { method: 'POST', body: { name } }); loadNexusChat(); } catch(e){ toast('err', e.message); }
+    }
+    async function admDelChatChan(id) {
+      if(!confirm('Delete this channel and all messages?')) return;
+      try { await API(`/api/staff/channels/${id}`, { method: 'DELETE' }); CUR_CHAN=null; loadNexusChat(); } catch(e){ toast('err', e.message); }
     }
 
     async function loadNexusNode() {

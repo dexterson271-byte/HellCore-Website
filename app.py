@@ -1,7 +1,7 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║          HELLCORE NETWORK — Flask Backend v7                ║
-║  pip install flask mysql-connector-python                   ║
+║  pip install flask mysql-connector-python gunicorn requests║
 ║  python app.py  →  http://localhost:5000                    ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  DATABASE SETUP:                                            ║
@@ -28,11 +28,23 @@
 """
 
 import os, io, json, hashlib, secrets, sqlite3, traceback
+from datetime import datetime
+
 import urllib.request, urllib.error, urllib.parse
 from functools import wraps
+import threading
+
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response
 
 app = Flask(__name__)
+
+@app.after_request
+def add_header(r):
+    """Disable caching for all API responses"""
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION — edit these to match your setup
@@ -59,6 +71,22 @@ SQLITE_FILE = "hellcore.db"
 
 # Internal: which DB mode is actually active
 _DB_MODE = "sqlite"  # will be set by try_connect()
+
+# ═══════════════════════════════════════════════════════
+# PUSHER CONFIGURATION (Real-time Chat)
+# ═══════════════════════════════════════════════════════
+try:
+    import pusher
+    pusher_client = pusher.Pusher(
+      app_id='2143195',
+      key='0546780f85fe17efd982',
+      secret='f9039e77d4d2da2f7894',
+      cluster='ap3',
+      ssl=True
+    )
+except ImportError:
+    pusher_client = None
+    print("⚠ Pusher library not found. Real-time chat will use fallback.")
 
 # ═══════════════════════════════════════════════════════
 # DB CONNECTION
@@ -112,8 +140,10 @@ def get_db():
             return mysql.connector.connect(
                 host=AIVEN_HOST, port=AIVEN_PORT,
                 user=AIVEN_USER, password=AIVEN_PASSWORD,
-                database=AIVEN_DATABASE, ssl_disabled=False
+                database=AIVEN_DATABASE, ssl_disabled=False,
+                autocommit=True
             )
+
     else:
         conn = sqlite3.connect(SQLITE_FILE)
         conn.row_factory = sqlite3.Row
@@ -307,11 +337,27 @@ f"""CREATE TABLE IF NOT EXISTS hc_audit_logs(
   target_id INTEGER,
   details TEXT,
   created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_staff_channels(
+  id INTEGER PRIMARY KEY {AI},
+  name VARCHAR(100) NOT NULL,
+  created_by INTEGER NOT NULL,
+  created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
+  id INTEGER PRIMARY KEY {AI},
+  channel_id INTEGER NOT NULL,
+  author_id INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  created_at {DT})""",
     ]
 
     for sql in tables:
         try: c.execute(sql)
         except Exception as e: print(f"  Table warn: {e}")
+
+    # Ensure default channel exists
+    c.execute("SELECT id FROM hc_staff_channels WHERE name='#staff-hub'")
+    if not c.fetchone():
+        c.execute(f"INSERT INTO hc_staff_channels (name, created_by, created_at) VALUES ('#staff-hub', 0, {ph()})", (datetime.now(),))
 
     db.commit(); c.close(); db.close()
     print(f"✓ Tables ready ({_DB_MODE})")
@@ -320,7 +366,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_audit_logs(
 # AUTH HELPERS
 # ═══════════════════════════════════════════════════════
 STAFF_ROLES = ("helper","mod","dev","admin","owner","founder","youtube","famous")
-ADMIN_ROLES = ("admin","owner","founder")
+ADMIN_ROLES = ("helper","mod","dev","admin","owner","founder")
+SUPER_ADMIN_ROLES = ("admin","owner","founder","dev")
 
 def get_user_by_token(token):
     if not token: return None
@@ -931,6 +978,8 @@ def admin_users():
 @app.route("/api/admin/users/<int:uid>/role", methods=["POST"])
 @admin_required
 def admin_role(uid):
+    if request.cu["role"] not in SUPER_ADMIN_ROLES:
+        return jsonify({"error":"Super Admin access required for role changes"}), 403
     d = request.get_json(force=True) or {}
     role = d.get("role","player")
     if role not in ("player","helper","mod","dev","admin","owner","founder","youtube","famous"):
@@ -944,6 +993,8 @@ def admin_role(uid):
 @app.route("/api/admin/setstats", methods=["POST"])
 @admin_required
 def admin_setstats():
+    if request.cu["role"] not in SUPER_ADMIN_ROLES:
+        return jsonify({"error":"Super Admin access required for stat editing"}), 403
     d = request.get_json(force=True) or {}
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (d["username"],))
@@ -981,6 +1032,8 @@ def admin_seteco():
 @app.route("/api/admin/users/<int:uid>", methods=["DELETE"])
 @admin_required
 def admin_delete_user(uid):
+    if request.cu["role"] not in SUPER_ADMIN_ROLES:
+        return jsonify({"error":"Super Admin access required for account deletion"}), 403
     db = get_db(); c = db_cursor(db)
     # Cascading deletion across all tables referencing user_id
     tables = ["hc_stats", "hc_economy", "hc_inventory", "hc_cart", "hc_ads", "hc_ranks", "hc_gifts"]
@@ -1026,14 +1079,14 @@ def admin_event_delete(eid):
 def admin_overview():
     db = get_db(); c = db_cursor(db)
     # Get total users
-    c.execute("SELECT COUNT(*) FROM hc_users")
-    total_users = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) as cnt FROM hc_users")
+    total_users = c.fetchone()["cnt"]
     # Get pending commands
-    c.execute("SELECT COUNT(*) FROM hc_command_queue WHERE status='pending'")
-    pending = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) as cnt FROM hc_command_queue WHERE status='pending'")
+    pending = c.fetchone()["cnt"]
     # Get staff count
-    c.execute(f"SELECT COUNT(*) FROM hc_users WHERE role IN {str(STAFF_ROLES)}")
-    staff_count = c.fetchone()[0]
+    c.execute(f"SELECT COUNT(*) as cnt FROM hc_users WHERE role IN {str(STAFF_ROLES)}")
+    staff_count = c.fetchone()["cnt"]
     # Get recent logs (Audit Logs)
     c.execute("SELECT l.*, u.username admin_name FROM hc_audit_logs l JOIN hc_users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 15")
     logs = to_list(c.fetchall())
@@ -1254,6 +1307,107 @@ def ads_streak_rewards():
 @app.route("/api/health")
 def health():
     return jsonify({"status":"ok","db":_DB_MODE,"version":"7.0"})
+
+# ═══════════════════════════════════════════════════════
+# STAFF CHAT API
+# ═══════════════════════════════════════════════════════
+STAFF_WEBHOOK = "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj"
+
+@app.route("/api/staff/channels", methods=["GET"])
+@staff_required
+def staff_channels_list():
+    db = get_db(); c = db_cursor(db)
+    if _DB_MODE == "mysql":
+        c.execute("SELECT * FROM hc_staff_channels ORDER BY name ASC")
+    else:
+        c.execute("SELECT * FROM hc_staff_channels ORDER BY name ASC")
+    rows = c.fetchall(); db.close()
+    return jsonify([to_dict(r) for r in rows])
+
+@app.route("/api/staff/channels", methods=["POST"])
+@staff_required
+def staff_channels_create():
+    if request.cu["role"] != 'founder': return jsonify({"error":"Only Founder can create channels"}), 403
+    data = request.get_json(); name = data.get("name","").strip()
+    if not name: return jsonify({"error":"Name required"}), 400
+    if not name.startswith("#"): name = "#" + name
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"INSERT INTO hc_staff_channels (name, created_by, created_at) VALUES ({ph()},{ph()},{ph()})", (name, request.cu["id"], datetime.now()))
+    db.commit(); db.close()
+    log_audit(request.cu["id"], "create_staff_channel", details=name)
+    return jsonify({"success":True})
+
+@app.route("/api/staff/channels/<int:cid>", methods=["DELETE"])
+@staff_required
+def staff_channels_delete(cid):
+    if request.cu["role"] != 'founder': return jsonify({"error":"Only Founder can delete channels"}), 403
+    db = get_db(); c = db_cursor(db)
+    # Don't delete staff-hub
+    c.execute(f"SELECT name FROM hc_staff_channels WHERE id={ph()}", (cid,))
+    row = c.fetchone()
+    if not row or row["name"] == "#staff-hub": return jsonify({"error":"Cannot delete protected channel"}), 400
+    
+    c.execute(f"DELETE FROM hc_staff_channels WHERE id={ph()}", (cid,))
+    c.execute(f"DELETE FROM hc_staff_messages WHERE channel_id={ph()}", (cid,))
+    db.commit(); db.close()
+    log_audit(request.cu["id"], "delete_staff_channel", cid)
+    return jsonify({"success":True})
+
+@app.route("/api/staff/channels/<int:cid>/messages", methods=["GET"])
+@staff_required
+def staff_messages_list(cid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT m.*, u.username, u.role FROM hc_staff_messages m "
+              f"JOIN hc_users u ON m.author_id=u.id WHERE m.channel_id={ph()} "
+              f"ORDER BY m.created_at DESC LIMIT 50", (cid,))
+    rows = c.fetchall(); db.close()
+    return jsonify([to_dict(r) for r in reversed(rows)])
+
+@app.route("/api/staff/channels/<int:cid>/messages", methods=["POST"])
+@staff_required
+def staff_messages_post(cid):
+    data = request.get_json(); content = data.get("content","").strip()
+    if not content: return jsonify({"error":"Content required"}), 400
+    
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"INSERT INTO hc_staff_messages (channel_id, author_id, content, created_at) "
+              f"VALUES ({ph()},{ph()},{ph()},{ph()})", (cid, request.cu["id"], content, datetime.now()))
+    
+    # Get channel name for discord
+    c.execute(f"SELECT name FROM hc_staff_channels WHERE id={ph()}", (cid,))
+    ch = c.fetchone()
+    db.commit(); db.close()
+
+    # Pusher Broadcast (Instant)
+    if pusher_client:
+        try:
+            pusher_client.trigger('staff-chat', 'new-message', {
+                "channel_id": cid,
+                "author_id": request.cu["id"],
+                "username": request.cu["username"],
+                "role": request.cu["role"],
+                "content": content,
+                "created_at": datetime.now().isoformat()
+            })
+        except: pass
+
+    # Discord Bridge (Background)
+    def send_to_discord(webhook, payload):
+        try:
+            import requests
+            requests.post(webhook, json=payload, timeout=5)
+        except: pass
+
+    threading.Thread(target=send_to_discord, args=(STAFF_WEBHOOK, {
+        "embeds": [{
+            "author": {"name": f"{request.cu['username']} [{request.cu['role'].upper()}]"},
+            "description": content,
+            "footer": {"text": f"Sent in {ch['name'] if ch else '#unknown'}"},
+            "color": 0xFF512F
+        }]
+    })).start()
+
+    return jsonify({"success":True})
 
 # ═══════════════════════════════════════════════════════
 # RUN
