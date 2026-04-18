@@ -1348,6 +1348,9 @@ def ads_streak_rewards():
 def health():
     db_status = "unknown"
     db_err = None
+    mysql_diagnostic = None
+    
+    # Check SQLite status
     try:
         db = get_db(); c = db_cursor(db)
         c.execute("SELECT 1")
@@ -1357,13 +1360,29 @@ def health():
     except Exception as e:
         db_status = "failed"
         db_err = str(e)
+        
+    # Attempt Aiven diagnostic connection to pinpoint the issue
+    if USE_MYSQL_AIVEN:
+        try:
+            import mysql.connector
+            conn = mysql.connector.connect(
+                host=AIVEN_HOST, port=AIVEN_PORT,
+                user=AIVEN_USER, password=AIVEN_PASSWORD,
+                database=AIVEN_DATABASE, ssl_disabled=False,
+                connection_timeout=3
+            )
+            conn.close()
+            mysql_diagnostic = "Success - Aiven is reachable!"
+        except Exception as e:
+            mysql_diagnostic = f"Aiven Connection Error: {e}"
 
     return jsonify({
         "status": "ok",
-        "backend_version": "7.2",
+        "backend_version": "7.3",
         "db_mode": _DB_MODE,
         "db_connection": db_status,
         "db_error": db_err,
+        "mysql_diagnostic": mysql_diagnostic,
         "pusher": "active" if pusher_client else "inactive"
     })
 
