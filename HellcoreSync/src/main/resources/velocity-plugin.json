@@ -1,0 +1,10 @@
+{
+  "id": "hellcoresync",
+  "name": "HellcoreSync",
+  "version": "1.0",
+  "description": "Syncs website DB command queue and player counts",
+  "authors": [
+    "Developer"
+  ],
+  "main": "in.hellcore.sync.HellcoreSync"
+}
