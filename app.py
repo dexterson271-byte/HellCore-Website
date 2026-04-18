@@ -899,6 +899,60 @@ def gift_claim(gid):
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
+# PLAYER STATS & LEADERBOARD
+# ═══════════════════════════════════════════════════════
+@app.route("/api/player/<username>")
+def player_get(username):
+    db = get_db(); c = db_cursor(db)
+    # Find user by username or MC username
+    c.execute(f"SELECT * FROM hc_users WHERE username={ph()} OR mc_username={ph()}", (username, username))
+    u = to_dict(c.fetchone())
+    if not u: db.close(); return jsonify({"error":"Player not found"}), 404
+
+    # Fetch all stats, ranks, economy
+    c.execute(f"SELECT * FROM hc_stats    WHERE user_id={ph()}", (u["id"],)); stats = to_list(c.fetchall())
+    c.execute(f"SELECT * FROM hc_ranks    WHERE user_id={ph()}", (u["id"],)); ranks = to_list(c.fetchall())
+    c.execute(f"SELECT * FROM hc_economy  WHERE user_id={ph()}", (u["id"],)); eco = to_dict(c.fetchone())
+    c.close(); db.close()
+    return jsonify({
+        "user":    {"username":u["username"],"role":u["role"],"mc_username":u["mc_username"] or ""},
+        "stats":   {s["gamemode"]:s for s in stats},
+        "ranks":   {r["gamemode"]:r["rank_name"] for r in ranks},
+        "economy": eco or {"server_gold":0,"server_iron":0}
+    })
+
+@app.route("/api/serverstatus")
+def server_status():
+    db = get_db(); c = db_cursor(db)
+    # Let the DB calculate the difference for perfect timezone safety
+    if _DB_MODE == "sqlite":
+        c.execute("SELECT *, (strftime('%s','now') - strftime('%s', last_updated)) as diff FROM hc_server_metrics WHERE server_name='NETWORK'")
+    else:
+        c.execute("SELECT *, (TIMESTAMPDIFF(SECOND, last_updated, NOW())) as diff FROM hc_server_metrics WHERE server_name='NETWORK'")
+    
+    row = to_dict(c.fetchone())
+    if not row:
+        db.close(); return jsonify({"online":False, "players":{"online":0, "max":0}})
+    
+    online = row.get("diff", 999) < 45
+    db.close()
+    return jsonify({
+        "online": online,
+        "players": { "online": row["online_players"], "max": row["max_players"] },
+        "ip": row.get("server_ip", "hellcore.in")
+    })
+
+@app.route("/api/stats")
+def stats_leaderboard():
+    mode = request.args.get("mode", "global")
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT u.username, u.mc_username, s.wins, s.kills, s.coins "
+              f"FROM hc_stats s JOIN hc_users u ON s.user_id=u.id "
+              f"WHERE s.gamemode={ph()} ORDER BY s.wins DESC LIMIT 10", (mode,))
+    rows = to_list(c.fetchall()); c.close(); db.close()
+    return jsonify(rows)
+
+# ═══════════════════════════════════════════════════════
 # STATS & LEADERBOARD
 # ═══════════════════════════════════════════════════════
 
