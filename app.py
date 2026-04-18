@@ -59,12 +59,12 @@ LOCAL_MYSQL_PASSWORD = "yourpassword"   # <── change this
 LOCAL_MYSQL_DATABASE = "hellcore"
 
 # ── AIVEN MYSQL (cloud) ───────────────────────────────
-USE_MYSQL_AIVEN = True           # Set True to use Aiven
-AIVEN_HOST     = "mysql-3b8a4df-hellcroe.g.aivencloud.com"
-AIVEN_PORT     = 19513
-AIVEN_USER     = "avnadmin"
-AIVEN_PASSWORD = "AVNS_rYI7NMjmgxZ3No8QaxW"
-AIVEN_DATABASE = "defaultdb"
+USE_MYSQL_AIVEN = os.environ.get("USE_MYSQL_AIVEN", "True").lower() == "true"
+AIVEN_HOST     = os.environ.get("AIVEN_HOST", "")
+AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", 19513))
+AIVEN_USER     = os.environ.get("AIVEN_USER", "")
+AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
+AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
 
 # ── SQLITE (zero-config fallback) ─────────────────────
 SQLITE_FILE = "hellcore.db"
@@ -78,10 +78,10 @@ _DB_MODE = "sqlite"  # will be set by try_connect()
 try:
     import pusher
     pusher_client = pusher.Pusher(
-      app_id='2143195',
-      key='0546780f85fe17efd982',
-      secret='f9039e77d4d2da2f7894',
-      cluster='ap3',
+      app_id=os.environ.get("PUSHER_APP_ID", ""),
+      key=os.environ.get("PUSHER_KEY", ""),
+      secret=os.environ.get("PUSHER_SECRET", ""),
+      cluster=os.environ.get("PUSHER_CLUSTER", ""),
       ssl=True
     )
 except ImportError:
@@ -507,37 +507,6 @@ def skin_head(identifier, size=64):
         except: pass
     return Response(b"", status=404)
 
-# ── Server status
-@app.route("/api/serverstatus")
-def srv_status():
-    try:
-        db = get_db(); c = db_cursor(db)
-        c.execute("SELECT * FROM hc_server_metrics")
-        rows = to_list(c.fetchall())
-        c.close(); db.close()
-        
-        net = next((r for r in rows if r["server_name"] == 'NETWORK'), None)
-        bw = next((r for r in rows if r["server_name"] == 'BEDWARS'), None)
-        sw = next((r for r in rows if r["server_name"] == 'SKYWARS'), None)
-
-        return jsonify({
-            "online": net is not None,
-            "players": {"online": net["online_players"] if net else 0, "max": net["max_players"] if net else 0},
-            "modes": {
-                "bedwars": {
-                    "players": bw["online_players"] if bw else 0,
-                    "arenas_active": bw["arenas_active"] if bw else 0,
-                    "arenas_total": bw["arenas_total"] if bw else 0
-                },
-                "skywars": {
-                    "players": sw["online_players"] if sw else 0,
-                    "arenas_active": sw["arenas_active"] if sw else 0,
-                    "arenas_total": sw["arenas_total"] if sw else 0
-                }
-            }
-        })
-    except Exception as e:
-        return jsonify({"online": False, "error": str(e)})
 
 @app.route("/api/serverstatus/history")
 def srv_history():
@@ -924,22 +893,39 @@ def player_get(username):
 @app.route("/api/serverstatus")
 def server_status():
     db = get_db(); c = db_cursor(db)
-    # Let the DB calculate the difference for perfect timezone safety
+    # Composite status query using DB-relative timestamps
+    sql = """
+        SELECT *, (TIMESTAMPDIFF(SECOND, last_updated, NOW())) as diff 
+        FROM hc_server_metrics
+    """
     if _DB_MODE == "sqlite":
-        c.execute("SELECT *, (strftime('%s','now') - strftime('%s', last_updated)) as diff FROM hc_server_metrics WHERE server_name='NETWORK'")
-    else:
-        c.execute("SELECT *, (TIMESTAMPDIFF(SECOND, last_updated, NOW())) as diff FROM hc_server_metrics WHERE server_name='NETWORK'")
-    
-    row = to_dict(c.fetchone())
-    if not row:
-        db.close(); return jsonify({"online":False, "players":{"online":0, "max":0}})
-    
-    online = row.get("diff", 999) < 45
+        sql = "SELECT *, (strftime('%s','now') - strftime('%s', last_updated)) as diff FROM hc_server_metrics"
+        
+    c.execute(sql)
+    rows = to_list(c.fetchall())
     db.close()
+
+    net = next((r for r in rows if r["server_name"] == 'NETWORK'), None)
+    bw = next((r for r in rows if r["server_name"] == 'BEDWARS'), None)
+    sw = next((r for r in rows if r["server_name"] == 'SKYWARS'), None)
+
+    # Online if heartbeat within 45 seconds
+    is_online = net and net.get("diff", 999) < 45
+
     return jsonify({
-        "online": online,
-        "players": { "online": row["online_players"], "max": row["max_players"] },
-        "ip": row.get("server_ip", "hellcore.in")
+        "online": is_online,
+        "players": { "online": net["online_players"] if net else 0, "max": net["max_players"] if net else 200 },
+        "ip": net.get("server_ip", "hellcore.in") if net else "hellcore.in",
+        "modes": {
+            "bedwars": {
+                "players": bw["online_players"] if bw else 0,
+                "online": bw and bw.get("diff", 999) < 60
+            },
+            "skywars": {
+                "players": sw["online_players"] if sw else 0,
+                "online": sw and sw.get("diff", 999) < 60
+            }
+        }
     })
 
 @app.route("/api/stats")
@@ -957,8 +943,8 @@ def stats_leaderboard():
 # ═══════════════════════════════════════════════════════
 
 # ── External BedWars API Proxy (Tracklify-style stats)
-BW_API_BASE = "http://srv125.godlike.club:26239/api/v1"
-BW_API_KEY  = "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1"
+BW_API_BASE = os.environ.get("BW_API_BASE", "")
+BW_API_KEY  = os.environ.get("BW_API_KEY", "")
 
 @app.route("/api/bwstats/<username>")
 def bw_stats_proxy(username):
@@ -1360,7 +1346,26 @@ def ads_streak_rewards():
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status":"ok","db":_DB_MODE,"version":"7.0"})
+    db_status = "unknown"
+    db_err = None
+    try:
+        db = get_db(); c = db_cursor(db)
+        c.execute("SELECT 1")
+        row = c.fetchone()
+        db_status = "connected (MySQL)" if _DB_MODE != "sqlite" else "connected (SQLite)"
+        db.close()
+    except Exception as e:
+        db_status = "failed"
+        db_err = str(e)
+
+    return jsonify({
+        "status": "ok",
+        "backend_version": "7.2",
+        "db_mode": _DB_MODE,
+        "db_connection": db_status,
+        "db_error": db_err,
+        "pusher": "active" if pusher_client else "inactive"
+    })
 
 # ═══════════════════════════════════════════════════════
 # STAFF CHAT API
