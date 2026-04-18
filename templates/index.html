@@ -3743,7 +3743,7 @@
     function togPW(id, btn) {
       const el = I(id); if (!el) return;
       el.type = el.type === 'password' ? 'text' : 'password';
-      btn.textContent = el.type === 'password' ? '<svg class="ic"><use href="#ic-eye"/></svg>' : '<svg class="ic"><use href="#ic-eye-off"/></svg>';
+      btn.innerHTML = el.type === 'password' ? '<svg class="ic"><use href="#ic-eye"/></svg>' : '<svg class="ic"><use href="#ic-eye-off"/></svg>';
     }
 
     // ════════════════════════════════════════════════════

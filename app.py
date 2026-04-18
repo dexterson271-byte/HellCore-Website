@@ -27,12 +27,27 @@
 ╚══════════════════════════════════════════════════════════════╝
 """
 
-import os, io, json, hashlib, secrets, sqlite3, traceback
-from datetime import datetime
-
-import urllib.request, urllib.error, urllib.parse
+import os
+import sqlite3
+import json
+import uuid
+import hashlib
+import re
+import traceback
+import secrets
+import io
+from datetime import datetime, timedelta
 from functools import wraps
+import urllib.request
+import urllib.error
 import threading
+
+# Load environment variables for local testing
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response
 
@@ -77,16 +92,21 @@ _DB_MODE = "sqlite"  # will be set by try_connect()
 # ═══════════════════════════════════════════════════════
 try:
     import pusher
-    pusher_client = pusher.Pusher(
-      app_id=os.environ.get("PUSHER_APP_ID", ""),
-      key=os.environ.get("PUSHER_KEY", ""),
-      secret=os.environ.get("PUSHER_SECRET", ""),
-      cluster=os.environ.get("PUSHER_CLUSTER", ""),
-      ssl=True
-    )
-except ImportError:
+    _p_id = os.environ.get("PUSHER_APP_ID", "")
+    if _p_id:
+        pusher_client = pusher.Pusher(
+          app_id=_p_id,
+          key=os.environ.get("PUSHER_KEY", ""),
+          secret=os.environ.get("PUSHER_SECRET", ""),
+          cluster=os.environ.get("PUSHER_CLUSTER", ""),
+          ssl=True
+        )
+    else:
+        pusher_client = None
+        print("⚠ PUSHER_APP_ID not set in environment. Real-time chat disabled locally.")
+except Exception as e:
     pusher_client = None
-    print("⚠ Pusher library not found. Real-time chat will use fallback.")
+    print(f"⚠ Pusher initialization failed: {e}. Real-time chat disabled.")
 
 # ═══════════════════════════════════════════════════════
 # DB CONNECTION
@@ -1168,8 +1188,8 @@ def admin_announcement():
         return jsonify({"ok":True})
     else:
         c.execute("SELECT server_ip FROM hc_server_metrics WHERE server_name='GLOBAL_BANNER'")
-        row = c.fetchone()
-        msg = row[0] if row else ""
+        row = to_dict(c.fetchone())
+        msg = row.get("server_ip", "") if row else ""
         c.close(); db.close()
         return jsonify({"message":msg})
 
