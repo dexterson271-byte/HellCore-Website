@@ -127,7 +127,11 @@ def try_connect():
     _DB_MODE = "sqlite"
     print("✓ Using SQLite (hellcore.db) — zero config mode")
 
+# Automatically connect to DB when the app starts
+try_connect()
+
 def get_db():
+
     if _DB_MODE in ("mysql_local", "mysql_aiven"):
         import mysql.connector
         if _DB_MODE == "mysql_local":
@@ -1490,15 +1494,15 @@ def staff_messages_post(cid):
 # ═══════════════════════════════════════════════════════
 # RUN
 # ═══════════════════════════════════════════════════════
+try:
+    init_db()
+except Exception as e:
+    print(f"⚠ DB init error: {e}")
+
 if __name__ == "__main__":
     print("=" * 56)
     print("  HELLCORE NETWORK — Backend v7")
     print("=" * 56)
-    try_connect()
-    try:
-        init_db()
-    except Exception as e:
-        print(f"⚠ DB init error: {e}"); traceback.print_exc()
     print("=" * 56)
     print("  Running on http://localhost:5000")
     print("=" * 56)
