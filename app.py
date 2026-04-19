@@ -1761,34 +1761,35 @@ def staff_messages_post(cid):
     ch = c.fetchone()
     db.commit(); db.close()
 
-    # Pusher Broadcast (Instant)
-    if pusher_client:
-        try:
-            pusher_client.trigger('staff-chat', 'new-message', {
-                "channel_id": cid,
-                "author_id": request.cu["id"],
-                "username": request.cu["username"],
-                "role": request.cu["role"],
-                "content": content,
-                "created_at": datetime.now().isoformat()
-            })
-        except: pass
+    # Background Tasks (Pusher + Discord)
+    def background_broadcast(ch_name):
+        # Pusher Broadcast
+        if pusher_client:
+            try:
+                pusher_client.trigger('staff-chat', 'new-message', {
+                    "channel_id": cid,
+                    "author_id": request.cu["id"],
+                    "username": request.cu["username"],
+                    "role": request.cu["role"],
+                    "content": content,
+                    "created_at": datetime.now().isoformat()
+                })
+            except: pass
 
-    # Discord Bridge (Background)
-    def send_to_discord(webhook, payload):
+        # Discord Bridge
         try:
             import requests
-            requests.post(webhook, json=payload, timeout=5)
+            requests.post(STAFF_WEBHOOK, json={
+                "embeds": [{
+                    "author": {"name": f"{request.cu['username']} [{request.cu['role'].upper()}]"},
+                    "description": content,
+                    "footer": {"text": f"Sent in {ch_name}"},
+                    "color": 0xFF512F
+                }]
+            }, timeout=5)
         except: pass
 
-    threading.Thread(target=send_to_discord, args=(STAFF_WEBHOOK, {
-        "embeds": [{
-            "author": {"name": f"{request.cu['username']} [{request.cu['role'].upper()}]"},
-            "description": content,
-            "footer": {"text": f"Sent in {ch['name'] if ch else '#unknown'}"},
-            "color": 0xFF512F
-        }]
-    })).start()
+    threading.Thread(target=background_broadcast, args=(ch["name"] if ch else "#unknown",)).start()
 
     return jsonify({"success":True})
 
