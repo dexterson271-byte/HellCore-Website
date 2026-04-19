@@ -3684,21 +3684,34 @@
       // Init recent searches + showcase for Stats tab
       renderRecentSearches();
       loadShowcase();
+      initRouting();
     });
 
     // ════════════════════════════════════════════════════
     // NAVIGATION
     // ════════════════════════════════════════════════════
-    function GO(id) {
+    // NAVIGATION
+    // ════════════════════════════════════════════════════
+    function GO(id, push = true) {
       document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
       document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
-      const pg = I('pg-' + id); if (pg) pg.classList.add('ON');
+      const pg = I('pg-' + id);
+      if (pg) pg.classList.add('ON');
       window.scrollTo(0, 0);
+
       // Mark active nav button
       const base = id.split('-')[0];
       document.querySelectorAll('.nb').forEach(b => {
         if (b.textContent.toLowerCase().includes(base)) b.classList.add('on');
       });
+
+      // Update URL
+      if (push) {
+        let path = id.replace('pg-', '').replace(/-/g, '/');
+        if (path === 'home') path = '';
+        history.pushState({ pg: id }, '', '/' + path);
+      }
+
       ({
         forums: loadForums,
         players: () => { plT('skin'); initSV3D(); },
@@ -3717,6 +3730,28 @@
         'store-pr': () => showStore('pr'),
         'store-free': () => { showStore('free'); loadAdStatus(); },
       })[id]?.();
+    }
+
+    // Handle back/forward buttons
+    window.onpopstate = (e) => {
+        if (e.state && e.state.pg) GO(e.state.pg, false);
+    };
+
+    // Initial Routing Logic
+    function initRouting() {
+        const path = window.location.pathname.substring(1);
+        if (!path) { GO('home', false); return; }
+        
+        // Map path back to ID
+        // e.g. "store/free" -> "store-free"
+        const id = path.replace(/\//g, '-');
+        const target = I('pg-' + id);
+        if (target) {
+            GO(id, false);
+        } else {
+            // Fallback for special cases or home
+            GO('home', false);
+        }
     }
 
     // ════════════════════════════════════════════════════

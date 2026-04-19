@@ -455,11 +455,9 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 # FRONTEND
 # ═══════════════════════════════════════════════════════
+# Serves index.html for the root path
 @app.route("/")
 def index(): return render_template("index.html")
-
-@app.route("/<path:unused>")
-def catch_all(unused): return render_template("index.html")
 
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
@@ -1558,6 +1556,15 @@ def ads_txt():
 def robots_txt():
     content = "User-agent: *\nAllow: /\nSitemap: https://hellcore.net/sitemap.xml"
     return Response(content, mimetype="text/plain")
+
+# -------------------------------------------------------
+# CATCH-ALL ROUTE (Serves frontend for all valid paths)
+# -------------------------------------------------------
+@app.route("/<path:p>")
+def catch_all(p):
+    # Only serve index.html for non-file paths or specific SPA routes
+    if "." in p: return "Not Found", 404
+    return render_template("index.html")
 
 # -------------------------------------------------------
 # RUN
