@@ -2188,6 +2188,56 @@
       background: #60a5fa;
     }
 
+    /* ═══════ FORUM OVERHAUL ═══════ */
+    .f-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: flex-start; }
+    @media(max-width: 900px) { .f-layout { grid-template-columns: 1fr; } }
+    
+    .f-index-cat { margin-bottom: 24px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--bd2); overflow: hidden; }
+    .f-cat-head { background: rgba(255,255,255,0.05); padding: 12px 16px; font-weight: 800; font-family: 'Oxanium', sans-serif; color: var(--g); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--bd); }
+    
+    .f-row { display: grid; grid-template-columns: 50px 1fr 180px 220px; align-items: center; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; cursor: pointer; }
+    .f-row:last-child { border-bottom: none; }
+    .f-row:hover { background: rgba(255,255,255,0.03); }
+    @media(max-width: 700px) { .f-row { grid-template-columns: 40px 1fr; gap: 10px; } .f-row .f-stats, .f-row .f-last { display: none; } }
+    
+    .f-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 10px; color: var(--tx3); }
+    .f-title { font-weight: 700; font-size: 1rem; color: #fff; margin-bottom: 2px; }
+    .f-desc { font-size: 0.75rem; color: var(--tx2); line-height: 1.4; }
+    
+    .f-stats { display: flex; gap: 20px; justify-content: center; text-align: center; border-left: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); height: 100%; align-items: center; }
+    .f-stat-unit { display: flex; flex-direction: column; }
+    .f-stat-val { font-weight: 700; color: #fff; font-size: 0.9rem; }
+    .f-stat-lbl { font-size: 0.65rem; color: var(--tx3); text-transform: uppercase; }
+    
+    .f-last { padding-left: 16px; font-size: 0.75rem; display: flex; gap: 10px; align-items: center; }
+    .f-last-avatar { width: 32px; height: 32px; border-radius: 6px; }
+    .f-last-txt { flex: 1; min-width: 0; }
+    .f-last-title { font-weight: 600; color: var(--g); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .f-last-meta { font-size: 0.65rem; color: var(--tx2); }
+
+    /* Sidebar Widgets */
+    .f-widget { background: rgba(255,255,255,0.03); border: 1px solid var(--bd2); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .f-widget-title { font-weight: 800; font-family: 'Oxanium', sans-serif; font-size: 0.75rem; color: var(--tx3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .f-widget-item { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+    .f-widget-item:last-child { margin-bottom: 0; }
+    .f-widget-img { width: 28px; height: 28px; border-radius: 4px; }
+    .f-widget-txt { flex: 1; min-width: 0; }
+    .f-widget-name { font-weight: 700; font-size: 0.85rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; cursor: pointer; }
+    .f-widget-name:hover { color: var(--g); }
+    .f-widget-meta { font-size: 0.65rem; color: var(--tx2); }
+
+    /* Admin Badges */
+    .f-pin { color: #f59e0b; margin-right: 5px; }
+    .f-lock { color: #94a3b8; margin-right: 5px; }
+
+    /* Staff Badges */
+    .st-badge { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+    .st-owner { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+    .st-admin { background: #f97316; box-shadow: 0 0 10px rgba(249,115,22,0.3); }
+    .st-dev { background: #8b5cf6; box-shadow: 0 0 10px rgba(139,92,246,0.3); }
+    .st-mod { background: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+    .st-helper { background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.3); }
+
     /* ═══════ MYSTERY NEXUS ═══════ */
     .nexus-wrap { text-align:center; padding:40px 20px; position:relative; overflow:hidden; border-radius:15px; background:rgba(255,255,255,0.03); border:1px solid var(--bd2); }
     .nexus-title { font-size:2.5rem; font-weight:900; font-family:'Outfit',sans-serif; letter-spacing:-1px; margin-bottom:10px; background:linear-gradient(45deg,#fff,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
@@ -2212,9 +2262,125 @@
     .reward-card { animation: cardPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background:rgba(255,255,255,0.05); padding:30px; border-radius:20px; border:1px solid var(--bd2); text-align:center; }
     @keyframes cardPop { 0% { transform:scale(0.5); opacity:0; } 100% { transform:scale(1); opacity:1; } }
 
-    .loot-table { width:100%; font-size:0.8rem; margin-top:20px; border-collapse:collapse; }
-    .loot-table th { color:var(--tx3); text-align:left; padding:8px; border-bottom:1px solid var(--bd2); }
     .loot-table td { padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.02); }
+
+    /* ═══════ EVENT CAROUSEL ═══════ */
+    .event-carousel { display: flex; gap: 16px; overflow-x: auto; padding: 10px 5px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    .event-carousel::-webkit-scrollbar { display: none; }
+    .event-card { flex: 0 0 280px; scroll-snap-align: start; background: rgba(255,255,255,0.03); border: 1px solid var(--bd2); border-radius: 16px; padding: 20px; text-align: left; transition: transform 0.3s, border-color 0.3s, background 0.3s; cursor: pointer; position: relative; overflow: hidden; z-index: 10; user-select: none; }
+    .event-card:hover { transform: translateY(-5px); border-color: var(--g); background: rgba(255,255,255,0.05); }
+    .event-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--g), var(--g2)); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .event-card:hover::before { opacity: 1; }
+    .event-card-title { font-family: 'Oxanium', sans-serif; font-weight: 800; font-size: 1rem; color: var(--g); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; pointer-events: none; }
+    .event-card-desc { font-size: 0.8rem; color: var(--tx2); line-height: 1.6; min-height: 48px; pointer-events: none; }
+    .event-card-action { display: inline-flex; align-items: center; gap: 6px; margin-top: 15px; font-size: 0.75rem; font-weight: 700; color: var(--g); text-transform: uppercase; transition: gap 0.2s; pointer-events: none; }
+    .event-card:hover .event-card-action { gap: 10px; }
+
+    /* ═══════ ADMIN PRESETS ═══════ */
+    .preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .preset-btn { background: rgba(255,255,255,0.02); border: 1px solid var(--bd2); border-radius: 8px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .preset-btn:hover { background: rgba(255,255,255,0.06); border-color: var(--g); transform: translateY(-2px); }
+    .preset-btn-name { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 4px; display: block; }
+    .preset-btn-tag { font-size: 0.6rem; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ═══════════════════════════════════════════════
+       MOBILE RESPONSIVE — max-width: 768px
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+
+      /* Navbar */
+      #NAV { padding: 0 12px; height: 56px; gap: 6px; }
+      .nlogo-t { display: none; }
+      .nlogo img { height: 36px; width: 36px; }
+      .nlinks { gap: 2px; overflow-x: auto; scrollbar-width: none; }
+      .nlinks::-webkit-scrollbar { display: none; }
+      .nb { padding: 6px 10px; font-size: 0.78rem; }
+      .srv { display: none; }
+
+      /* Pages */
+      .pg { padding: 76px 14px 48px; }
+
+      /* Hero */
+      .hero { padding: 24px 0 20px; text-align: center; }
+      .hero h1 { font-size: clamp(2.4rem, 10vw, 4rem); }
+      .hero-sub { font-size: 0.85rem; }
+      .hero-ip { font-size: 0.9rem; padding: 8px 16px; }
+      .hbtns { flex-direction: column; align-items: center; gap: 10px; }
+      .hbtns .btn, .hbtns .bto { width: 100%; max-width: 280px; justify-content: center; }
+
+      /* Content Width */
+      .W, .Ws { padding: 0; }
+
+      /* Event Cards */
+      .event-carousel { gap: 12px; padding: 6px 2px; }
+      .event-card { flex: 0 0 240px; padding: 16px; }
+
+      /* Stats grids */
+      .g2, .g3, .g4 { grid-template-columns: 1fr; }
+      .scard-row { grid-template-columns: 1fr 1fr; }
+
+      /* Section title */
+      .stitle { font-size: 0.95rem; }
+
+      /* Panels */
+      .p { padding: 16px; border-radius: 12px; }
+
+      /* Page Title */
+      .ptitle { font-size: clamp(1.6rem, 7vw, 2.2rem); }
+
+      /* Tabs */
+      .tabs { gap: 6px; flex-wrap: wrap; }
+      .tab { padding: 7px 12px; font-size: 0.78rem; }
+
+      /* Admin tabs */
+      #ADM-TABS { flex-wrap: wrap; gap: 4px; }
+      #ADM-TABS button { font-size: 0.72rem; padding: 6px 10px; }
+
+      /* Buttons */
+      .btn, .bto { font-size: 0.82rem; padding: 9px 18px; }
+
+      /* Forum layout */
+      .f-layout { grid-template-columns: 1fr !important; }
+      .f-row { grid-template-columns: 36px 1fr; gap: 8px; }
+      .f-row .f-stats, .f-row .f-actions, .f-row .f-cat { display: none; }
+
+      /* Forms */
+      .fg label { font-size: 0.75rem; }
+      .inp { font-size: 0.9rem; }
+
+      /* Store */
+      .mc { padding: 16px 12px; }
+
+      /* Players / search */
+      .bw-search-box { flex-wrap: wrap; gap: 6px; }
+      .bw-search-btn { width: 100%; }
+
+      /* Modal */
+      .mdl { padding: 20px 16px; border-radius: 16px; margin: 12px; max-width: calc(100vw - 24px); }
+
+      /* Table overflow */
+      table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+      /* Leaderboard */
+      .lb-row { grid-template-columns: 28px 1fr 60px 60px; gap: 6px; font-size: 0.8rem; }
+
+      /* Toast notifications */
+      #TOASTS { right: 10px; left: 10px; max-width: 100%; }
+      .toast { font-size: 0.82rem; }
+
+      /* Announcement banner */
+      #ANN { font-size: 0.78rem; padding: 8px 12px; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       SMALL MOBILE — max-width: 400px
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 400px) {
+      .nb { padding: 5px 7px; font-size: 0.72rem; }
+      .event-card { flex: 0 0 200px; }
+      .btn, .bto { padding: 8px 14px; font-size: 0.78rem; }
+      .hero h1 { font-size: 2.2rem; }
+    }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2731,11 +2897,8 @@
         <div class="stitle"><svg class="ic">
             <use href="#ic-megaphone" />
           </svg> Current Event</div>
-        <div id="EVENT-BOX" class="p"
-          style="margin-bottom:20px; text-align:center; background:rgba(0,0,0,0.2); border:1px dashed var(--g); min-height:80px">
-          <div class="ld">
-            <div class="sp"></div>
-          </div>
+        <div id="EVENT-BOX" style="margin-bottom:20px; min-height:100px">
+          <!-- Populated by JS -->
         </div>
         <div class="stitle"><svg class="ic">
             <use href="#ic-bolt" />
@@ -2924,13 +3087,30 @@
 
         <div id="ADM-EVENTS" style="display:none">
           <div class="p">
-            <div class="stitle">Event Management</div>
+            <div class="stitle">Quick Templates</div>
+            <div id="ADM-E-PRESETS" class="preset-grid">
+              <!-- Inline JS for speed or let loadNexusEvents handle it? Better in static/onload -->
+              <button class="preset-btn" onclick="admFillPreset(0)"><span class="preset-btn-name">Free Rank</span><span class="preset-btn-tag">Starter</span></button>
+              <button class="preset-btn" onclick="admFillPreset(1)"><span class="preset-btn-name">Discord</span><span class="preset-btn-tag">Social</span></button>
+              <button class="preset-btn" onclick="admFillPreset(2)"><span class="preset-btn-name">Double XP</span><span class="preset-btn-tag">Boost</span></button>
+              <button class="preset-btn" onclick="admFillPreset(3)"><span class="preset-btn-name">Vote</span><span class="preset-btn-tag">Rewards</span></button>
+              <button class="preset-btn" onclick="admFillPreset(4)"><span class="preset-btn-name">Sale</span><span class="preset-btn-tag">Shop</span></button>
+              <button class="preset-btn" onclick="admFillPreset(5)"><span class="preset-btn-name">Tournament</span><span class="preset-btn-tag">Guilds</span></button>
+              <button class="preset-btn" onclick="admFillPreset(6)"><span class="preset-btn-name">Mystery</span><span class="preset-btn-tag">Rates</span></button>
+            </div>
+
+            <div class="dv"></div>
+
+            <div class="stitle">Custom Event</div>
             <div class="fg"><label>Event Title</label><input id="ADM-E-TI" class="inp"
                 placeholder="Seasonal Event Name"></div>
             <div class="fg"><label>Description</label><input id="ADM-E-DE" class="inp" placeholder="Details..."></div>
-            <div class="fg"><label>Expiry (YYYY-MM-DD HH:MM)</label><input id="ADM-E-EX" class="inp"
-                placeholder="2026-12-31 23:59"></div>
-            <button class="btn" onclick="admCreateEvent()">Publish Event</button>
+            <div class="fg"><label>Expiry Date & Time</label>
+              <input id="ADM-E-EX" type="datetime-local" class="inp">
+            </div>
+            <div class="fg"><label>Link URL (Internal e.g. /store or External)</label><input id="ADM-E-LK" class="inp"
+                placeholder="/store or https://discord.gg/..."></div>
+            <button class="btn" style="width:100%" onclick="admCreateEvent()">Publish Custom Event</button>
             <div class="dv"></div>
             <div id="ADM-E-LIST"></div>
           </div>
@@ -3194,32 +3374,70 @@
     </div>
 
     <!-- ════════════ FORUMS ════════════ -->
+    <!-- ════════════ FORUMS ════════════ -->
     <div class="pg" id="pg-forums">
       <div class="Ws">
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-chat" />
-          </svg> Forums</div>
-        <div id="F-LIST">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-            <select id="F-CAT" class="inp" style="width:auto" onchange="loadForums()">
-              <option value="">All</option>
-              <option value="general">General</option>
-              <option value="announcements">Announcements</option>
-              <option value="help">Help</option>
-              <option value="suggestions">Suggestions</option>
-              <option value="offtopic">Off-Topic</option>
-            </select>
-            <button class="btn" onclick="NL(()=>openM('MF'))">+ New Thread</button>
-          </div>
-          <div id="F-ROWS"></div>
+        <!-- BREADCRUMBS -->
+        <div id="F-BREAD" style="margin-bottom:15px; font-size:0.85rem; color:var(--tx3); font-family:'Oxanium',sans-serif">
+          <span class="link" onclick="GO('home')">Home</span> <span style="margin:0 5px">/</span> 
+          <span class="link" onclick="renderForumIndex()">Forums</span> <span id="F-BREAD-CAT"></span>
         </div>
-        <div id="F-THREAD" style="display:none">
-          <button class="bto bsm" onclick="backF()" style="margin-bottom:10px">← Forums</button>
-          <div id="F-TC"></div>
-          <div class="p" style="margin-top:12px">
-            <div class="stitle">Post a Reply</div>
-            <div class="fg"><textarea id="F-RPLY" class="inp" rows="4" placeholder="Write your reply…"></textarea></div>
-            <button class="btn" onclick="postReply()">Post Reply</button>
+
+        <div class="f-layout">
+          <!-- MAIN CONTENT -->
+          <div class="f-main">
+            <div id="F-INDEX">
+               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                  <div class="ptitle" style="margin:0"><svg class="ic"><use href="#ic-chat"/></svg> Community Forums</div>
+                  <button class="btn" onclick="NL(()=>openM('MF'))">+ New Thread</button>
+               </div>
+               <div id="F-INDEX-L">
+                  <div class="ld"><div class="sp"></div></div>
+               </div>
+            </div>
+
+            <!-- CATEGORY LIST VIEW -->
+            <div id="F-LIST" style="display:none">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <div class="ptitle" style="margin:0"><svg class="ic"><use href="#ic-chat"/></svg> <span id="F-CAT-TITLE">Category</span></div>
+                <div style="display:flex; gap:8px">
+                  <button class="bto bsm" onclick="renderForumIndex()">← Back</button>
+                  <button class="btn bsm" onclick="NL(()=>openM('MF'))">+ New Thread</button>
+                </div>
+              </div>
+              <div id="F-ROWS" class="f-index-cat"></div>
+            </div>
+
+            <!-- THREAD VIEW -->
+            <div id="F-THREAD" style="display:none">
+              <button class="bto bsm" onclick="backF()" style="margin-bottom:15px">← Back to Category</button>
+              <div id="F-TC"></div>
+              <div class="p" style="margin-top:12px">
+                <div class="stitle">Post a Reply</div>
+                <div class="fg">
+                  <textarea id="F-RPLY" class="inp" rows="4" placeholder="Write your reply…"></textarea>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px">
+                   <div id="F-RPLY-ADMIN" style="display:none">
+                      <button class="bto bxs" onclick="I('F-IMG-UP').click()">📷 Upload Image</button>
+                      <input type="file" id="F-IMG-UP" style="display:none" onchange="uploadForumImg(this)">
+                   </div>
+                   <button class="btn" onclick="postReply()">Post Reply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR -->
+          <div class="f-sidebar">
+            <div class="f-widget">
+              <div class="f-widget-title"><svg class="ic"><use href="#ic-ann"/></svg> Latest Posts</div>
+              <div id="F-WID-LATEST"></div>
+            </div>
+            <div class="f-widget">
+              <div class="f-widget-title"><svg class="ic"><use href="#ic-bolt"/></svg> Trending Content</div>
+              <div id="F-WID-TREND"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -3690,9 +3908,11 @@
     // ════════════════════════════════════════════════════
     // NAVIGATION
     // ════════════════════════════════════════════════════
-    // NAVIGATION
     // ════════════════════════════════════════════════════
     function GO(id, push = true) {
+      if (id === 'admin' && !isAdmin()) { GO('home'); return; }
+      if (id === 'staff' && !isStaff()) { GO('home'); return; }
+
       document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
       document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
       const pg = I('pg-' + id);
@@ -3713,7 +3933,7 @@
       }
 
       ({
-        forums: loadForums,
+        forums: renderForumIndex,
         players: () => { plT('skin'); initSV3D(); },
         profile: () => { if (ME) { loadProfile(); loadInv(); loadGifts(); loadProfTix(); } else openM('ML'); },
         tickets: loadTix,
@@ -4278,6 +4498,7 @@
             html += `<button class="bw-mode-tab${i === 0 ? ' active' : ''}" onclick="switchBwMode('${m}')">${esc(m)}</button>`;
           });
           html += `</div>`;
+          
           modeNames.forEach((m, i) => {
             const s = modes[m];
             html += `<div class="bw-mode-panel${i === 0 ? ' active' : ''}" id="bw-mode-${m}">
@@ -4366,94 +4587,237 @@
     // Helper: rough XP needed for next BedWars level
     function getXpForLevel(lvl) { return 5000 + (lvl * 500); }
 
+    // ════════════════════════════════════════════════════
+    // FORUM OVERHAUL LOGIC
+    // ════════════════════════════════════════════════════
+    const F_GROUPS = {
+      'Official': ['announcements', 'rules'],
+      'Community': ['general', 'offtopic'],
+      'Support': ['help', 'suggestions']
+    };
 
-    // ════════════════════════════════════════════════════
-    // FORUMS
-    // ════════════════════════════════════════════════════
-    async function loadForums() {
-      const cat = V('F-CAT'), el = I('F-ROWS');
+    function stBadge(role) {
+      if (!role || role === 'player') return '';
+      const cls = ['helper', 'mod', 'dev', 'admin', 'owner'].includes(role) ? `st-${role}` : 'rb-player';
+      return `<span class="st-badge ${cls}">${role}</span>`;
+    }
+
+    async function renderForumIndex() {
+      I('F-INDEX').style.display = 'block';
+      I('F-LIST').style.display = 'none';
+      I('F-THREAD').style.display = 'none';
+      I('F-BREAD-CAT').innerHTML = '';
+      
+      const el = I('F-INDEX-L');
       el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      
       try {
-        const d = await API(`/api/forums${cat ? '?cat=' + cat : ''}`);
-        if (!d.length) { el.innerHTML = '<div class="empty">No threads yet. Be the first!</div>'; return; }
+        const meta = await API('/api/forums/meta');
+        const { counts, replies, latest } = meta;
+        
+        let html = '';
+        for (const [group, cats] of Object.entries(F_GROUPS)) {
+          html += `<div class="f-index-cat">
+            <div class="f-cat-head">${group.toUpperCase()}</div>`;
+          cats.forEach(cat => {
+            const tCount = counts[cat] || 0;
+            const mCount = tCount + (replies[cat] || 0);
+            const lt = latest[cat];
+            
+            html += `<div class="f-row" onclick="loadForums('${cat}')">
+              <div class="f-icon"><svg class="ic"><use href="#ic-chat"/></svg></div>
+              <div class="f-txt">
+                <div class="f-title">${cap(cat)}</div>
+                <div class="f-desc">Community discussions about ${cat}.</div>
+              </div>
+              <div class="f-stats">
+                 <div class="f-stat-unit"><span class="f-stat-val">${fmtK(tCount)}</span><span class="f-stat-lbl">Threads</span></div>
+                 <div class="f-stat-unit"><span class="f-stat-val">${fmtK(mCount)}</span><span class="f-stat-lbl">Messages</span></div>
+              </div>
+              <div class="f-last">
+                 ${lt ? `
+                   <img class="f-last-avatar" src="/api/skin/head/${enc(lt.author_name)}/32">
+                   <div class="f-last-txt">
+                      <span class="f-last-title">${esc(lt.title)}</span>
+                      <div class="f-last-meta">By ${esc(lt.author_name)} · ${fmtD(lt.created_at)}</div>
+                   </div>
+                 ` : '<div style="color:var(--tx3)">No activity</div>'}
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+        el.innerHTML = html;
+        loadForumWidgets();
+      } catch (e) { el.innerHTML = '<div class="empty">Error loading index.</div>'; }
+    }
+
+    async function loadForumWidgets() {
+      try {
+        const d = await API('/api/forums/widgets');
+        I('F-WID-LATEST').innerHTML = d.latest.map(f => `
+           <div class="f-widget-item">
+             <img src="/api/skin/head/${enc(f.author_name)}/28" class="f-widget-img">
+             <div class="f-widget-txt">
+                <span class="f-widget-name" onclick="openForum(${f.id})">${esc(f.title)}</span>
+                <div class="f-widget-meta">by ${esc(f.author_name)} · ${fmtD(f.created_at)}</div>
+             </div>
+           </div>
+        `).join('');
+        I('F-WID-TREND').innerHTML = d.trending.map(f => `
+           <div class="f-widget-item">
+             <div class="f-widget-txt">
+                <span class="f-widget-name" onclick="openForum(${f.id})">${esc(f.title)}</span>
+                <div class="f-widget-meta">${f.rc} replies · in ${cap(f.category)}</div>
+             </div>
+           </div>
+        `).join('');
+      } catch (e) { }
+    }
+
+    async function loadForums(cat) {
+      if (!cat) { renderForumIndex(); return; }
+      I('F-INDEX').style.display = 'none';
+      I('F-LIST').style.display = 'block';
+      I('F-THREAD').style.display = 'none';
+      I('F-CAT-TITLE').textContent = cap(cat);
+      I('F-BREAD-CAT').innerHTML = `<span style="margin:0 5px">/</span> <span>${cap(cat)}</span>`;
+      
+      const el = I('F-ROWS');
+      el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      
+      try {
+        const d = await API(`/api/forums?cat=${cat}`);
+        if (!d.length) { el.innerHTML = '<div class="empty">No threads in this category.</div>'; return; }
         el.innerHTML = d.map(f => {
-          const avatar = `/api/skin/head/${enc(f.author_name)}/48`;
-          return `<div class="frow" onclick="openForum(${f.id})">
-            <img class="fhead" src="${avatar}" alt="">
+          const avatar = `/api/skin/head/${enc(f.author_name)}/40`;
+          return `<div class="f-row" onclick="openForum(${f.id})">
+            <div class="f-icon"><svg class="ic"><use href="#ic-chat"/></svg></div>
             <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-                <span style="font-weight:700;font-size:1.1rem">${esc(f.title)}</span>
-                <span class="tag" style="background:rgba(255,255,255,0.1)">${f.category}</span>
-              </div>
-              <div style="font-size:.75rem;color:var(--tx2)">
-                By <strong style="color:var(--tx)">${esc(f.author_name)}</strong>
-                <span class="rb rb-${f.author_role}" style="margin-left:3px">${f.author_role}</span>
-                · ${fmtD(f.created_at)}
-              </div>
+               <div class="f-title">
+                  ${f.is_pinned ? '<span class="f-pin">📌</span>' : ''}
+                  ${f.is_locked ? '<span class="f-lock">🔒</span>' : ''}
+                  ${esc(f.title)}
+               </div>
+               <div class="f-desc">By ${esc(f.author_name)} ${stBadge(f.author_role)} · ${fmtD(f.created_at)}</div>
             </div>
-            <div style="text-align:right">
-              <div style="font-weight:800;font-family:'Oxanium',sans-serif;color:var(--g)">${f.reply_count}</div>
-              <div style="font-size:0.6rem;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">Replies</div>
+            <div class="f-stats">
+               <div class="f-stat-unit"><span class="f-stat-val">${f.reply_count}</span><span class="f-stat-lbl">Replies</span></div>
+               <div class="f-stat-unit"><span class="f-stat-val">${f.views}</span><span class="f-stat-lbl">Views</span></div>
+            </div>
+            <div class="f-last">
+               <img src="${avatar}" class="f-last-avatar">
+               <div class="f-last-txt" style="font-size:0.7rem">
+                  Latest activity<br>
+                  <span style="color:var(--tx3)">${fmtD(f.created_at)}</span>
+               </div>
             </div>
           </div>`;
         }).join('');
-      } catch (e) { el.innerHTML = '<div class="empty">Could not load forums.</div>'; }
+      } catch (e) { el.innerHTML = '<div class="empty">Error.</div>'; }
     }
 
     async function openForum(id) {
       CUR_FORUM = id;
-      I('F-LIST').style.display = 'none'; I('F-THREAD').style.display = 'block';
+      I('F-INDEX').style.display = 'none'; I('F-LIST').style.display = 'none'; I('F-THREAD').style.display = 'block';
       const el = I('F-TC'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
         const d = await API(`/api/forums/${id}`);
-        const f = d.forum, canDel = ME && (ME.id === f.author_id || isAdmin());
+        const f = d.forum, is_ad = isAdmin();
+        const canDel = ME && (ME.id === f.author_id || is_ad);
         const avatar = `/api/skin/head/${enc(f.author_name)}/64`;
-        el.innerHTML = `<div class="p" style="margin-bottom:15px">
+
+        // Breadcrumb
+        I('F-BREAD-CAT').innerHTML = `<span style="margin:0 5px">/</span> <span class="link" onclick="loadForums('${f.category}')">${cap(f.category)}</span> <span style="margin:0 5px">/</span> <span>${esc(f.title)}</span>`;
+
+        // Admin Toolbar
+        let adminBar = '';
+        if (is_ad) {
+           adminBar = `<div style="display:flex; gap:8px; margin-bottom:12px">
+              <button class="bto bxs" onclick="adminTog(${id}, '${f.is_pinned ? 'unpin' : 'pin'}')">${f.is_pinned ? 'Unpin' : 'Pin'}</button>
+              <button class="bto bxs" onclick="adminTog(${id}, '${f.is_locked ? 'unlock' : 'lock'}')">${f.is_locked ? 'Unlock' : 'Lock (Archive)'}</button>
+           </div>`;
+        }
+
+        I('F-RPLY-ADMIN').style.display = is_ad ? 'block' : 'none';
+
+        el.innerHTML = adminBar + `<div class="p" style="margin-bottom:15px; border-left:4px solid var(--g)">
             <div style="display:flex;gap:15px;align-items:flex-start">
-              <img src="${avatar}" style="width:60px;height:60px;border-radius:10px;border:1px solid var(--bd)">
+              <img src="${avatar}" style="width:54px;height:54px;border-radius:10px;border:1px solid var(--bd)">
               <div style="flex:1">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start">
-                   <h2 style="font-family:'Oxanium',sans-serif;color:var(--g);margin:0">${esc(f.title)}</h2>
-                   ${canDel ? `<button class="btn bred bxs" onclick="delForum(${f.id})">Delete Thread</button>` : ''}
-                </div>
-                <div style="font-size:.75rem;color:var(--tx2);margin-top:5px">
-                  Posted by <strong style="color:var(--tx)">${esc(f.author_name)}</strong>
-                  <span class="rb rb-${f.author_role}">${f.author_role}</span>
-                  · ${fmtD(f.created_at)}
-                </div>
+                 <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                    <h2 style="font-family:'Oxanium',sans-serif;color:var(--g);margin:0; font-size:1.4rem">
+                       ${f.is_pinned ? '📌 ' : ''}${f.is_locked ? '🔒 ' : ''}${esc(f.title)}
+                    </h2>
+                    ${canDel ? `<button class="btn bred bxs" onclick="delForum(${f.id})">Delete</button>` : ''}
+                 </div>
+                 <div style="font-size:.75rem;color:var(--tx2);margin-top:5px">
+                   By <strong style="color:var(--tx)">${esc(f.author_name)}</strong> ${stBadge(f.author_role)}
+                   · ${fmtD(f.created_at)}
+                 </div>
               </div>
             </div>
             <div class="dv"></div>
-            <div style="color:var(--tx2);line-height:1.8;font-size:.95rem;white-space:pre-wrap">${esc(f.content)}</div>
+            <div style="color:var(--tx);line-height:1.8;font-size:.95rem;white-space:pre-wrap">${f.content}</div>
         </div>
-        <div style="color:var(--g);font-family:'Oxanium',sans-serif;font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <svg class="ic"><use href="#ic-chat"/></svg> ${d.replies.length} Responses
+        <div style="color:var(--tx3);font-family:'Oxanium',sans-serif;font-size:.8rem;margin-bottom:12px">
+          ${d.replies.length} REPLIES
         </div>
-        ${d.replies.map(r => {
-          const st = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder'].includes(r.author_role);
-          const cdr = ME && (ME.id === r.author_id || isAdmin());
-          const rava = `/api/skin/head/${enc(r.author_name)}/40`;
-          return `<div class="frep ${st ? 'staff' : ''}">
+        ${d.replies.map(r => `
+          <div class="p" style="margin-bottom:12px; background:rgba(255,255,255,0.02)">
             <div style="display:flex;gap:12px;align-items:flex-start">
-              <img src="${rava}" style="width:36px;height:36px;border-radius:6px;border:1px solid var(--bd)">
+              <img src="/api/skin/head/${enc(r.author_name)}/40" style="width:36px;height:36px;border-radius:6px;border:1px solid var(--bd)">
               <div style="flex:1">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                  <div style="font-size:.72rem;color:var(--tx2)">
-                    <strong style="color:var(--tx)">${esc(r.author_name)}</strong>
-                    <span class="rb rb-${r.author_role}">${r.author_role}</span>
-                    · ${fmtD(r.created_at)}
-                  </div>
-                  ${cdr ? `<button class="btn bred bxs" style="padding:4px" onclick="delReply(${r.id})"><svg class="ic" style="margin:0"><use href="#ic-trash"/></svg></button>` : ''}
-                </div>
-                <div style="color:var(--tx2);font-size:.88rem;white-space:pre-wrap">${esc(r.content)}</div>
+                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <div style="font-size:.8rem;font-weight:700">${esc(r.author_name)} ${stBadge(r.author_role)}</div>
+                    <div style="font-size:.7rem;color:var(--tx2)">${fmtD(r.created_at)}</div>
+                 </div>
+                 <div style="color:var(--tx2);font-size:.9rem;white-space:pre-wrap">${r.content}</div>
               </div>
+              ${ME && (ME.id === r.author_id || is_ad) ? `<button class="btn bred bxs" onclick="delReply(${r.id})">×</button>` : ''}
             </div>
-          </div>`;
-        }).join('')}`;
-      } catch (e) { el.innerHTML = '<div class="empty" style="color:var(--r2)">Could not load thread.</div>'; }
+          </div>
+        `).join('')}`;
+      } catch (e) { el.innerHTML = '<div class="empty">Error.</div>'; }
     }
 
-    function backF() { I('F-LIST').style.display = ''; I('F-THREAD').style.display = 'none'; CUR_FORUM = null; }
+    async function adminTog(fid, action) {
+      try {
+        await API('/api/admin/thread_control', { method: 'POST', body: { fid, action } });
+        toast('ok', `Thread updated: ${action}`);
+        openForum(fid);
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function uploadForumImg(el) {
+      if (!el.files.length) return;
+      const formData = new FormData();
+      formData.append('file', el.files[0]);
+      try {
+         const d = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + TOK },
+            body: formData
+         }).then(res => res.json());
+         if (d.error) throw new Error(d.error);
+         
+         const area = I('F-RPLY');
+         area.value += `\n<img src="${d.url}" style="max-width:100%; border-radius:10px; margin:10px 0">\n`;
+         toast('ok', 'Image uploaded and inserted!');
+      } catch (e) { toast('err', e.message); }
+    }
+
+    function backF() {
+       renderForumIndex();
+    }
+    
+    // Helper: format 1500 to 1.5K
+    function fmtK(n) {
+      if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+      return n;
+    }
+
+    function loadForumsInit() { renderForumIndex(); }
 
     // ════════════════════════════════════════════════════
     // HELLCORE NEXUS (ADMIN SETTINGS)
@@ -4716,12 +5080,31 @@
       } catch (e) { }
     }
 
+    const EVENT_PRESETS = [
+      { ti: "Earn a Free Rank", de: "Claim your free starter rank today and unlock exclusive lobby furniture!", lk: "/store/free" },
+      { ti: "Join our Discord", de: "Join 5,000+ members! Get live updates and participate in giveaways.", lk: "https://discord.gg/hellcore" },
+      { ti: "Double XP Weekend", de: "2x Experience is currently ACTIVE! Level up your battle pass twice as fast.", lk: "/players" },
+      { ti: "Vote for Rewards", de: "Help Hellcore Network grow on server lists and earn 2x Mystery Boxes!", lk: "/forums" },
+      { ti: "Spring Sale: 20% OFF", de: "Spring is here! Use coupon code 'SPRING20' for a massive discount.", lk: "/store" },
+      { ti: "Guild Tournament", de: "The weekly Guild Wars have begun! Top guilds win sharing chests of Gold.", lk: "/players" },
+      { ti: "Mystery Nexus Boost", de: "Nexus rates are BOOSTED! Watch ads for a higher chance of Legendary loot.", lk: "/store/free" }
+    ];
+
+    function admFillPreset(idx) {
+      const p = EVENT_PRESETS[idx];
+      SV('ADM-E-TI', p.ti); SV('ADM-E-DE', p.de); SV('ADM-E-LK', p.lk);
+      toast('ok', 'Template loaded!');
+    }
+
     async function admCreateEvent() {
-      const ti = V('ADM-E-TI'), de = V('ADM-E-DE'), ex = V('ADM-E-EX');
+      const ti = V('ADM-E-TI'), de = V('ADM-E-DE'), lk = V('ADM-E-LK');
+      let ex = V('ADM-E-EX'); // datetime-local format: YYYY-MM-DDTHH:MM
+      if (ex) ex = ex.replace('T', ' '); // format for backend: YYYY-MM-DD HH:MM
+      
       if (!ti || !de) return;
       try {
-        await API('/api/admin/events', { method: 'POST', body: { title: ti, description: de, expires_at: ex } });
-        SV('ADM-E-TI', ''); SV('ADM-E-DE', ''); SV('ADM-E-EX', '');
+        await API('/api/admin/events', { method: 'POST', body: { title: ti, description: de, expires_at: ex, link_url: lk } });
+        SV('ADM-E-TI', ''); SV('ADM-E-DE', ''); SV('ADM-E-EX', ''); SV('ADM-E-LK', '');
         loadNexusEvents(); toast('ok', 'Event published!'); loadEvents();
       } catch (e) { toast('err', e.message); }
     }
@@ -4743,14 +5126,63 @@
       const el = I('EVENT-BOX'); if (!el) return;
       try {
         const d = await API('/api/events');
-        if (!d.length) { el.innerHTML = '<div style="padding:20px;color:var(--tx2);font-style:italic">No active events. Stay tuned!</div>'; return; }
-        const e = d[0]; // Latest
-        el.innerHTML = `<div style="padding:15px">
-          <div style="font-family:'Oxanium',sans-serif;color:var(--g);font-weight:700;font-size:1.2rem;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px">${esc(e.title)}</div>
-          <div style="color:var(--tx2);font-size:.85rem;line-height:1.6">${esc(e.description)}</div>
-          ${e.expires_at ? `<div style="font-size:.65rem;color:var(--g);margin-top:10px;text-transform:uppercase">Expires: ${fmtD(e.expires_at)}</div>` : ''}
-        </div>`;
-      } catch (e) { el.innerHTML = ''; }
+        if (!d.length) {
+          el.innerHTML = '<div class="p" style="text-align:center;color:var(--tx2);font-style:italic">No active events. Stay tuned!</div>';
+          return;
+        }
+
+        const carousel = document.createElement('div');
+        carousel.className = 'event-carousel';
+
+        d.forEach(function(ev) {
+          const lk = ev.link_url || '';
+          const isExt = lk.startsWith('http') || lk.startsWith('//');
+
+          const card = document.createElement('div');
+          card.className = 'event-card';
+
+          const title = document.createElement('div');
+          title.className = 'event-card-title';
+          title.textContent = ev.title;
+
+          const desc = document.createElement('div');
+          desc.className = 'event-card-desc';
+          desc.textContent = ev.description;
+
+          card.appendChild(title);
+          card.appendChild(desc);
+
+          if (lk) {
+            if (isExt) {
+              // External link: use a real <a> tag
+              const btn = document.createElement('a');
+              btn.className = 'btn bsm';
+              btn.style.cssText = 'display:inline-block;margin-top:14px;text-decoration:none;';
+              btn.href = lk;
+              btn.target = '_blank';
+              btn.rel = 'noopener noreferrer';
+              btn.textContent = 'Learn More';
+              card.appendChild(btn);
+            } else {
+              // Internal link: real <button>
+              const btn = document.createElement('button');
+              btn.className = 'btn bsm';
+              btn.style.cssText = 'margin-top:14px;';
+              btn.textContent = 'Learn More';
+              btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                GO(lk.replace(/^\//, '').replace(/\//g, '-'));
+              });
+              card.appendChild(btn);
+            }
+          }
+
+          carousel.appendChild(card);
+        });
+
+        el.innerHTML = '';
+        el.appendChild(carousel);
+      } catch(err) { el.innerHTML = ''; }
     }
 
     async function loadNexusForums() {

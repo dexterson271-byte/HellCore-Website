@@ -296,6 +296,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_forums(
   author_id INTEGER NOT NULL,
   category VARCHAR(40) DEFAULT 'general',
   views INTEGER DEFAULT 0,
+  is_pinned INTEGER DEFAULT 0,
+  is_locked INTEGER DEFAULT 0,
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_replies(
@@ -355,6 +357,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_events(
   title VARCHAR(200) NOT NULL,
   description TEXT NOT NULL,
   image_url VARCHAR(255) DEFAULT '',
+  link_url VARCHAR(255) DEFAULT '',
   expires_at DATETIME,
   created_at {DT})""",
 f"""CREATE TABLE IF NOT EXISTS hc_audit_logs(
@@ -381,11 +384,33 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
         try: c.execute(sql)
         except Exception as e: print(f"  Table warn: {e}")
 
-    # Ensure default channel exists
-    c.execute("SELECT id FROM hc_staff_channels WHERE name='#staff-hub'")
-    if not c.fetchone():
-        c.execute(f"INSERT INTO hc_staff_channels (name, created_by, created_at) VALUES ('#staff-hub', 0, {ph()})", (datetime.now(),))
+    # MIGRATION: Add is_pinned and is_locked if missing
+    for col in ["is_pinned", "is_locked"]:
+        try: c.execute(f"ALTER TABLE hc_forums ADD COLUMN {col} INTEGER DEFAULT 0")
+        except: pass
 
+    db.commit()
+
+    # --- BOOTSTRAP EVENTS ---
+    def bootstrap_events(curr):
+        # One-time purge to fix missing link_url in existing records
+        curr.execute("DELETE FROM hc_events")
+        
+        evs = [
+            ("Earn a Free Rank", "Claim your free starter rank today and unlock exclusive lobby furniture!", "/static/logo.png", "/store/free"),
+            ("Join our Discord", "Join 5,000+ members! Get live updates and participate in giveaways.", "/static/logo.png", "https://discord.gg/hellcore"),
+            ("Double XP Weekend", "2x Experience is currently ACTIVE! Level up your battle pass twice as fast.", "/static/logo.png", "/players"),
+            ("Vote for Rewards", "Help Hellcore Network grow on server lists and earn 2x Mystery Boxes!", "/static/logo.png", "/forums"),
+            ("Spring Sale: 20% OFF", "Spring is here! Use coupon code 'SPRING20' for a massive discount.", "/static/logo.png", "/store"),
+            ("Guild Tournament", "The weekly Guild Wars have begun! Top guilds win sharing chests of Gold.", "/static/logo.png", "/players"),
+            ("Mystery Nexus Boost", "Nexus rates are BOOSTED! Watch ads for a higher chance of Legendary loot.", "/static/logo.png", "/store/free")
+        ]
+        for title, desc, img, link in evs:
+            curr.execute(f"INSERT INTO hc_events (title, description, image_url, link_url, created_at) VALUES ({phs(5)})", 
+                        (title, desc, img, link, datetime.now()))
+        print("[OK] Purged and Re-boostrapped 7 events.")
+
+    bootstrap_events(c)
     db.commit(); c.close(); db.close()
     print(f"[OK] Tables ready ({_DB_MODE})")
 
@@ -637,6 +662,77 @@ def auth_me():
 # ═══════════════════════════════════════════════════════
 # FORUMS
 # ═══════════════════════════════════════════════════════
+
+@app.route("/api/forums/meta")
+def forums_meta():
+    db = get_db(); c = db_cursor(db)
+    # Get thread and reply counts per category
+    c.execute("SELECT category, COUNT(*) as thread_count FROM hc_forums GROUP BY category")
+    t_counts = {r["category"]: r["thread_count"] for r in to_list(c.fetchall())}
+    
+    c.execute("SELECT f.category, COUNT(r.id) as reply_count FROM hc_forums f "
+              "LEFT JOIN hc_replies r ON r.forum_id = f.id GROUP BY f.category")
+    r_counts = {r["category"]: r["reply_count"] for r in to_list(c.fetchall())}
+
+    # Get latest post per category
+    c.execute("SELECT f.id, f.title, f.category, f.created_at, u.username as author_name "
+              "FROM hc_forums f JOIN hc_users u ON f.author_id = u.id "
+              "WHERE (f.category, f.created_at) IN (SELECT category, MAX(created_at) FROM hc_forums GROUP BY category)")
+    latest = {r["category"]: r for r in to_list(c.fetchall())}
+    for k in latest: latest[k]["created_at"] = ts(latest[k]["created_at"])
+
+    db.close()
+    return jsonify({"counts": t_counts, "replies": r_counts, "latest": latest})
+
+@app.route("/api/forums/widgets")
+def forums_widgets():
+    db = get_db(); c = db_cursor(db)
+    # Latest 5
+    c.execute("SELECT f.*, u.username author_name FROM hc_forums f JOIN hc_users u ON f.author_id=u.id ORDER BY f.created_at DESC LIMIT 5")
+    latest = to_list(c.fetchall())
+    for r in latest: r["created_at"] = ts(r["created_at"])
+    
+    # Trending 5 (by replies)
+    c.execute("SELECT f.*, u.username author_name, (SELECT COUNT(*) FROM hc_replies r WHERE r.forum_id=f.id) rc "
+              "FROM hc_forums f JOIN hc_users u ON f.author_id=u.id ORDER BY rc DESC LIMIT 5")
+    trending = to_list(c.fetchall())
+    for r in trending: r["created_at"] = ts(r["created_at"])
+    
+    db.close()
+    return jsonify({"latest": latest, "trending": trending})
+
+@app.route("/api/admin/thread_control", methods=["POST"])
+@admin_required
+def admin_thread_control():
+    d = request.get_json(force=True) or {}
+    fid = d.get("fid")
+    action = d.get("action") # 'pin', 'unpin', 'lock', 'unlock'
+    if not fid or not action: return jsonify({"error":"Missing params"}), 400
+    
+    db = get_db(); c = db_cursor(db)
+    if action == 'pin': c.execute(f"UPDATE hc_forums SET is_pinned=1 WHERE id={ph()}", (fid,))
+    elif action == 'unpin': c.execute(f"UPDATE hc_forums SET is_pinned=0 WHERE id={ph()}", (fid,))
+    elif action == 'lock': c.execute(f"UPDATE hc_forums SET is_locked=1 WHERE id={ph()}", (fid,))
+    elif action == 'unlock': c.execute(f"UPDATE hc_forums SET is_locked=0 WHERE id={ph()}", (fid,))
+    
+    db.commit(); c.close(); db.close()
+    return jsonify({"ok":True})
+
+@app.route("/api/upload", methods=["POST"])
+@admin_required
+def admin_upload():
+    if 'file' not in request.files: return jsonify({"error":"No file"}), 400
+    f = request.files['file']
+    if f.filename == '': return jsonify({"error":"No selected file"}), 400
+    
+    # Ensure uploads dir exists
+    up_dir = os.path.join(app.root_path, 'static', 'uploads')
+    if not os.path.exists(up_dir): os.makedirs(up_dir)
+    
+    fname = f"{uuid.uuid4().hex}_{f.filename}"
+    f.save(os.path.join(up_dir, fname))
+    return jsonify({"url": f"/static/uploads/{fname}"})
+
 @app.route("/api/forums")
 def forums_list():
     cat = request.args.get("cat","")
@@ -644,10 +740,11 @@ def forums_list():
     base = ("SELECT f.*, u.username author_name, u.role author_role, "
             f"(SELECT COUNT(*) FROM hc_replies r WHERE r.forum_id=f.id) reply_count "
             "FROM hc_forums f JOIN hc_users u ON f.author_id=u.id")
+    order = "ORDER BY f.is_pinned DESC, f.created_at DESC"
     if cat:
-        c.execute(base + f" WHERE f.category={ph()} ORDER BY f.created_at DESC", (cat,))
+        c.execute(base + f" WHERE f.category={ph()} " + order, (cat,))
     else:
-        c.execute(base + " ORDER BY f.created_at DESC")
+        c.execute(base + " " + order)
     rows = to_list(c.fetchall()); c.close(); db.close()
     for r in rows: r["created_at"] = ts(r["created_at"])
     return jsonify(rows)
@@ -702,6 +799,12 @@ def reply_add(fid):
     d = request.get_json(force=True) or {}
     if not d.get("content"): return jsonify({"error":"Content required"}), 400
     db = get_db(); c = db_cursor(db)
+    
+    # Check if locked
+    c.execute(f"SELECT is_locked FROM hc_forums WHERE id={ph()}", (fid,))
+    f = c.fetchone()
+    if f and f[0] and request.cu["role"] not in STAFF_ROLES:
+        db.close(); return jsonify({"error":"This thread is locked (Private)."}), 403
     c.execute(f"INSERT INTO hc_replies(forum_id,author_id,content) VALUES({phs(3)})",
               (fid, request.cu["id"], d["content"]))
     db.commit(); c.close(); db.close()
