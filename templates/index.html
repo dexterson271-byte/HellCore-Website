@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Hellcore Network — mc.hellcore.in</title>
+  <title>Hellcore Network — mc.hellcore.com</title>
   <link rel="icon" href="/static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
@@ -2613,9 +2613,12 @@
   <div id="BG"></div>
   <div id="APP">
     <!-- GLOBAL BANNER -->
-    <div id="GLOBAL-BANNER" style="display:none;background:linear-gradient(90deg,var(--g),#fb923c);color:#000;text-align:center;padding:10px;font-weight:800;font-family:'Oxanium',sans-serif;font-size:0.85rem;position:sticky;top:0;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+    <div id="GLOBAL-BANNER"
+      style="display:none;background:linear-gradient(90deg,var(--g),#fb923c);color:#000;text-align:center;padding:10px;font-weight:800;font-family:'Oxanium',sans-serif;font-size:0.85rem;position:sticky;top:0;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
       <div class="Ws" style="display:flex;align-items:center;justify-content:center;gap:10px">
-        <svg class="ic" style="margin:0;width:1.2rem;height:1.2rem"><use href="#ic-ann"/></svg>
+        <svg class="ic" style="margin:0;width:1.2rem;height:1.2rem">
+          <use href="#ic-ann" />
+        </svg>
         <span id="BANNER-TXT"></span>
       </div>
     </div>
@@ -2684,7 +2687,7 @@
         <div class="hero">
           <h1>HELLCORE</h1>
           <div class="hero-sub">Bedwars · SkyWars</div>
-          <div class="hero-ip" onclick="copyIP()">mc.hellcore.in</div>
+          <div class="hero-ip" onclick="copyIP()">mc.hellcore.com</div>
           <div class="hbtns">
             <button class="btn" onclick="GO('store')"><svg class="ic">
                 <use href="#ic-cart" />
@@ -2739,12 +2742,15 @@
               </div>
             </div>
           </div>
-          <div class="mc" style="border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); cursor: default;">
+          <div class="mc"
+            style="border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05); cursor: default;">
             <span class="mi" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><svg class="ic">
                 <use href="#ic-cloud" />
               </svg></span>
             <div style="flex:1">
-              <h3 style="color: #f59e0b; display: flex; align-items: center; gap: 8px;">SkyWars <span style="font-size: 0.65rem; background: #f59e0b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px;">COMING SOON</span></h3>
+              <h3 style="color: #f59e0b; display: flex; align-items: center; gap: 8px;">SkyWars <span
+                  style="font-size: 0.65rem; background: #f59e0b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 800; letter-spacing: 0.5px;">COMING
+                  SOON</span></h3>
               <p>Battle across floating sky islands</p>
               <div style="display:flex;gap:8px;margin-top:10px">
                 <span class="tag" style="background:rgba(245, 158, 11, 0.1);color:#f59e0b">Developing...</span>
@@ -2755,7 +2761,7 @@
         <div class="p" style="text-align:center;padding:24px">
           <div style="font-family:'Oxanium',sans-serif;color:var(--g);margin-bottom:7px">Ready to play?</div>
           <p style="color:var(--tx2);margin-bottom:14px">Java Edition · <strong
-              style="color:var(--g)">mc.hellcore.in</strong></p>
+              style="color:var(--g)">mc.hellcore.com</strong></p>
           <button class="btn" onclick="copyIP()"><svg class="ic">
               <use href="#ic-clipboard" />
             </svg> Copy Server IP</button>
@@ -2770,22 +2776,23 @@
             <use href="#ic-wrench" />
           </svg> Hellcore Nexus</div>
         <div class="tabs" style="justify-content:flex-start">
-        <button id="ADM-TAB-NODE" class="tab ON" onclick="admT('node')">Analytics</button>
-        <button id="ADM-TAB-PLAYERS" class="tab" onclick="admT('players')">Players</button>
-        <button id="ADM-TAB-STAFF" class="tab" onclick="admT('staff')">Staff</button>
-        <button id="ADM-TAB-LOGS" class="tab" onclick="admT('logs')">Audit Logs</button>
-        <button id="ADM-TAB-FORUMS" class="tab" onclick="admT('forums')">Forums</button>
-        <button id="ADM-TAB-TICKETS" class="tab" onclick="admT('tickets')">Tickets</button>
-        <button id="ADM-TAB-CHAT" class="tab" onclick="admT('chat')">Staff Chat</button>
-        <button id="ADM-TAB-EVENTS" class="tab" onclick="admT('events')">Events</button>
-        <button id="ADM-TAB-MGMT" class="tab" onclick="admT('mgmt')">Controls</button>
-      </div>
+          <button id="ADM-TAB-NODE" class="tab ON" onclick="admT('node')">Analytics</button>
+          <button id="ADM-TAB-PLAYERS" class="tab" onclick="admT('players')">Players</button>
+          <button id="ADM-TAB-STAFF" class="tab" onclick="admT('staff')">Staff</button>
+          <button id="ADM-TAB-LOGS" class="tab" onclick="admT('logs')">Audit Logs</button>
+          <button id="ADM-TAB-FORUMS" class="tab" onclick="admT('forums')">Forums</button>
+          <button id="ADM-TAB-TICKETS" class="tab" onclick="admT('tickets')">Tickets</button>
+          <button id="ADM-TAB-CHAT" class="tab" onclick="admT('chat')">Staff Chat</button>
+          <button id="ADM-TAB-EVENTS" class="tab" onclick="admT('events')">Events</button>
+          <button id="ADM-TAB-MGMT" class="tab" onclick="admT('mgmt')">Controls</button>
+        </div>
 
         <!-- Node Overview -->
         <div id="ADM-NODE">
           <div class="g4" style="gap:12px;margin-bottom:14px">
             <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Sync Status</div>
+              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Sync Status
+              </div>
               <div id="ADM-SYNC-STATUS" style="font-weight:800;color:var(--g)">ONLINE</div>
             </div>
             <div class="p" style="text-align:center">
@@ -2793,7 +2800,8 @@
               <div id="ADM-TOTAL-USERS" style="font-weight:800;color:#fff">0</div>
             </div>
             <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Pending CMDs</div>
+              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Pending CMDs
+              </div>
               <div id="ADM-PENDING-CMD" style="font-weight:800;color:var(--r2)">0</div>
             </div>
             <div class="p" style="text-align:center">
@@ -2811,7 +2819,9 @@
         <div id="ADM-PLAYERS" style="display:none">
           <div class="p">
             <div class="stitle">User Search</div>
-            <div class="fg" style="display:flex;gap:7px"><input id="ADM-P-SEARCH" class="inp" placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP()"><button class="btn" onclick="admSearchP()">Search</button></div>
+            <div class="fg" style="display:flex;gap:7px"><input id="ADM-P-SEARCH" class="inp"
+                placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP()"><button class="btn"
+                onclick="admSearchP()">Search</button></div>
             <div class="dv"></div>
             <div id="ADM-P-RES"></div>
           </div>
@@ -2820,7 +2830,8 @@
         <div id="ADM-STAFF" style="display:none">
           <div class="p">
             <div class="stitle">Network Staff Team</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">List of all active moderators, developers, and administrators.</p>
+            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">List of all active moderators, developers,
+              and administrators.</p>
             <div id="ADM-S-LIST"></div>
           </div>
         </div>
@@ -2828,7 +2839,8 @@
         <div id="ADM-LOGS" style="display:none">
           <div class="p">
             <div class="stitle">Audit Trail</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Detailed record of all administrative actions for transparency.</p>
+            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Detailed record of all administrative actions
+              for transparency.</p>
             <div id="ADM-L-LIST" style="font-size:.78rem;font-family:monospace"></div>
           </div>
         </div>
@@ -2856,22 +2868,26 @@
             <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                 <div class="stitle" style="margin:0">Channels</div>
-                <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()" style="display:none">+</button>
+                <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()"
+                  style="display:none">+</button>
               </div>
               <div id="CHAT-CHANNELS" style="display:flex;flex-direction:column;gap:5px"></div>
             </div>
             <!-- Chat Area -->
             <div class="p" style="display:flex;flex-direction:column;padding:0;overflow:hidden;border-color:var(--bd2)">
-              <div id="CHAT-HEAD-WRAP" style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center">
+              <div id="CHAT-HEAD-WRAP"
+                style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center">
                 <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
                 <div id="CHAT-STATUS" style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
                   <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
                   <span id="CHAT-STATE">Connecting...</span>
                 </div>
               </div>
-              <div id="CHAT-MESSAGES" style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px"></div>
+              <div id="CHAT-MESSAGES"
+                style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px"></div>
               <div style="padding:15px;border-top:1px solid var(--bd);display:flex;gap:10px">
-                <input id="CHAT-INP" class="inp" placeholder="Message staff..." onkeydown="if(event.key==='Enter')sendStaffMsg()">
+                <input id="CHAT-INP" class="inp" placeholder="Message staff..."
+                  onkeydown="if(event.key==='Enter')sendStaffMsg()">
                 <button class="btn" onclick="sendStaffMsg()">Send</button>
               </div>
             </div>
@@ -2881,9 +2897,11 @@
         <div id="ADM-EVENTS" style="display:none">
           <div class="p">
             <div class="stitle">Event Management</div>
-            <div class="fg"><label>Event Title</label><input id="ADM-E-TI" class="inp" placeholder="Seasonal Event Name"></div>
+            <div class="fg"><label>Event Title</label><input id="ADM-E-TI" class="inp"
+                placeholder="Seasonal Event Name"></div>
             <div class="fg"><label>Description</label><input id="ADM-E-DE" class="inp" placeholder="Details..."></div>
-            <div class="fg"><label>Expiry (YYYY-MM-DD HH:MM)</label><input id="ADM-E-EX" class="inp" placeholder="2026-12-31 23:59"></div>
+            <div class="fg"><label>Expiry (YYYY-MM-DD HH:MM)</label><input id="ADM-E-EX" class="inp"
+                placeholder="2026-12-31 23:59"></div>
             <button class="btn" onclick="admCreateEvent()">Publish Event</button>
             <div class="dv"></div>
             <div id="ADM-E-LIST"></div>
@@ -2894,15 +2912,20 @@
         <div id="ADM-MGMT" style="display:none">
           <div class="p">
             <div class="stitle">Network Announcement</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Set a global message that appears at the top of every page for all users.</p>
-            <div class="fg"><label>Banner Content (HTML allowed)</label><textarea id="ADM-ANN-MSG" class="inp" rows="3" placeholder="Welcome to Hellcore Network v7! Check out the store."></textarea></div>
+            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Set a global message that appears at the top
+              of every page for all users.</p>
+            <div class="fg"><label>Banner Content (HTML allowed)</label><textarea id="ADM-ANN-MSG" class="inp" rows="3"
+                placeholder="Welcome to Hellcore Network v7! Check out the store."></textarea></div>
             <button class="btn" onclick="admSetAnn()">Update Network Banner</button>
             <button class="btn bred bsm" onclick="admSetAnn(true)" style="margin-top:7px">Remove Banner</button>
           </div>
           <div class="p">
-             <div class="stitle">Direct Command Engine</div>
-             <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Queue a raw command to the Velocity proxy.</p>
-             <div class="fg" style="display:flex;gap:7px"><input id="ADM-RAW-CMD" class="inp" placeholder="e.g. alert Web update complete!"><button class="btn" onclick="admRunCmd()">Queue</button></div>
+            <div class="stitle">Direct Command Engine</div>
+            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Queue a raw command to the Velocity proxy.
+            </p>
+            <div class="fg" style="display:flex;gap:7px"><input id="ADM-RAW-CMD" class="inp"
+                placeholder="e.g. alert Web update complete!"><button class="btn" onclick="admRunCmd()">Queue</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3312,7 +3335,7 @@
             <table style="width:100%;font-size:.82rem;border-collapse:collapse">
               <tr>
                 <td style="color:var(--tx2);padding:4px 0">IP</td>
-                <td style="color:var(--g);font-weight:700">mc.hellcore.in</td>
+                <td style="color:var(--g);font-weight:700">mc.hellcore.com</td>
               </tr>
               <tr>
                 <td style="color:var(--tx2);padding:4px 0">Version</td>
@@ -3495,6 +3518,10 @@
               </svg></button>
           </div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:15px;cursor:pointer" onclick="I('LG-REM').click()">
+          <input type="checkbox" id="LG-REM" style="width:16px;height:16px;accent-color:var(--g);cursor:pointer" checked>
+          <label style="font-size:0.8rem;color:var(--tx2);cursor:pointer">Remember Me</label>
+        </div>
         <div class="capwrap">
           <div>
             <div style="font-size:.64rem;color:var(--tx2);margin-bottom:2px">Enter this code:</div>
@@ -3628,14 +3655,20 @@
     // BOOT
     // ════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', () => {
-      // ★ Restore session — no logout on refresh
-      const t = localStorage.getItem('hc_t'), u = localStorage.getItem('hc_u');
+      // Restore session — check localStorage (Remember Me) or sessionStorage (This tab only)
+      const t = localStorage.getItem('hc_t') || sessionStorage.getItem('hc_t');
+      const u = localStorage.getItem('hc_u') || sessionStorage.getItem('hc_u');
       if (t && u) {
         TOK = t;
         try { ME = JSON.parse(u); } catch (e) { }
         refreshUI();
-        // Re-sync from server to get latest role (prevents cache issues)
-        API('/api/auth/me').then(r => { ME = r; localStorage.setItem('hc_u', JSON.stringify(ME)); refreshUI(); }).catch(() => { });
+        // Re-sync from server to get latest roles
+        API('/api/auth/me').then(r => {
+          ME = r;
+          const storage = localStorage.getItem('hc_t') ? localStorage : sessionStorage;
+          storage.setItem('hc_u', JSON.stringify(ME));
+          refreshUI();
+        }).catch(() => { });
       }
 
       genCap('LG'); genCap('RG');
@@ -3747,7 +3780,7 @@
     // AUTH
     // ════════════════════════════════════════════════════
     async function doLogin() {
-      const id = V('LG-ID'), pw = V('LG-PW');
+      const id = V('LG-ID'), pw = V('LG-PW'), rem = I('LG-REM')?.checked;
       const ci = V('LG-CI').toUpperCase().replace(/\s/g, '');
       I('LG-ERR').textContent = '';
       if (!id || !pw) { I('LG-ERR').textContent = 'Fill all fields.'; return; }
@@ -3755,7 +3788,8 @@
       try {
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
         TOK = r.token; ME = r;
-        localStorage.setItem('hc_t', TOK); localStorage.setItem('hc_u', JSON.stringify(ME));
+        const storage = rem ? localStorage : sessionStorage;
+        storage.setItem('hc_t', TOK); storage.setItem('hc_u', JSON.stringify(ME));
         refreshUI(); closeM('ML');
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
@@ -3772,6 +3806,7 @@
       try {
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
         TOK = r.token; ME = r;
+        // Registration defaults to localStorage for convenience
         localStorage.setItem('hc_t', TOK); localStorage.setItem('hc_u', JSON.stringify(ME));
         refreshUI(); closeM('MR');
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
@@ -3783,6 +3818,7 @@
       try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
       ME = null; TOK = null;
       localStorage.removeItem('hc_t'); localStorage.removeItem('hc_u');
+      sessionStorage.removeItem('hc_t'); sessionStorage.removeItem('hc_u');
       refreshUI(); GO('home'); toast('ok', 'Logged out.');
     }
 
@@ -4410,14 +4446,14 @@
       try {
         const chans = await API('/api/staff/channels');
         const el = I('CHAT-CHANNELS');
-        el.innerHTML = chans.map(c => `<div class="p bxs CH-ITM" id="CH-${c.id}" style="cursor:pointer;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;background:${CUR_CHAN===c.id?'var(--p2)':'transparent'}" onclick="setStaffChan(${c.id},'${esc(c.name)}')">
+        el.innerHTML = chans.map(c => `<div class="p bxs CH-ITM" id="CH-${c.id}" style="cursor:pointer;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;background:${CUR_CHAN === c.id ? 'var(--p2)' : 'transparent'}" onclick="setStaffChan(${c.id},'${esc(c.name)}')">
           <span>${esc(c.name)}</span>
-          ${ME?.role==='founder' && c.name !== '#staff-hub' ? `<span style="color:var(--r2);font-size:12px;cursor:pointer" onclick="event.stopPropagation();admDelChatChan(${c.id})">×</span>` : ''}
+          ${ME?.role === 'founder' && c.name !== '#staff-hub' ? `<span style="color:var(--r2);font-size:12px;cursor:pointer" onclick="event.stopPropagation();admDelChatChan(${c.id})">×</span>` : ''}
         </div>`).join('');
         if (!CUR_CHAN && chans.length) setStaffChan(chans[0].id, chans[0].name);
         else if (CUR_CHAN) updateChatHighlights();
         startChatPoll();
-      } catch(e){}
+      } catch (e) { }
     }
 
     function setStaffChan(id, name) {
@@ -4429,7 +4465,7 @@
 
     function updateChatHighlights() {
       document.querySelectorAll('.CH-ITM').forEach(d => {
-        d.style.background = (d.id === 'CH-'+CUR_CHAN) ? 'var(--p2)' : 'transparent';
+        d.style.background = (d.id === 'CH-' + CUR_CHAN) ? 'var(--p2)' : 'transparent';
       });
     }
 
@@ -4439,56 +4475,56 @@
         const msgs = await API(`/api/staff/channels/${CUR_CHAN}/messages`);
         const el = I('CHAT-MESSAGES'), wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
         el.innerHTML = msgs.map(m => `
-          <div style="display:flex;flex-direction:column;align-items:${m.author_id===ME.id?'flex-end':'flex-start'}">
+          <div style="display:flex;flex-direction:column;align-items:${m.author_id === ME.id ? 'flex-end' : 'flex-start'}">
             <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px">
               <b>${esc(m.username)}</b> <span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
               · ${fmtD(m.created_at)}
             </div>
-            <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;background:${m.author_id===ME.id?'var(--g)':'var(--p1)'};color:${m.author_id===ME.id?'#000':'#fff'};border-radius:12px;${m.author_id===ME.id?'border-bottom-right-radius:2px':'border-bottom-left-radius:2px'}">
+            <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;background:${m.author_id === ME.id ? 'var(--g)' : 'var(--p1)'};color:${m.author_id === ME.id ? '#000' : '#fff'};border-radius:12px;${m.author_id === ME.id ? 'border-bottom-right-radius:2px' : 'border-bottom-left-radius:2px'}">
               ${esc(m.content)}
             </div>
           </div>
         `).join('') || '<div class="empty">No messages. Pull the trigger on some chat!</div>';
         if (wasAtBottom) el.scrollTop = el.scrollHeight;
-      } catch(e){}
+      } catch (e) { }
     }
 
-    function startChatPoll() { 
+    function startChatPoll() {
       initPusher();
-      stopChatPoll(); 
+      stopChatPoll();
       // Manual backup poll every 10s instead of 1.5s
-      CHAT_POLL = setInterval(loadChatMsgs, 10000); 
+      CHAT_POLL = setInterval(loadChatMsgs, 10000);
     }
-    function stopChatPoll() { if(CHAT_POLL) clearInterval(CHAT_POLL); CHAT_POLL = null; }
+    function stopChatPoll() { if (CHAT_POLL) clearInterval(CHAT_POLL); CHAT_POLL = null; }
 
     let PUSHER_INST = null, P_CHAN = null;
     function initPusher() {
       if (PUSHER_INST) return;
       try {
         PUSHER_INST = new Pusher('0546780f85fe17efd982', { cluster: 'ap3' });
-        
+
         // Status updates
-        PUSHER_INST.connection.bind('state_change', function(states) {
+        PUSHER_INST.connection.bind('state_change', function (states) {
           I('CHAT-STATE').textContent = states.current.charAt(0).toUpperCase() + states.current.slice(1);
           I('CHAT-DOT').style.background = states.current === 'connected' ? '#4ade80' : '#f87171';
         });
 
         P_CHAN = PUSHER_INST.subscribe('staff-chat');
-        P_CHAN.bind('new-message', function(data) {
+        P_CHAN.bind('new-message', function (data) {
           console.log('Chat Event:', data);
           // Use Number() to ensure we match correctly regardless of string/int types
           if (Number(data.channel_id) === Number(CUR_CHAN)) {
-             loadChatMsgs(); 
+            loadChatMsgs();
           }
         });
-      } catch(e) { console.error('Pusher error:', e); }
+      } catch (e) { console.error('Pusher error:', e); }
 
     }
 
     async function sendStaffMsg() {
-      const c = V('CHAT-INP').trim(); if(!c || !CUR_CHAN) return;
-      SV('CHAT-INP','');
-      
+      const c = V('CHAT-INP').trim(); if (!c || !CUR_CHAN) return;
+      SV('CHAT-INP', '');
+
       // Optimistic UI: Add message locally first
       const el = I('CHAT-MESSAGES');
       const tempDiv = document.createElement('div');
@@ -4505,16 +4541,16 @@
       try {
         await API(`/api/staff/channels/${CUR_CHAN}/messages`, { method: 'POST', body: { content: c } });
         loadChatMsgs();
-      } catch(e){ toast('err', e.message); loadChatMsgs(); }
+      } catch (e) { toast('err', e.message); loadChatMsgs(); }
     }
 
     async function admCreateChatChan() {
-      const name = prompt('Channel Name (e.g. #dev-only)'); if(!name) return;
-      try { await API('/api/staff/channels', { method: 'POST', body: { name } }); loadNexusChat(); } catch(e){ toast('err', e.message); }
+      const name = prompt('Channel Name (e.g. #dev-only)'); if (!name) return;
+      try { await API('/api/staff/channels', { method: 'POST', body: { name } }); loadNexusChat(); } catch (e) { toast('err', e.message); }
     }
     async function admDelChatChan(id) {
-      if(!confirm('Delete this channel and all messages?')) return;
-      try { await API(`/api/staff/channels/${id}`, { method: 'DELETE' }); CUR_CHAN=null; loadNexusChat(); } catch(e){ toast('err', e.message); }
+      if (!confirm('Delete this channel and all messages?')) return;
+      try { await API(`/api/staff/channels/${id}`, { method: 'DELETE' }); CUR_CHAN = null; loadNexusChat(); } catch (e) { toast('err', e.message); }
     }
 
     async function loadNexusNode() {
@@ -4524,7 +4560,7 @@
         I('ADM-PENDING-CMD').textContent = d.pending || 0;
         I('ADM-TOTAL-USERS').textContent = d.total_users || 0;
         I('ADM-STAFF-COUNT').textContent = d.staff_count || 0;
-        
+
         const log = I('ADM-LOGS-MINI');
         if (log) log.innerHTML = d.logs.map(l => `<div style="padding:4px;border-bottom:1px solid var(--bd);opacity:0.8"><small style="color:var(--g)">[${fmtD(l.created_at)}]</small> <b>${l.admin_name}</b>: ${l.action} ${l.details ? `(${l.details})` : ''}</div>`).join('') || 'No actions recorded yet.';
       } catch (e) { }
@@ -4567,20 +4603,20 @@
         const d = await API('/api/admin/announcement');
         const el = I('GLOBAL-BANNER'), txt = I('BANNER-TXT');
         if (d.message && d.message.trim()) {
-           el.style.display = 'block';
-           txt.innerHTML = d.message;
+          el.style.display = 'block';
+          txt.innerHTML = d.message;
         } else {
-           el.style.display = 'none';
+          el.style.display = 'none';
         }
       } catch (e) { }
     }
 
     async function admRunCmd() {
-       const cmd = V('ADM-RAW-CMD').trim(); if(!cmd) return;
-       try {
-         await API('/api/admin/commands/queue', { method: 'POST', body: { command: cmd } });
-         toast('ok', 'Command queued to Velocity Proxy!'); SV('ADM-RAW-CMD', ''); loadNexusNode();
-       } catch (e) { toast('err', e.message); }
+      const cmd = V('ADM-RAW-CMD').trim(); if (!cmd) return;
+      try {
+        await API('/api/admin/commands/queue', { method: 'POST', body: { command: cmd } });
+        toast('ok', 'Command queued to Velocity Proxy!'); SV('ADM-RAW-CMD', ''); loadNexusNode();
+      } catch (e) { toast('err', e.message); }
     }
 
     async function admSearchP() {
@@ -4591,8 +4627,8 @@
         const users = await API(`/api/admin/users?q=${enc(q)}`);
         if (!users.length) { el.innerHTML = '<div class="empty">No users found.</div>'; return; }
         el.innerHTML = users.map(u => {
-           const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
-           return `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid ${isStaff ? 'var(--g)' : 'transparent'}">
+          const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
+          return `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid ${isStaff ? 'var(--g)' : 'transparent'}">
             <div>
               <strong>${esc(u.username)}</strong> <span class="rb rb-${u.role}" style="font-size:.6rem;padding:1px 4px">${u.role}</span>
               <div style="font-size:.7rem;color:var(--tx2)">${esc(u.email)} · Member ${fmtD(u.created_at)}</div>
@@ -5278,11 +5314,18 @@
       const h = { 'Content-Type': 'application/json' };
       if (TOK) h['X-Auth-Token'] = TOK;
       const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
-      
+
       // Auto-logout if session is invalid
       if (res.status === 401 && !url.includes('/api/auth/')) {
-        doLogout();
-        toast('err', 'Session expired. Please login again.');
+        if (ME) {
+            doLogout();
+            toast('err', 'Session expired. Please login again.');
+        } else {
+            ME = null; TOK = null;
+            localStorage.removeItem('hc_t'); localStorage.removeItem('hc_u');
+            sessionStorage.removeItem('hc_t'); sessionStorage.removeItem('hc_u');
+            refreshUI();
+        }
         throw new Error('Unauthorized');
       }
 
@@ -5315,7 +5358,7 @@
     const mIC = m => ({ bedwars: '<svg class="ic"><use href="#ic-bed"/></svg> ', lifesteal: '<svg class="ic" style="color:#e11d48"><use href="#ic-heart"/></svg> ', skywars: '<svg class="ic"><use href="#ic-cloud"/></svg> ', survival: '<svg class="ic"><use href="#ic-tree"/></svg> ', practice: '<svg class="ic"><use href="#ic-swords"/></svg> ' }[m] || '<svg class="ic"><use href="#ic-gamepad"/></svg> ');
     const rbcls = r => r.replace('+', 'plus').toLowerCase();
     const fmtD = s => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return s || ''; } };
-    const copyIP = () => navigator.clipboard?.writeText('mc.hellcore.in').then(() => toast('ok', '✓ IP copied!'));
+    const copyIP = () => navigator.clipboard?.writeText('mc.hellcore.com').then(() => toast('ok', '✓ IP copied!'));
   </script>
 </body>
 
