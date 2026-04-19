@@ -177,23 +177,28 @@ def try_connect():
 # Automatically connect to DB when the app starts
 try_connect()
 
-def get_db():
+_MYSQL_POOL = None
 
+def get_db():
+    global _MYSQL_POOL
     if _DB_MODE in ("mysql_local", "mysql_aiven"):
-        import mysql.connector
-        if _DB_MODE == "mysql_local":
-            return mysql.connector.connect(
-                host=LOCAL_MYSQL_HOST, port=LOCAL_MYSQL_PORT,
-                user=LOCAL_MYSQL_USER, password=LOCAL_MYSQL_PASSWORD,
-                database=LOCAL_MYSQL_DATABASE
-            )
-        else:
-            return mysql.connector.connect(
-                host=AIVEN_HOST, port=AIVEN_PORT,
-                user=AIVEN_USER, password=AIVEN_PASSWORD,
-                database=AIVEN_DATABASE, ssl_disabled=False,
-                autocommit=True
-            )
+        if _MYSQL_POOL is None:
+            import mysql.connector.pooling
+            if _DB_MODE == "mysql_local":
+                _MYSQL_POOL = mysql.connector.pooling.MySQLConnectionPool(
+                    pool_name="hellcore_pool", pool_size=10, pool_reset_session=True,
+                    host=LOCAL_MYSQL_HOST, port=LOCAL_MYSQL_PORT,
+                    user=LOCAL_MYSQL_USER, password=LOCAL_MYSQL_PASSWORD,
+                    database=LOCAL_MYSQL_DATABASE
+                )
+            else:
+                _MYSQL_POOL = mysql.connector.pooling.MySQLConnectionPool(
+                    pool_name="hellcore_pool", pool_size=10, pool_reset_session=True,
+                    host=AIVEN_HOST, port=AIVEN_PORT,
+                    user=AIVEN_USER, password=AIVEN_PASSWORD,
+                    database=AIVEN_DATABASE, ssl_disabled=False, autocommit=True
+                )
+        return _MYSQL_POOL.get_connection()
 
     else:
         conn = sqlite3.connect(SQLITE_FILE)
