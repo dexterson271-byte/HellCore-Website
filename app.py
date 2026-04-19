@@ -1150,16 +1150,17 @@ def stats_get(username):
 
 @app.route("/api/lb/<gamemode>")
 def lb_get(gamemode):
-    stat = request.args.get("stat","wins")
-    db = get_db(); c = db_cursor(db)
-    
+    stat = request.args.get("stat", "wins")
+
     if gamemode == "bedwars":
         import urllib.request, json
 
+        # Map frontend stat names → API stat names (camelCase as API expects)
         bw_stat_map = {
             "wins": "wins", "kills": "kills", "deaths": "deaths",
             "final_kills": "finalKills", "beds_destroyed": "bedsBroken",
-            "level": "level", "fkdr": "fkdr"
+            "level": "level", "fkdr": "fkdr", "xp": "xp",
+            "finalKills": "finalKills", "bedsBroken": "bedsBroken"
         }
         api_stat = bw_stat_map.get(stat, "wins")
         bw_api_key = os.environ.get("BW_API_KEY", "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1")
@@ -1167,21 +1168,31 @@ def lb_get(gamemode):
 
         try:
             url = f"{bw_api_base}/leaderboard/{api_stat}?apikey={bw_api_key}"
+            print(f"[LB] Fetching: {url}")
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            res = urllib.request.urlopen(req, timeout=5)
+            res = urllib.request.urlopen(req, timeout=8)
             data = json.loads(res.read())
+            print(f"[LB] Response keys: {list(data.keys())}")
 
             if not data.get("success"):
+                print(f"[LB] API returned failure: {data}")
                 return jsonify([])
 
             entries = data.get("entries", [])
 
             # Pull any website ranks for players who have accounts
-            db_conn = get_db()
-            c_local = db_cursor(db_conn)
-            c_local.execute("SELECT u.mc_username, r.rank_name FROM hc_ranks r JOIN hc_users u ON r.user_id = u.id WHERE r.gamemode='bedwars'")
-            rank_map = {r['mc_username'].lower(): r['rank_name'] for r in to_dict(c_local.fetchall())}
-            c_local.close(); db_conn.close()
+            rank_map = {}
+            try:
+                db_conn = get_db()
+                c_local = db_cursor(db_conn)
+                c_local.execute("SELECT u.mc_username, r.rank_name FROM hc_ranks r JOIN hc_users u ON r.user_id = u.id WHERE r.gamemode='bedwars'")
+                for row in c_local.fetchall():
+                    d = dict(row) if not isinstance(row, dict) else row
+                    if d.get("mc_username"):
+                        rank_map[d["mc_username"].lower()] = d["rank_name"]
+                db_conn.close()
+            except Exception as re:
+                print(f"[LB] Rank map error (non-fatal): {re}")
 
             rows = []
             for e in entries:
@@ -1193,17 +1204,18 @@ def lb_get(gamemode):
                     "stat": api_stat,
                     "rank": e.get("rank", 0),
                     "is_bw1058": True,
-                    "rank_name": rank_map.get(uname.lower(), None)
+                    "rank_name": rank_map.get(uname.lower())
                 })
 
             return jsonify(rows)
 
         except Exception as e:
-            print("Bedwars API Error:", e)
-            pass
+            print(f"[LB] Bedwars API Error: {e}")
+            return jsonify({"error": str(e)}), 500
 
-    # Default fallback for other gamemodes (or if bw1058 missing)
+    # Default fallback for other gamemodes (SkyWars etc from local DB)
     if stat not in ("kills","deaths","wins","losses","coins"): stat = "wins"
+    db = get_db(); c = db_cursor(db)
     c.execute(
         f"SELECT u.username, u.mc_username, r.rank_name, "
         f"s.kills, s.deaths, s.wins, s.losses, s.coins "
