@@ -1148,6 +1148,20 @@ def stats_get(username):
         "economy": eco or {"server_gold":0,"server_iron":0}
     })
 
+@app.route("/api/lb-test")
+def lb_test():
+    import urllib.request, json
+    bw_api_key = os.environ.get("BW_API_KEY", "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1")
+    bw_api_base = os.environ.get("BW_API_BASE", "http://srv125.godlike.club:26364/api/v1")
+    url = f"{bw_api_base}/leaderboard/wins?apikey={bw_api_key}"
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        res = urllib.request.urlopen(req, timeout=8)
+        raw = res.read().decode()
+        return jsonify({"url": url, "response": json.loads(raw)})
+    except Exception as e:
+        return jsonify({"url": url, "error": str(e)}), 500
+
 @app.route("/api/lb/<gamemode>")
 def lb_get(gamemode):
     stat = request.args.get("stat", "wins")
