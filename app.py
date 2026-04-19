@@ -102,11 +102,11 @@ LOCAL_MYSQL_DATABASE = "hellcore"
 
 # ── AIVEN MYSQL (cloud) ───────────────────────────────
 USE_MYSQL_AIVEN = os.environ.get("USE_MYSQL_AIVEN", "True").lower() == "true"
-AIVEN_HOST     = os.environ.get("AIVEN_HOST", "")
+AIVEN_HOST     = os.environ.get("AIVEN_HOST", "").strip()
 AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", 19513))
-AIVEN_USER     = os.environ.get("AIVEN_USER", "")
-AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
-AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
+AIVEN_USER     = os.environ.get("AIVEN_USER", "").strip()
+AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "").strip()
+AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "").strip()
 
 # ── SQLITE (zero-config fallback) ─────────────────────
 SQLITE_FILE = "hellcore.db"
