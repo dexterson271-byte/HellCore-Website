@@ -29,6 +29,7 @@
 
 import os
 import sqlite3
+import time
 import json
 import uuid
 import hashlib
@@ -562,12 +563,28 @@ def skin_head(identifier, size=64):
 def srv_history():
     try:
         db = get_db(); c = db_cursor(db)
-        # Fetch last 24 hours of player counts (limited to ~96 points if 15m intervals)
-        c.execute("SELECT timestamp, total_players FROM hc_player_history ORDER BY timestamp DESC LIMIT 96")
+        # Fetch last 60 points
+        c.execute("SELECT timestamp, total_players FROM hc_player_history ORDER BY timestamp DESC LIMIT 60")
         rows = to_list(c.fetchall())
         c.close(); db.close()
         rows.reverse()
-        return jsonify(rows)
+        
+        labels = []
+        counts = []
+        for r in rows:
+            ts = r["timestamp"]
+            # Handle both string (SQLite) and datetime (MySQL) objects
+            try:
+                if isinstance(ts, str):
+                    p_ts = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+                else:
+                    p_ts = ts
+                labels.append(p_ts.strftime("%H:%M"))
+            except:
+                labels.append("??:??")
+            counts.append(r["total_players"])
+            
+        return jsonify({"labels": labels, "counts": counts})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -1749,6 +1766,41 @@ def catch_all(p):
     return render_template("index.html")
 
 # -------------------------------------------------------
+# BACKGROUND STATUS WORKER
+# -------------------------------------------------------
+def status_worker():
+    """Polls the Minecraft server every 60s and saves to hc_player_history."""
+    print("[STATUS WORKER] Starting background polling...")
+    server_ip = "mc.hellcore.net"
+    api_url = f"https://api.mcsrvstat.us/3/{server_ip}"
+    
+    while True:
+        try:
+            # Poll mcsrvstat.us
+            req = urllib.request.Request(api_url, headers={"User-Agent": "HellcoreStatus/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as res:
+                data = json.loads(res.read().decode())
+                
+            online = 1 if data.get("online") else 0
+            players = data.get("players", {}).get("online", 0)
+            
+            # Save to DB
+            db = get_db(); c = db_cursor(db)
+            c.execute("INSERT INTO hc_player_history (timestamp, total_players) VALUES (?, ?)",
+                      (datetime.now(), players))
+            
+            # Keep only last 1000 points (~16 hours of tracking)
+            c.execute("DELETE FROM hc_player_history WHERE id NOT IN (SELECT id FROM hc_player_history ORDER BY timestamp DESC LIMIT 1000)")
+            
+            db.commit(); c.close(); db.close()
+            # print(f"[STATUS WORKER] Recorded {players} players online.")
+            
+        except Exception as e:
+            print(f"[STATUS WORKER] Error: {e}")
+            
+        time.sleep(60)
+
+# -------------------------------------------------------
 # RUN
 # -------------------------------------------------------
 try:
@@ -1760,6 +1812,10 @@ if __name__ == "__main__":
     print("=" * 56)
     print("  HELLCORE NETWORK — Backend v7")
     print("=" * 56)
+    
+    # Start background polling
+    threading.Thread(target=status_worker, daemon=True).start()
+    
     print("=" * 56)
     print("  Running on http://localhost:5000")
     print("=" * 56)

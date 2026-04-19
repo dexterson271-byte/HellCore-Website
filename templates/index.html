@@ -4731,8 +4731,23 @@
     // Rolling 60-minute history stored in memory
     const playerHistory = { labels: [], counts: [] };
     let pChart = null;
+    let historyLoaded = false;
 
     async function checkStatus() {
+      // Load history once on first run
+      if (!historyLoaded) {
+        try {
+          const hRes = await fetch('/api/serverstatus/history');
+          const hData = await hRes.json();
+          if (hData.labels && hData.counts) {
+            playerHistory.labels = hData.labels;
+            playerHistory.counts = hData.counts;
+            if (I('CHART-EMPTY')) I('CHART-EMPTY').style.display = 'none';
+          }
+          historyLoaded = true;
+        } catch (e) { }
+      }
+
       try {
         const res = await fetch(MC_API);
         const d = await res.json();
