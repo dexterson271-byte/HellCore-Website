@@ -4140,6 +4140,8 @@
               <option value="deaths">Deaths</option>
               <option value="final_kills" class="bw-only">Final Kills</option>
               <option value="beds_destroyed" class="bw-only">Beds Broken</option>
+              <option value="level" class="bw-only">Level</option>
+              <option value="fkdr" class="bw-only">FKDR</option>
               <option value="coins">Coins</option>
             </select>
           </div>
@@ -5165,7 +5167,7 @@
     function updateLBS() {
       const isBW = V('LB-M') === 'bedwars';
       document.querySelectorAll('.bw-only').forEach(el => el.style.display = isBW ? 'block' : 'none');
-      if (!isBW && ['final_kills', 'beds_destroyed'].includes(V('LB-S'))) {
+      if (!isBW && ['final_kills', 'beds_destroyed', 'level', 'fkdr'].includes(V('LB-S'))) {
         I('LB-S').value = 'wins';
       }
     }
@@ -5182,8 +5184,8 @@
         const isBW = d[0].is_bw1058;
 
         if (isBW) {
-          head.style.gridTemplateColumns = '30px 1fr 50px 50px 70px 70px 80px';
-          head.innerHTML = `<span>#</span><span>Player</span><span>Wins</span><span>Kills</span><span>F. Kills</span><span>Beds</span><span>Rank</span>`;
+          head.style.gridTemplateColumns = '30px 1fr 40px 50px 50px 65px 50px 50px 60px';
+          head.innerHTML = `<span>#</span><span>Player</span><span style="text-align:right">Lvl</span><span style="text-align:right">Wins</span><span style="text-align:right">Kills</span><span style="text-align:right">F. Kills</span><span style="text-align:right">Beds</span><span style="text-align:right">FKDR</span><span style="text-align:center">Rank</span>`;
         } else {
           head.style.gridTemplateColumns = '30px 1fr 60px 60px 60px 60px 80px';
           head.innerHTML = `<span>#</span><span>Player</span><span>Wins</span><span>Kills</span><span>Deaths</span><span>K/D</span><span>Rank</span>`;
@@ -5192,7 +5194,7 @@
         el.innerHTML = d.map((p, i) => {
           let cols = '';
           if (isBW) {
-            cols = `<span style="text-align:right">${p.wins || 0}</span><span style="text-align:right">${p.kills || 0}</span><span style="text-align:right;color:#fb923c">${p.final_kills || 0}</span><span style="text-align:right;color:#ef4444">${p.beds_destroyed || 0}</span>`;
+            cols = `<span style="text-align:right">${p.level || 0}</span><span style="text-align:right">${p.wins || 0}</span><span style="text-align:right">${p.kills || 0}</span><span style="text-align:right;color:#fb923c">${p.final_kills || 0}</span><span style="text-align:right;color:#ef4444">${p.beds_destroyed || 0}</span><span style="text-align:right">${p.fkdr || 0}</span>`;
           } else {
             const kd = p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : '∞';
             cols = `<span>${p.wins || 0}</span><span>${p.kills || 0}</span><span>${p.deaths || 0}</span><span>${kd}</span>`;

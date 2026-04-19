@@ -1159,7 +1159,8 @@ def lb_get(gamemode):
 
         bw_stat_map = {
             "wins": "wins", "kills": "kills", "deaths": "deaths",
-            "final_kills": "finalkills", "beds_destroyed": "bedsbroken"
+            "final_kills": "finalKills", "beds_destroyed": "bedsBroken",
+            "level": "level", "fkdr": "fkdr"
         }
         api_stat = bw_stat_map.get(stat, "wins")
         bw_api_key = os.environ.get("BW_API_KEY", "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1")
@@ -1167,7 +1168,7 @@ def lb_get(gamemode):
 
         try:
             # 1. Get Top 10 from the External API Leaderboard
-            url = f"{bw_api_base}/leaderboard?apikey={bw_api_key}&stat={api_stat}"
+            url = f"{bw_api_base}/leaderboard/{api_stat}?apikey={bw_api_key}"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             res = urllib.request.urlopen(req, timeout=3)
             data = json.loads(res.read())
@@ -1206,6 +1207,8 @@ def lb_get(gamemode):
                             "coins": 0,
                             "final_kills": ps.get("finalKills", 0),
                             "beds_destroyed": ps.get("bedsBroken", 0),
+                            "level": ps.get("level", 0),
+                            "fkdr": ps.get("fkdr", 0),
                             "is_bw1058": True,
                             "rank_name": rank_map.get(uname.lower(), None)
                         }
