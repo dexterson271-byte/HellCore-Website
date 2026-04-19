@@ -48,7 +48,7 @@ import urllib.error
 # Load environment variables for local testing
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(override=True)
 except ImportError:
     pass
 
