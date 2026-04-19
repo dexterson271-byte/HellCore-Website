@@ -5343,53 +5343,43 @@
     // ════════════════════════════════════════════════════
     // TOP PLAYERS SHOWCASE
     // ════════════════════════════════════════════════════
-    const SHOWCASE_PLAYERS = ['KqTF', 'Notch', 'Dream', 'jeb_'];
-    let showcaseLoaded = false;
     async function loadShowcase() {
-      if (showcaseLoaded) return;
       const el = I('PS-SHOWCASE'); if (!el) return;
-      showcaseLoaded = true;
-      const cards = [];
-      const stats = ['wins', 'kills', 'finalKills', 'bedsBroken'];
-      const labels = ['Top Wins', 'Top Kills', 'Top Finals', 'Top Beds'];
-      const colors = ['var(--grn)', '#f87171', '#60a5fa', '#fde047'];
+      el.innerHTML = '<div class="ld"><div class="sp"></div>Calculating champions...</div>';
+      
+      const stats = ['wins', 'level', 'kills', 'final_kills', 'beds_destroyed'];
+      const labels = ['Top Wins', 'Top Level', 'Top Kills', 'Top Finals', 'Top Beds'];
+      const colors = ['var(--grn)', '#c084fc', '#f87171', '#60a5fa', '#fde047'];
+      
+      try {
+        const results = await Promise.all(stats.map(s => 
+          API(`/api/lb/bedwars?stat=${s}&limit=1`).then(d => d[0] || null).catch(() => null)
+        ));
+        
+        const cards = results.map((p, i) => {
+          if (!p) return '';
+          const val = stats[i] === 'fkdr' || stats[i] === 'wlr' || stats[i] === 'kdr' ? Number(p.value).toFixed(2) : fmt(p.value);
+          return `<div class="showcase-card" style="--card-accent:${colors[i]}" onclick="document.getElementById('PS-IN').value='${esc(p.username)}';loadPS()">
+            <img src="/api/skin/head/${enc(p.mc_username || p.username)}/48" onerror="this.style.display='none'" alt="">
+            <div class="showcase-name">${esc(p.username)}</div>
+            <div class="showcase-stat-label">${labels[i]}</div>
+            <div class="showcase-stat-val" style="color:${colors[i]}">${val}</div>
+            <div class="showcase-sub">#1 Overall · Click to view</div>
+          </div>`;
+        }).filter(Boolean);
 
-      // Try to load a few players
-      const promises = SHOWCASE_PLAYERS.map(async (name) => {
-        try {
-          const r = await fetch(`/api/bwstats/${enc(name)}`);
-          const d = await r.json();
-          if (d.success && d.player) return d.player;
-        } catch (e) { }
-        return null;
-      });
-      const players = (await Promise.all(promises)).filter(Boolean);
-      if (players.length === 0) return;
-
-      // Find top player for each stat
-      stats.forEach((stat, i) => {
-        let best = null, bestVal = 0;
-        players.forEach(p => {
-          const o = p.groupStats?.overall || {};
-          const v = Number(o[stat] || p[stat] || 0);
-          if (v > bestVal) { bestVal = v; best = p; }
-        });
-        if (best) {
-          cards.push(`<div class="showcase-card" style="--card-accent:${colors[i]}" onclick="document.getElementById('PS-IN').value='${esc(best.username)}';loadPS()">
-        <img src="/api/skin/head/${enc(best.username)}/48" onerror="this.style.display='none'" alt="">
-        <div class="showcase-name">${esc(best.username)}</div>
-        <div class="showcase-stat-label">${labels[i]}</div>
-        <div class="showcase-stat-val" style="color:${colors[i]}">${fmt(bestVal)}</div>
-        <div class="showcase-sub">${best.stars || best.level || 0}★ · Click to view</div>
-      </div>`);
+        if (cards.length > 0) {
+          el.innerHTML = `<div class="bw-section-title">Top Players</div>
+            <div class="showcase-grid">${cards.join('')}</div>`;
+        } else {
+          el.innerHTML = '';
         }
-      });
-
-      if (cards.length > 0) {
-        el.innerHTML = `<div class="bw-section-title">Top Players</div>
-    <div class="showcase-grid">${cards.join('')}</div>`;
+      } catch (e) {
+        console.error('loadShowcase:', e);
+        el.innerHTML = '';
       }
     }
+
 
     // ════════════════════════════════════════════════════
     // STAT BAR HELPER (visual gauge for ratios)
