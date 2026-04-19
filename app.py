@@ -1153,12 +1153,21 @@ def lb_test():
     import urllib.request, json
     bw_api_key = os.environ.get("BW_API_KEY", "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1")
     bw_api_base = os.environ.get("BW_API_BASE", "http://srv125.godlike.club:26364/api/v1")
-    url = f"{bw_api_base}/leaderboard/wins?apikey={bw_api_key}"
+    stat = request.args.get("stat", "wins")
+    url = f"{bw_api_base}/leaderboard/{stat}?apikey={bw_api_key}"
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         res = urllib.request.urlopen(req, timeout=8)
         raw = res.read().decode()
-        return jsonify({"url": url, "response": json.loads(raw)})
+        data = json.loads(raw)
+        return jsonify({
+            "url": url,
+            "bw_api_base_env": bw_api_base,
+            "success": data.get("success"),
+            "entries_count": len(data.get("entries", [])),
+            "first_entry": data.get("entries", [{}])[0] if data.get("entries") else None,
+            "full_response": data
+        })
     except Exception as e:
         return jsonify({"url": url, "error": str(e)}), 500
 
