@@ -66,7 +66,27 @@ def add_header(r):
 
 @app.route("/discord")
 def discord_redirect():
-    return redirect("https://discord.gg/z4Yc7EMr4e")
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Join Hellcore Network Discord</title>
+    <meta name="description" content="Click to join the official Hellcore Network Discord server. Get live updates, chat with the community, and participate in giveaways!">
+    <meta property="og:title" content="Hellcore Network Discord">
+    <meta property="og:description" content="Click here to join the official Hellcore Network Discord server!">
+    <meta property="og:image" content="https://hellcore.net/static/logo.png">
+    <meta property="og:url" content="https://hellcore.net/discord">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#FF512F">
+    <meta http-equiv="refresh" content="0; url=https://discord.gg/z4Yc7EMr4e">
+    <script>window.location.href = "https://discord.gg/z4Yc7EMr4e";</script>
+</head>
+<body style="background:#09090b; color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh;">
+    <p>Redirecting to Discord... <a href="https://discord.gg/z4Yc7EMr4e" style="color:#FF512F;">Click here</a> if not redirected.</p>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION — edit these to match your setup
