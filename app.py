@@ -36,11 +36,13 @@ import re
 import traceback
 import secrets
 import io
+import threading
+import random
+import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
 import urllib.request
 import urllib.error
-import threading
 
 # Load environment variables for local testing
 try:
@@ -325,6 +327,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_ads(
   ad_streak INTEGER DEFAULT 0,
   ads_today INTEGER DEFAULT 0,
   last_ad_date DATE,
+  last_ad_time DATETIME,
   vip_active INTEGER DEFAULT 0,
   vip_expires DATETIME,
   created_at {DT})""",
@@ -1280,45 +1283,76 @@ def ads_watch():
         db.commit()
         c.execute(f"SELECT * FROM hc_ads WHERE user_id={ph()}", (u["id"],))
         ad = to_dict(c.fetchone())
+    # ═══════════════════════════════════════════════════════
+    # 5-MINUTE COOLDOWN CHECK
+    # ═══════════════════════════════════════════════════════
+    now = dt.datetime.now()
+    last_time = ad.get("last_ad_time")
+    if last_time:
+        if isinstance(last_time, str):
+            try: last_time = dt.datetime.strptime(last_time, "%Y-%m-%d %H:%M:%S")
+            except: last_time = None
+        if last_time and (now - last_time).total_seconds() < 300: # 5 minutes
+            remain = 300 - (now - last_time).total_seconds()
+            return jsonify({"error": f"Cooldown! Next crate in {int(remain)} seconds."}), 429
+
     today = dt.date.today()
-    last = ad.get("last_ad_date")
+    last_date = ad.get("last_ad_date")
     ads_today = ad.get("ads_today", 0)
     ad_streak = ad.get("ad_streak", 0)
-    if last:
-        if isinstance(last, str):
-            last = dt.datetime.strptime(last, "%Y-%m-%d").date()
-        if last != today:
-            ads_today = 0
-            diff = (today - last).days
-            if diff > 1:
-                ad_streak = 0
-    
-    ads_today += 1
-    
-    # Only increment streak on exactly the 3rd ad
-    if ads_today == 3:
-        ad_streak += 1
 
-    last_str = today.strftime("%Y-%m-%d")
-    c.execute(f"UPDATE hc_ads SET ads_today={ph()}, last_ad_date={ph()}, ad_streak={ph()} WHERE user_id={ph()}",
-             (ads_today, last_str, ad_streak, u["id"]))
-    db.commit()
+    if last_date:
+        if isinstance(last_date, str):
+            try: last_date = dt.datetime.strptime(last_date, "%Y-%m-%d").date()
+            except: last_date = None
+        if last_date and last_date != today:
+            ads_today = 0
+            if (today - last_date).days > 1: ad_streak = 0
+
+    ads_today += 1
+    if ads_today == 5: ad_streak += 1 # Streak point on 5th ad
+
+    # ═══════════════════════════════════════════════════════
+    # WEIGHTED REWARD ENGINE
+    # ═══════════════════════════════════════════════════════
+    # Common (65%), Rare (25%), Epic (8%), Legendary (2%)
+    roll = random.random() * 100
+    rarity = "common"
+    if roll < 2: rarity = "legendary"
+    elif roll < 10: rarity = "epic"
+    elif roll < 35: rarity = "rare"
 
     reward = {"xp": 0, "coins": 0, "vip_hours": 0}
-    if ads_today == 1:
-        reward["xp"] = 300
-    elif ads_today == 2:
-        reward["coins"] = 100
-    elif ads_today == 3:
-        reward["vip_hours"] = 1
-        reward["coins"] = 200
-        reward["xp"] = 200
-    elif ads_today >= 4:
-        # 4th Ad (BONUS) - Doubles everything accumulated today!
-        # Total from Ad 1+2+3 = 500 XP + 300 Coins + 1hr VIP
-        reward["xp"] = 500
-        reward["coins"] = 300
-        reward["vip_hours"] = 1
+    label = ""
+    icon = ""
+
+    if rarity == "common":
+        amt = random.randint(100, 300)
+        if random.random() > 0.5:
+            reward["coins"] = amt; label = f"{amt} Global Coins"; icon = "ic-cart"
+        else:
+            reward["xp"] = amt; label = f"{amt} Global XP"; icon = "ic-bolt"
+    elif rarity == "rare":
+        if random.random() > 0.7:
+            reward["vip_hours"] = 1; label = "1H VIP Rank"; icon = "ic-shield"
+        else:
+            amt = random.randint(500, 1000)
+            reward["coins"] = amt; label = f"{amt} Global Coins"; icon = "ic-cart"
+    elif rarity == "epic":
+        if random.random() > 0.5:
+            reward["vip_hours"] = 6; label = "6H VIP Rank"; icon = "ic-shield"
+        else:
+            reward["coins"] = 2500; label = "2,500 Global Coins"; icon = "ic-cart"
+    elif rarity == "legendary":
+        if random.random() > 0.5:
+            reward["vip_hours"] = 24; label = "24H MVP+ Rank"; icon = "ic-crown"
+        else:
+            reward["coins"] = 10000; label = "10,000 Global Coins"; icon = "ic-cart"
+
+    last_str = today.strftime("%Y-%m-%d")
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(f"UPDATE hc_ads SET ads_today={ph()}, last_ad_date={ph()}, last_ad_time={ph()}, ad_streak={ph()} WHERE user_id={ph()}",
+             (ads_today, last_str, now_str, ad_streak, u["id"]))
 
     c.execute(f"INSERT INTO hc_inventory(user_id,item_type,item_name,gamemode,status) VALUES({phs(5)})",
              (u["id"], "reward", f"Daily Ad Reward #{ads_today}", "global", "claimed"))

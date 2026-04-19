@@ -2187,6 +2187,34 @@
     .stat-bar-fill.blue {
       background: #60a5fa;
     }
+
+    /* ═══════ MYSTERY NEXUS ═══════ */
+    .nexus-wrap { text-align:center; padding:40px 20px; position:relative; overflow:hidden; border-radius:15px; background:rgba(255,255,255,0.03); border:1px solid var(--bd2); }
+    .nexus-title { font-size:2.5rem; font-weight:900; font-family:'Outfit',sans-serif; letter-spacing:-1px; margin-bottom:10px; background:linear-gradient(45deg,#fff,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .nexus-box { width:140px; height:140px; margin:20px auto; position:relative; cursor:pointer; transition:transform 0.3s; }
+    .nexus-box:hover { transform:scale(1.1); }
+    .nexus-box img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0 15px rgba(245,158,11,0.4)); }
+    .nexus-box.cooldown { filter:grayscale(1) opacity(0.5); cursor:not-allowed; }
+    
+    .crate-pulse { animation: cratePulse 2s infinite; }
+    @keyframes cratePulse { 0% { filter:drop-shadow(0 0 5px var(--g)); } 50% { filter:drop-shadow(0 0 25px var(--g)); } 100% { filter:drop-shadow(0 0 5px var(--g)); } }
+
+    .rarity-common { color:#cbd5e1; }
+    .rarity-rare { color:#60a5fa; text-shadow:0 0 10px #60a5fa; }
+    .rarity-epic { color:#a855f7; text-shadow:0 0 10px #a855f7; }
+    .rarity-legendary { color:#f59e0b; text-shadow:0 0 15px #f59e0b; font-weight:900; }
+
+    .opening-slot { height:120px; overflow:hidden; position:relative; background:rgba(0,0,0,0.3); border-radius:10px; border:2px solid var(--bd2); }
+    .slot-strip { position:absolute; top:0; left:0; width:100%; display:flex; flex-direction:column; align-items:center; transition:top 4s cubic-bezier(0.1, 0.7, 1.0, 0.1); }
+    .slot-item { height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; gap:5px; width:100%; }
+    .slot-center { position:absolute; top:50%; left:0; right:0; height:2px; background:var(--g); transform:translateY(-50%); box-shadow:0 0 10px var(--g); z-index:5; pointer-events:none; }
+
+    .reward-card { animation: cardPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); background:rgba(255,255,255,0.05); padding:30px; border-radius:20px; border:1px solid var(--bd2); text-align:center; }
+    @keyframes cardPop { 0% { transform:scale(0.5); opacity:0; } 100% { transform:scale(1); opacity:1; } }
+
+    .loot-table { width:100%; font-size:0.8rem; margin-top:20px; border-collapse:collapse; }
+    .loot-table th { color:var(--tx3); text-align:left; padding:8px; border-bottom:1px solid var(--bd2); }
+    .loot-table td { padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.02); }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -2987,83 +3015,53 @@
     <!-- FREE STORE -->
     <div class="pg" id="pg-store-free">
       <div class="W"><button class="bto bsm" onclick="GO('store')" style="margin-bottom:12px">← Back</button>
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-gift" />
-          </svg> Free Rewards</div>
-        <div class="tabs">
-          <button class="tab ON" id="FREE-TAB-PAID" onclick="freeT('paid')"><svg class="ic">
-              <use href="#ic-cart" />
-            </svg> Paid</button>
-          <button class="tab" id="FREE-TAB-FREE" onclick="freeT('free')"><svg class="ic">
-              <use href="#ic-gift" />
-            </svg> Free</button>
+        
+        <div class="nexus-wrap">
+          <div class="nexus-title">MYSTERY NEXUS</div>
+          <p style="color:var(--tx2)">Watch premium advertisements to unlock Hellcore Mystery Crates.</p>
+          
+          <div id="NEXUS-HUB">
+            <div id="NEXUS-BOX" class="nexus-box crate-pulse" onclick="watchAd(1)">
+              <img src="/static/logo.png" alt="Crate">
+            </div>
+            <div id="NEXUS-TIMER" style="font-size:1.2rem;font-weight:700;color:var(--tx3);margin-bottom:20px">READY TO UNLOCK</div>
+            <button id="NEXUS-BTN" class="btn" style="width:200px" onclick="watchAd(1)">WATCH & WIN</button>
+          </div>
+
+          <div style="margin-top:40px;text-align:left">
+            <div class="stitle"><svg class="ic"><use href="#ic-history"/></svg> Recent Global Loot</div>
+            <div class="p" style="padding:0">
+              <table class="loot-table">
+                <thead><tr><th>Player</th><th>Reward</th><th>Time</th></tr></thead>
+                <tbody id="NEXUS-HISTORY"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div id="FREE-PAID">
-          <div class="g4" id="S-FREE-PAID"></div>
+
+      </div>
+    </div>
+
+    <!-- MYSTERY OPENING MODAL -->
+    <div class="ov" id="MX">
+      <div class="mdl" style="max-width:400px">
+        <div class="mhd">Opening Crate...</div>
+        
+        <div id="MX-SPIN" style="display:block">
+          <div class="opening-slot">
+            <div class="slot-center"></div>
+            <div id="MX-STRIP" class="slot-strip"></div>
+          </div>
+          <p style="text-align:center;color:var(--tx3);font-size:0.75rem;margin-top:15px">Calculating loot probabilities...</p>
         </div>
-        <div id="FREE-FREE" style="display:none">
-          <div class="p" style="margin-bottom:20px;text-align:center">
-            <div class="stitle" style="justify-content:center">Your Ad Streak</div>
-            <div id="AD-STREAK" style="font-size:2.5rem;font-weight:800;font-family:'Outfit',sans-serif;color:var(--g)">
-              0</div>
-            <div style="font-size:.8rem;color:var(--tx2)">days</div>
-            <div style="font-weight:700;font-size:.8rem;color:#fde047;margin-top:8px">ad streak only counts if player
-              has seen 3 ads</div>
+
+        <div id="MX-RESULT" style="display:none">
+          <div class="reward-card" id="MX-CARD">
+            <div id="MX-ICON" style="font-size:3rem;margin-bottom:15px"></div>
+            <div id="MX-LABEL" style="font-size:1.5rem;font-weight:900;margin-bottom:10px"></div>
+            <div id="MX-RARITY" style="text-transform:uppercase;font-size:0.7rem;letter-spacing:2px"></div>
           </div>
-          <div class="stitle">Watch Ads & Earn Rewards</div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px">
-            <div class="p" style="text-align:center">
-              <div style="font-size:1.8rem;font-weight:700;color:var(--g)">1st Ad</div>
-              <div style="font-size:.85rem;color:var(--tx2)">300 XP</div>
-              <button class="btn bsm" style="margin-top:8px;width:100%" onclick="watchAd(1)" id="BTN-AD-1"><svg
-                  class="ic">
-                  <use href="#ic-play" />
-                </svg> Watch</button>
-            </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:1.8rem;font-weight:700;color:var(--g)">2nd Ad</div>
-              <div style="font-size:.85rem;color:var(--tx2)">100 Coins</div>
-              <button class="btn bsm" style="margin-top:8px;width:100%" onclick="watchAd(2)" id="BTN-AD-2"><svg
-                  class="ic">
-                  <use href="#ic-play" />
-                </svg> Watch</button>
-            </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:1.8rem;font-weight:700;color:var(--g)">3rd Ad</div>
-              <div style="font-size:.85rem;color:var(--tx2)">VIP 1hr + 200 Coins + 200 XP</div>
-              <button class="btn bsm" style="margin-top:8px;width:100%" onclick="watchAd(3)" id="BTN-AD-3"><svg
-                  class="ic">
-                  <use href="#ic-play" />
-                </svg> Watch</button>
-            </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:1.8rem;font-weight:700;color:#fde047">4th Ad (BONUS)</div>
-              <div style="font-size:.85rem;color:var(--tx2)">Double Everything!</div>
-              <button class="btn bsm" style="margin-top:8px;width:100%" onclick="watchAd(4)" id="BTN-AD-4"><svg
-                  class="ic">
-                  <use href="#ic-play" />
-                </svg> Watch</button>
-            </div>
-          </div>
-          <div class="stitle">Streak Rewards</div>
-          <div id="STREAK-REWARDS" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
-            <div class="p" style="text-align:center;opacity:0.5">
-              <div style="font-size:1.2rem;font-weight:700">7 Days</div>
-              <div style="font-size:.8rem;color:var(--tx2)">VIP+ 1 Day</div>
-            </div>
-            <div class="p" style="text-align:center;opacity:0.5">
-              <div style="font-size:1.2rem;font-weight:700">14 Days</div>
-              <div style="font-size:.8rem;color:var(--tx2)">VIP+ 2 Days + 250 Coins</div>
-            </div>
-            <div class="p" style="text-align:center;opacity:0.5">
-              <div style="font-size:1.2rem;font-weight:700">21 Days</div>
-              <div style="font-size:.8rem;color:var(--tx2)">VIP+ 3 Days + 500 Coins</div>
-            </div>
-            <div class="p" style="text-align:center;opacity:0.5">
-              <div style="font-size:1.2rem;font-weight:700">30 Days</div>
-              <div style="font-size:.8rem;color:var(--tx2)">MVP 2 Days</div>
-            </div>
-          </div>
+          <button class="btn" style="width:100%;margin-top:20px" onclick="closeM('MX')">COLLECT REWARD</button>
         </div>
       </div>
     </div>
@@ -3717,7 +3715,7 @@
         'store-ls': () => showStore('ls'),
         'store-sv': () => showStore('sv'),
         'store-pr': () => showStore('pr'),
-        'store-free': () => showStore('free'),
+        'store-free': () => { showStore('free'); loadAdStatus(); },
       })[id]?.();
     }
 
@@ -4904,38 +4902,10 @@
         document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
         pg.classList.add('ON');
         window.scrollTo(0, 0);
+        if (id === 'free') loadAdStatus();
       }
     }
     let AD_STATE = { ads_today: 0, ad_streak: 0, vip_active: false };
-    async function loadAdStatus() {
-      if (!ME) return;
-      try {
-        const d = await API('/api/ads/status');
-        AD_STATE = d;
-        I('AD-STREAK').textContent = d.ad_streak || 0;
-        for (let i = 1; i <= 4; i++) {
-          const btn = I('BTN-AD-' + i);
-          if (btn) {
-            if (i <= d.ads_today) {
-              btn.disabled = true;
-              btn.innerHTML = '<svg class="ic"><use href="#ic-check"/></svg> Claimed';
-              btn.style.opacity = '0.5';
-            } else if (i === d.ads_today + 1) {
-              btn.disabled = false;
-              btn.innerHTML = '<svg class="ic"><use href="#ic-play"/></svg> Watch';
-              btn.style.opacity = '1';
-            }
-          }
-        }
-      } catch (e) { console.error(e); }
-    }
-    function freeT(tab) {
-      document.getElementById('FREE-TAB-PAID').classList.toggle('ON', tab === 'paid');
-      document.getElementById('FREE-TAB-FREE').classList.toggle('ON', tab === 'free');
-      I('FREE-PAID').style.display = tab === 'paid' ? 'block' : 'none';
-      I('FREE-FREE').style.display = tab === 'free' ? 'block' : 'none';
-      if (tab === 'free') loadAdStatus();
-    }
     let AD_TIMER = null;
     function showGoogleAd() {
       try {
@@ -4944,13 +4914,57 @@
         }
       } catch (e) { console.log('Ad error:', e); }
     }
+    // ════════════════════════════════════════════════════
+    // MYSTERY NEXUS (Ad System)
+    // ════════════════════════════════════════════════════
+    let NEXUS_CD = 0;
+    function updateNexusCD() {
+      if (NEXUS_CD <= 0) {
+          I('NEXUS-TIMER').textContent = 'READY TO UNLOCK';
+          I('NEXUS-BTN').disabled = false;
+          I('NEXUS-BTN').textContent = 'WATCH & WIN';
+          I('NEXUS-BOX').classList.add('crate-pulse');
+          I('NEXUS-BOX').classList.remove('cooldown');
+          return;
+      }
+      const m = Math.floor(NEXUS_CD/60), s = NEXUS_CD%60;
+      I('NEXUS-TIMER').textContent = `RECHARGING: ${m}m ${s}s`;
+      I('NEXUS-BTN').disabled = true;
+      I('NEXUS-BTN').textContent = `${m}m ${s}s`;
+      I('NEXUS-BOX').classList.remove('crate-pulse');
+      I('NEXUS-BOX').classList.add('cooldown');
+      NEXUS_CD--;
+      setTimeout(updateNexusCD, 1000);
+    }
+
+    async function loadAdStatus() {
+        try {
+            const d = await API('/api/ads/status');
+            AD_STATE = d;
+            if (d.next_ad) {
+                const diff = (new Date(d.next_ad).getTime() - new Date().getTime()) / 1000;
+                if (diff > 0) { NEXUS_CD = Math.ceil(diff); updateNexusCD(); }
+            }
+            loadAdHistory();
+        } catch(e){}
+    }
+    async function loadAdHistory() {
+        const h = await API('/api/ads/recent');
+        I('NEXUS-HISTORY').innerHTML = h.map(x => `<tr>
+            <td><b>${esc(x.username)}</b></td>
+            <td>${esc(x.item_name)}</td>
+            <td>${fmtD(x.created_at)}</td>
+        </tr>`).join('');
+    }
+
     function watchAd(num) {
       if (!ME) { openM('ML'); toast('err', 'Log in to watch ads.'); return; }
-      if (AD_STATE.ads_today >= num) { toast('err', 'Already watched this ad.'); return; }
-      const btn = I('BTN-AD-' + num);
-      if (!btn || btn.disabled) return;
+      if (NEXUS_CD > 0) { toast('err', 'Nexus is recharging!'); return; }
+      
+      const btn = I('NEXUS-BTN');
       btn.disabled = true;
-      btn.innerHTML = '<div class="sp" style="width:16px;height:16px;border-width:2px"></div>';
+      btn.innerHTML = '<div class="sp" style="width:16px;height:16px;border-width:2px"></div> Waiting for Ad...';
+      
       showGoogleAd();
       let countdown = 30;
       if (AD_TIMER) clearInterval(AD_TIMER);
@@ -4959,25 +4973,62 @@
         if (countdown <= 0) {
           clearInterval(AD_TIMER);
           AD_TIMER = null;
-          completeAd(num);
+          completeAd();
         } else {
-          btn.innerHTML = countdown + 's';
+          btn.innerHTML = `Watching: ${countdown}s`;
         }
       }, 1000);
     }
-    async function completeAd(num) {
+
+    async function completeAd() {
       try {
         const d = await API('/api/ads/watch', { method: 'POST' });
-        AD_STATE = { ads_today: d.ads_today, ad_streak: d.ad_streak, vip_active: false };
-        const r = d.reward;
-        let msg = 'Reward claimed! ';
-        if (r.xp) msg += '+' + r.xp + ' XP ';
-        if (r.coins) msg += '+' + r.coins + ' Coins ';
-        if (r.vip_hours) msg += '+' + r.vip_hours + 'hr VIP ';
-        toast('ok', msg);
-        I('AD-STREAK').textContent = d.ad_streak;
-        loadAdStatus();
-      } catch (e) { toast('err', e.message); }
+        openCrate(d);
+        NEXUS_CD = 300; // Start 5m cooldown immediately locally
+        updateNexusCD();
+      } catch (e) { toast('err', e.message); loadAdStatus(); }
+    }
+
+    function openCrate(data) {
+        openM('MX');
+        I('MX-SPIN').style.display = 'block';
+        I('MX-RESULT').style.display = 'none';
+        
+        const strip = I('MX-STRIP');
+        const pool = [
+            { rarity:'common', label:'200 Coins', icon:'ic-cart' },
+            { rarity:'rare', label:'1H VIP', icon:'ic-shield' },
+            { rarity:'epic', label:'6H VIP', icon:'ic-shield' },
+            { rarity:'common', label:'300 XP', icon:'ic-bolt' },
+            { rarity:'rare', label:'1000 Coins', icon:'ic-cart' }
+        ];
+        
+        // Build strip
+        let html = '';
+        for(let i=0; i<40; i++) {
+            const it = pool[Math.floor(Math.random()*pool.length)];
+            html += `<div class="slot-item rarity-${it.rarity}"><svg class="ic" style="width:2rem;height:2rem"><use href="#${it.icon}"/></svg><span>${it.label}</span></div>`;
+        }
+        // Add final result
+        html += `<div class="slot-item rarity-${data.rarity}"><svg class="ic" style="width:2rem;height:2rem"><use href="#${data.icon}"/></svg><span>${data.label}</span></div>`;
+        strip.style.transition = 'none';
+        strip.style.top = '0px';
+        strip.innerHTML = html;
+        
+        setTimeout(() => {
+            strip.style.transition = 'top 4s cubic-bezier(0.1, 0.7, 0.3, 1)';
+            strip.style.top = `-${(40) * 120}px`;
+        }, 50);
+
+        setTimeout(() => {
+            I('MX-SPIN').style.display = 'none';
+            I('MX-RESULT').style.display = 'block';
+            I('MX-ICON').innerHTML = `<svg class="ic" style="width:4rem;height:4rem;color:inherit"><use href="#${data.icon}"/></svg>`;
+            I('MX-LABEL').textContent = data.label;
+            I('MX-RARITY').textContent = data.rarity;
+            I('MX-CARD').className = 'reward-card rarity-' + data.rarity;
+            loadAdHistory();
+        }, 4500);
     }
     function bwT(t) {
       console.log('bwT called:', t);
