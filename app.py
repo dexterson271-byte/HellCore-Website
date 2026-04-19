@@ -1110,8 +1110,33 @@ def stats_get(username):
 @app.route("/api/lb/<gamemode>")
 def lb_get(gamemode):
     stat = request.args.get("stat","wins")
-    if stat not in ("kills","deaths","wins","losses","coins"): stat = "wins"
     db = get_db(); c = db_cursor(db)
+    
+    if gamemode == "bedwars":
+        # BedWars1058 Database Integration
+        if stat not in ("kills","deaths","final_kills","final_deaths","wins","losses","beds_destroyed"): stat = "wins"
+        try:
+            c.execute(
+                f"SELECT s.name as username, s.name as mc_username, r.rank_name, "
+                f"s.kills, s.deaths, s.wins, s.losses, 0 as coins, "
+                f"s.final_kills, s.beds_destroyed "
+                f"FROM bw1058_stats s "
+                f"LEFT JOIN hc_users u ON s.uuid = u.uuid OR s.name = u.mc_username "
+                f"LEFT JOIN hc_ranks r ON r.user_id=u.id AND r.gamemode='bedwars' "
+                f"ORDER BY s.{stat} DESC LIMIT 50"
+            )
+            rows = to_list(c.fetchall())
+            # Inject flag so frontend knows to render bedwars specific table
+            for row in rows:
+                row["is_bw1058"] = True
+            c.close(); db.close()
+            return jsonify(rows)
+        except Exception as e:
+            # Table doesn't exist yet, fallback to default hc_stats
+            pass
+
+    # Default fallback for other gamemodes (or if bw1058 missing)
+    if stat not in ("kills","deaths","wins","losses","coins"): stat = "wins"
     c.execute(
         f"SELECT u.username, u.mc_username, r.rank_name, "
         f"s.kills, s.deaths, s.wins, s.losses, s.coins "
