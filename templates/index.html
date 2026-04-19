@@ -101,6 +101,30 @@
       border: 2px solid var(--bg);
     }
 
+    /* ══════ LAVA FLOW ══════ */
+    #LAVA-LAYER {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      display: none;
+      opacity: 0.3;
+    }
+
+    #LAVA-LAYER.ON {
+      display: block;
+      animation: lavaFlow 15s linear infinite alternate;
+      background: linear-gradient(45deg, #3a0101 0%, #7c0a0a 25%, #ff4b2b 50%, #7c0a0a 75%, #3a0101 100%);
+      background-size: 400% 400%;
+    }
+
+    @keyframes lavaFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.4);
     }
@@ -3549,7 +3573,9 @@
     </symbol>
   </svg>
 
+  <div id="LAVA-LAYER"></div>
   <div id="BG"></div>
+
   <div id="APP">
     <!-- GLOBAL BANNER -->
     <div id="GLOBAL-BANNER"
@@ -3603,6 +3629,10 @@
           </svg> Admin</button>
       </div>
       <div class="nright">
+        <button class="nb" onclick="toggleLava()" id="LAVA-BTN" style="padding:8px 12px;margin-right:5px">
+           <svg class="ic" style="color:#fde047"><use href="#ic-bolt"/></svg> LAVA
+        </button>
+
         <div class="srv">
           <div class="dot" id="DOT"></div><span id="STXT">Checking…</span>
         </div>
@@ -4136,14 +4166,12 @@
             </select>
             <select id="LB-S" class="inp" style="width:auto" onchange="loadLB()">
               <option value="wins">Wins</option>
+              <option value="level" class="bw-only">Level</option>
               <option value="kills">Kills</option>
-              <option value="deaths">Deaths</option>
               <option value="final_kills" class="bw-only">Final Kills</option>
               <option value="beds_destroyed" class="bw-only">Beds Broken</option>
-              <option value="level" class="bw-only">Level</option>
-              <option value="fkdr" class="bw-only">FKDR</option>
-              <option value="coins">Coins</option>
             </select>
+
           </div>
           <div class="p">
             <div id="LB-H" class="lh"
@@ -4721,6 +4749,11 @@
         o.addEventListener('click', e => { if (e.target === o) o.classList.remove('OPEN'); });
       });
 
+      initM(); refreshUI(); updateCart();
+      if (localStorage.getItem('hc_lava') === '1') toggleLava(true);
+    });
+
+
       buildStores();
       checkStatus();
       setInterval(checkStatus, 60000); // Poll every 60s — matches graph resolution
@@ -4873,6 +4906,17 @@
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
       } catch (e) { I('LG-ERR').textContent = e.message; genCap('LG'); }
+    }
+
+
+    let LAVA_ON = false;
+    function toggleLava(initial) {
+      if (!initial) LAVA_ON = !LAVA_ON; else LAVA_ON = true;
+      const el = I('LAVA-LAYER');
+      const btn = I('LAVA-BTN');
+      if (el) el.classList.toggle('ON', LAVA_ON);
+      if (btn) btn.classList.toggle('on', LAVA_ON);
+      localStorage.setItem('hc_lava', LAVA_ON ? '1' : '0');
     }
 
     async function doReg() {

@@ -1117,6 +1117,8 @@ BW_API_KEY  = os.environ.get("BW_API_KEY", "")
 
 @app.route("/api/bwstats/<username>")
 def bw_stats_proxy(username):
+    print(f"DEBUG: Entering bw_stats_proxy for {username}")
+
     """Proxy to the external BedWars stats API."""
     try:
         url = f"{BW_API_BASE}/player/{username}?apikey={BW_API_KEY}"
@@ -1173,25 +1175,32 @@ def lb_test():
 
 @app.route("/api/lb/<gamemode>")
 def lb_get(gamemode):
+    print(f"DEBUG: Entering lb_get for {gamemode}")
+
     stat = request.args.get("stat", "wins")
+    gamemode = gamemode.strip().lower()
+    print(f"[LB] Request: gamemode={repr(gamemode)}, stat={stat}")
 
     if gamemode == "bedwars":
         import urllib.request, json
 
         # Map frontend stat names → API stat names (camelCase as API expects)
         bw_stat_map = {
-            "wins": "wins", "kills": "kills", "deaths": "deaths",
-            "final_kills": "finalKills", "beds_destroyed": "bedsBroken",
-            "level": "level", "fkdr": "fkdr", "xp": "xp",
-            "finalKills": "finalKills", "bedsBroken": "bedsBroken"
+            "wins": "wins", "losses": "losses", "kills": "kills", "deaths": "deaths",
+            "final_kills": "finalKills", "final_deaths": "finalDeaths", 
+            "beds_destroyed": "bedsBroken", "games_played": "gamesPlayed",
+            "level": "level", "xp": "xp", "fkdr": "fkdr", "wlr": "wlr", "kdr": "kdr"
         }
-        api_stat = bw_stat_map.get(stat, "wins")
+        api_stat = bw_stat_map.get(stat, stat) # Fallback to literal if not in map
+        
         bw_api_key = os.environ.get("BW_API_KEY", "bw_91e25e30cd3ce741b9098925c8513ceadf5d3ab1")
         bw_api_base = os.environ.get("BW_API_BASE", "http://srv125.godlike.club:26364/api/v1")
 
+        limit = request.args.get("limit", "10")
         try:
-            url = f"{bw_api_base}/leaderboard/{api_stat}?apikey={bw_api_key}"
-            print(f"[LB] Fetching: {url}")
+            url = f"{bw_api_base}/leaderboard/{api_stat}?apikey={bw_api_key}&limit={limit}"
+            print(f"[LB] Bedwars Fetching: {url}")
+
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             res = urllib.request.urlopen(req, timeout=8)
             data = json.loads(res.read())
@@ -1215,26 +1224,33 @@ def lb_get(gamemode):
                     "is_bw1058": True,
                     "rank_name": None
                 })
-
             return jsonify(rows)
 
         except Exception as e:
             print(f"[LB] Bedwars API Error: {e}")
             return jsonify({"error": str(e)}), 500
 
+    if gamemode == "skywars":
+        return jsonify({"coming_soon": True, "gamemode": "SkyWars"})
+
     # Default fallback for other gamemodes (SkyWars etc from local DB)
-    if stat not in ("kills","deaths","wins","losses","coins"): stat = "wins"
-    db = get_db(); c = db_cursor(db)
-    c.execute(
-        f"SELECT u.username, u.mc_username, r.rank_name, "
-        f"s.kills, s.deaths, s.wins, s.losses, s.coins "
-        f"FROM hc_stats s JOIN hc_users u ON s.user_id=u.id "
-        f"LEFT JOIN hc_ranks r ON r.user_id=u.id AND r.gamemode={ph()} "
-        f"WHERE s.gamemode={ph()} ORDER BY s.{stat} DESC LIMIT 50",
-        (gamemode, gamemode)
-    )
-    rows = to_list(c.fetchall()); c.close(); db.close()
-    return jsonify(rows)
+    try:
+        if stat not in ("kills","deaths","wins","losses","coins"): stat = "wins"
+        db = get_db(); c = db_cursor(db)
+        c.execute(
+            f"SELECT u.username, u.mc_username, r.rank_name, "
+            f"s.kills, s.deaths, s.wins, s.losses, s.coins "
+            f"FROM hc_stats s JOIN hc_users u ON s.user_id=u.id "
+            f"LEFT JOIN hc_ranks r ON r.user_id=u.id AND r.gamemode={ph()} "
+            f"WHERE s.gamemode={ph()} ORDER BY s.{stat} DESC LIMIT 50",
+            (gamemode, gamemode)
+        )
+        rows = to_list(c.fetchall()); c.close(); db.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"[LB] Fallback Error for {gamemode}: {e}")
+        return jsonify([])
+
 
 @app.route("/api/staff")
 def staff_list():
