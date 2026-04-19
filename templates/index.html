@@ -2900,6 +2900,21 @@
         font-size: clamp(1.8rem, 8vw, 2.4rem);
       }
 
+      /* Admin UI Fixes */
+      #pg-admin .tabs, #pg-profile .tabs { 
+        flex-wrap: nowrap; 
+        overflow-x: auto; 
+        scrollbar-width: none; 
+      }
+      #pg-admin .tabs::-webkit-scrollbar, #pg-profile .tabs::-webkit-scrollbar { 
+        display: none; 
+      }
+      #ADM-CHAT-GRID { 
+        grid-template-columns: 1fr !important;
+        grid-template-rows: max-content 1fr;
+        height: 70vh !important;
+      }
+
       /* Hero */
       .hero {
         padding: 24px 0 20px;
@@ -3816,7 +3831,7 @@
 
         <!-- Events Management -->
         <div id="ADM-CHAT" style="display:none">
-          <div style="display:grid;grid-template-columns:220px 1fr;gap:15px;height:600px">
+          <div id="ADM-CHAT-GRID" style="display:grid;grid-template-columns:220px 1fr;gap:15px;height:600px">
             <!-- Sidebar -->
             <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3829,11 +3844,16 @@
             <!-- Chat Area -->
             <div class="p" style="display:flex;flex-direction:column;padding:0;overflow:hidden;border-color:var(--bd2)">
               <div id="CHAT-HEAD-WRAP"
-                style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center">
-                <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
-                <div id="CHAT-STATUS" style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
-                  <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
-                  <span id="CHAT-STATE">Connecting...</span>
+                style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
+                  <div id="CHAT-STATUS" style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
+                    <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
+                    <span id="CHAT-STATE">Connecting...</span>
+                  </div>
+                </div>
+                <div style="font-size:0.7rem;color:var(--tx3);display:flex;align-items:center;gap:5px">
+                  <span style="color:var(--grn)">🟢</span> <span id="ONLINE-USERS-LIST">Loading...</span>
                 </div>
               </div>
               <div id="CHAT-MESSAGES"
@@ -5747,7 +5767,7 @@
       else stopChatPoll();
     }
 
-    let CHAT_POLL = null, CUR_CHAN = null;
+    let CHAT_POLL = null, PING_POLL = null, CUR_CHAN = null;
     async function loadNexusChat() {
       if (ME?.role === 'founder') I('CHAT-CREATE-BTN').style.display = 'block';
       try {
@@ -5796,13 +5816,27 @@
       } catch (e) { }
     }
 
+    async function staffPing() {
+      try {
+        const active = await API('/api/staff/ping', { method: 'POST' });
+        const list = active.map(u => u.username).join(', ') || 'No one';
+        const el = I('ONLINE-USERS-LIST');
+        if (el) el.textContent = list;
+      } catch (e) { }
+    }
+
     function startChatPoll() {
       initPusher();
       stopChatPoll();
       // Manual backup poll every 10s instead of 1.5s
       CHAT_POLL = setInterval(loadChatMsgs, 10000);
+      PING_POLL = setInterval(staffPing, 10000);
+      staffPing();
     }
-    function stopChatPoll() { if (CHAT_POLL) clearInterval(CHAT_POLL); CHAT_POLL = null; }
+    function stopChatPoll() { 
+      if (CHAT_POLL) { clearInterval(CHAT_POLL); CHAT_POLL = null; }
+      if (PING_POLL) { clearInterval(PING_POLL); PING_POLL = null; }
+    }
 
     let PUSHER_INST = null, P_CHAN = null;
     function initPusher() {

@@ -1668,6 +1668,32 @@ def health():
 # ═══════════════════════════════════════════════════════
 # STAFF CHAT API
 # ═══════════════════════════════════════════════════════
+
+ONLINE_STAFF = {}  # { user_id: {"username": ..., "role": ..., "last_seen": datetime} }
+
+@app.route("/api/staff/ping", methods=["POST"])
+@staff_required
+def staff_ping():
+    now = datetime.now()
+    cutoff = now - timedelta(seconds=30)
+    
+    # Prune old users
+    stale_keys = [uid for uid, data in ONLINE_STAFF.items() if data["last_seen"] < cutoff]
+    for k in stale_keys:
+        del ONLINE_STAFF[k]
+        
+    # Update current user
+    cu = request.cu
+    ONLINE_STAFF[cu["id"]] = {
+        "username": cu["username"],
+        "role": cu["role"],
+        "last_seen": now
+    }
+    
+    # Return active users
+    active = [{"username": d["username"], "role": d["role"]} for d in ONLINE_STAFF.values()]
+    return jsonify(active)
+
 STAFF_WEBHOOK = "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj"
 
 @app.route("/api/staff/channels", methods=["GET"])
