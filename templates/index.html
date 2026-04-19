@@ -4862,12 +4862,23 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
           animation: { duration: 400 },
           plugins: {
             legend: { display: false },
             tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(9, 9, 11, 0.9)',
+              titleFont: { size: 13, weight: 'bold' },
+              bodyFont: { size: 12 },
+              padding: 10,
+              displayColors: false,
               callbacks: {
-                label: ctx => ` ${ctx.parsed.y} players`
+                label: ctx => `👥 ${ctx.parsed.y} Players Online`
               }
             }
           },
@@ -4880,6 +4891,7 @@
             y: {
               display: true,
               beginAtZero: true,
+              suggestedMax: 20,
               grid: { color: 'rgba(255,255,255,0.05)' },
               ticks: { color: '#71717a', precision: 0, font: { size: 11 } }
             }
