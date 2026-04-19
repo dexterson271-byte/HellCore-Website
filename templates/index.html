@@ -2910,9 +2910,12 @@
         </div>
         <div class="stitle"><svg class="ic">
             <use href="#ic-chart" />
-          </svg> 24-Hour Player Activity</div>
-        <div class="p" style="margin-bottom:20px; padding: 20px;">
-          <canvas id="playerChart" style="max-height: 300px; width: 100%;"></canvas>
+          </svg> Live Player Activity
+          <span style="font-size:0.6rem;font-weight:600;color:var(--grn);background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:20px;letter-spacing:0.05em;margin-left:4px">● LIVE · 1 MIN</span>
+        </div>
+        <div class="p" style="margin-bottom:20px;padding:20px">
+          <div id="CHART-EMPTY" style="text-align:center;color:var(--tx3);font-size:0.8rem;padding:20px;display:none">Collecting data… first point in 60 s</div>
+          <canvas id="playerChart" style="max-height:300px;width:100%"></canvas>
         </div>
         <div class="stitle"><svg class="ic">
             <use href="#ic-gamepad" />
@@ -3897,7 +3900,7 @@
 
       buildStores();
       checkStatus();
-      setInterval(checkStatus, 30000);
+      setInterval(checkStatus, 60000); // Poll every 60s — matches graph resolution
       loadAbout();
       // Init recent searches + showcase for Stats tab
       renderRecentSearches();
@@ -4078,107 +4081,119 @@
     // ════════════════════════════════════════════════════
     // SERVER STATUS
     // ════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════
+    // SERVER STATUS — mcsrvstat.us v3 API (live, client-side)
+    // ════════════════════════════════════════════════════
+    const MC_SERVER = 'mc.hellcore.com';
+    const MC_API    = `https://api.mcsrvstat.us/3/${MC_SERVER}`;
+
+    // Rolling 60-minute history stored in memory
+    const playerHistory = { labels: [], counts: [] };
+    let   pChart = null;
+
     async function checkStatus() {
       try {
-        const d = await API('/api/serverstatus');
+        const res = await fetch(MC_API);
+        const d   = await res.json();
+
+        // --- Navbar dot + text ---
         const dot = I('DOT'), txt = I('STXT');
-        if (d.online) { dot.className = 'dot ON'; txt.textContent = `${d.players?.online || 0}/${d.players?.max || 0} online`; }
-        else { dot.className = 'dot'; txt.textContent = 'Offline'; }
-        renderStatus(d);
-        loadPlayerChart();
-        loadEvents();
-      } catch (e) { const d = I('DOT'); if (d) d.className = 'dot'; }
-    }
+        const online  = d.online || false;
+        const players = d.players?.online || 0;
+        const maxPlayers = d.players?.max  || 0;
 
-    async function loadTicker() {
-      try {
-        const data = await API('/api/ads/recent');
-        const el = I('TICKER');
-        if (!el) return;
-        if (!data || data.length === 0) {
-          el.innerHTML = 'Be the first to claim a daily reward!';
-          return;
+        if (online) {
+          dot.className = 'dot ON';
+          txt.textContent = `${players}/${maxPlayers} online`;
+        } else {
+          dot.className = 'dot';
+          txt.textContent = 'Offline';
         }
-        let i = 0;
-        const rotate = () => {
-          if (!I('TICKER')) return;
-          const r = data[i];
-          el.style.opacity = 0;
-          setTimeout(() => {
-            el.innerHTML = `<svg class="ic" style="color:#fde047"><use href="#ic-star"/></svg> <b>${r.username}</b> just claimed: <b>${r.item_name}</b>!`;
-            el.style.opacity = 1;
-            i = (i + 1) % data.length;
-          }, 500);
-        };
-        rotate();
-        if (window.tickerInterval) clearInterval(window.tickerInterval);
-        window.tickerInterval = setInterval(rotate, 5000);
-      } catch (e) { console.error('Ticker error:', e); }
-    }
 
-    function renderStatus(d) {
-      const el = I('HOME-SRV'); if (!el) return;
-      if (!d.online) { el.innerHTML = '<p style="color:var(--r2);text-align:center;padding:18px">⚠ Server currently offline.</p>'; return; }
-      const pl = d.players?.online || 0, mx = d.players?.max || 200;
-      const subs = [
-        { n: '<svg class="ic"><use href="#ic-globe"/></svg>  Lobby / Proxy', c: pl },
-        { n: '<svg class="ic"><use href="#ic-bed"/></svg>  Bedwars', c: d.modes?.bedwars?.players || 0 },
-      ];
-      el.innerHTML = `<div style="text-align:center;margin-bottom:14px">
-    <span style="font-family:'Oxanium',sans-serif;font-size:1.8rem;color:var(--grn);font-weight:800">${pl}</span>
-    <span style="color:var(--tx2)"> / ${mx} players online</span></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px">
-      ${subs.map(s => `<div class="sbar"><span class="sbar-n">${s.n}</span><span class="sbar-c">${s.c} 🟢</span></div>`).join('')}
-    </div>`;
+        renderStatus(d);
+        loadEvents();
 
-      // Update advanced cards if they exist
-      if (d.modes) {
-        if (I('BW-ARENAS')) I('BW-ARENAS').textContent = (d.modes.bedwars.arenas_active || 0) + ' / ' + (d.modes.bedwars.arenas_total || 0) + ' Arenas';
-        if (I('BW-PLAYERS')) I('BW-PLAYERS').textContent = (d.modes.bedwars.players || 0) + ' In Game';
-        if (I('SW-ARENAS')) I('SW-ARENAS').textContent = (d.modes.skywars.arenas_active || 0) + ' / ' + (d.modes.skywars.arenas_total || 0) + ' Arenas';
-        if (I('SW-PLAYERS')) I('SW-PLAYERS').textContent = (d.modes.skywars.players || 0) + ' In Game';
+        // --- Append data point to rolling history ---
+        const now = new Date();
+        const label = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+        playerHistory.labels.push(label);
+        playerHistory.counts.push(players);
+        // Keep only last 60 data points
+        if (playerHistory.labels.length > 60) {
+          playerHistory.labels.shift();
+          playerHistory.counts.shift();
+        }
+
+        updatePlayerChart();
+
+      } catch (e) {
+        const dot = I('DOT');
+        if (dot) dot.className = 'dot';
       }
     }
 
-    let pChart = null;
-    async function loadPlayerChart() {
-      try {
-        const data = await API('/api/serverstatus/history');
-        const ctx = document.getElementById('playerChart').getContext('2d');
-        if (pChart) pChart.destroy();
+    function updatePlayerChart() {
+      const canvas = document.getElementById('playerChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-        const labels = data.map(d => {
-          const date = new Date(d.timestamp);
-          return date.getHours() + ":" + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
-        });
-        const counts = data.map(d => d.total_players);
+      if (pChart) {
+        // Live update — push new data without full re-render
+        pChart.data.labels = [...playerHistory.labels];
+        pChart.data.datasets[0].data = [...playerHistory.counts];
+        pChart.update('none'); // 'none' = no animation for smooth live feel
+        return;
+      }
 
-        pChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Players Online',
-              data: counts,
-              borderColor: '#4ade80',
-              backgroundColor: 'rgba(74, 222, 128, 0.1)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.4,
-              pointRadius: 0
-            }]
+      // First render
+      pChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: playerHistory.labels,
+          datasets: [{
+            label: 'Players Online',
+            data: playerHistory.counts,
+            borderColor: 'rgba(255,81,47,1)',
+            backgroundColor: 'rgba(255,81,47,0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: 'rgba(255,81,47,1)',
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: { duration: 400 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.parsed.y} players`
+              }
+            }
           },
-          options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { display: true, grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } },
-              y: { display: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } }
+          scales: {
+            x: {
+              display: true,
+              grid: { display: false },
+              ticks: { color: '#71717a', maxTicksLimit: 10, font: { size: 11 } }
+            },
+            y: {
+              display: true,
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#71717a', precision: 0, font: { size: 11 } }
             }
           }
-        });
-      } catch (e) { console.error('Chart load error:', e); }
+        }
+      });
     }
+
+    // ════════════════════════════════════════════════════
+    // SKIN VIEWER — All proxied through Flask, no crafatar
+    // ════════════════════════════════════════════════════
 
     // ════════════════════════════════════════════════════
     // SKIN VIEWER — All proxied through Flask, no crafatar
