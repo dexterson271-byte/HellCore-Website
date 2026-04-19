@@ -5206,8 +5206,8 @@
 
           let cols = '';
           if (isBW) {
-            const val = typeof p.value === 'number' && !Number.isInteger(p.value)
-              ? p.value.toFixed(2) : (p.value ?? 0);
+            const raw = p.value ?? 0;
+            const val = Number.isInteger(raw) || raw % 1 === 0 ? Math.round(raw) : raw.toFixed(2);
             cols = `<span style="text-align:right;font-weight:700;color:var(--g)">${val}</span>`;
           } else {
             const kd = p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : '∞';
