@@ -1203,20 +1203,6 @@ def lb_get(gamemode):
 
             entries = data.get("entries", [])
 
-            # Pull any website ranks for players who have accounts
-            rank_map = {}
-            try:
-                db_conn = get_db()
-                c_local = db_cursor(db_conn)
-                c_local.execute("SELECT u.mc_username, r.rank_name FROM hc_ranks r JOIN hc_users u ON r.user_id = u.id WHERE r.gamemode='bedwars'")
-                for row in c_local.fetchall():
-                    d = dict(row) if not isinstance(row, dict) else row
-                    if d.get("mc_username"):
-                        rank_map[d["mc_username"].lower()] = d["rank_name"]
-                db_conn.close()
-            except Exception as re:
-                print(f"[LB] Rank map error (non-fatal): {re}")
-
             rows = []
             for e in entries:
                 uname = e.get("username", "Unknown")
@@ -1227,7 +1213,7 @@ def lb_get(gamemode):
                     "stat": api_stat,
                     "rank": e.get("rank", 0),
                     "is_bw1058": True,
-                    "rank_name": rank_map.get(uname.lower())
+                    "rank_name": None
                 })
 
             return jsonify(rows)
