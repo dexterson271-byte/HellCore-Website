@@ -1117,7 +1117,6 @@ BW_API_KEY  = os.environ.get("BW_API_KEY", "")
 
 @app.route("/api/bwstats/<username>")
 def bw_stats_proxy(username):
-    print(f"DEBUG: Entering bw_stats_proxy for {username}")
 
     """Proxy to the external BedWars stats API."""
     try:
@@ -1175,11 +1174,8 @@ def lb_test():
 
 @app.route("/api/lb/<gamemode>")
 def lb_get(gamemode):
-    print(f"DEBUG: Entering lb_get for {gamemode}")
-
     stat = request.args.get("stat", "wins")
     gamemode = gamemode.strip().lower()
-    print(f"[LB] Request: gamemode={repr(gamemode)}, stat={stat}")
 
     if gamemode == "bedwars":
         import urllib.request, json

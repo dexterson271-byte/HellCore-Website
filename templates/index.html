@@ -101,30 +101,6 @@
       border: 2px solid var(--bg);
     }
 
-    /* ══════ LAVA FLOW ══════ */
-    #LAVA-LAYER {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      display: none;
-      opacity: 0.3;
-    }
-
-    #LAVA-LAYER.ON {
-      display: block;
-      animation: lavaFlow 15s linear infinite alternate;
-      background: linear-gradient(45deg, #3a0101 0%, #7c0a0a 25%, #ff4b2b 50%, #7c0a0a 75%, #3a0101 100%);
-      background-size: 400% 400%;
-    }
-
-    @keyframes lavaFlow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.4);
     }
@@ -3573,9 +3549,7 @@
     </symbol>
   </svg>
 
-  <div id="LAVA-LAYER"></div>
   <div id="BG"></div>
-
   <div id="APP">
     <!-- GLOBAL BANNER -->
     <div id="GLOBAL-BANNER"
@@ -3629,10 +3603,6 @@
           </svg> Admin</button>
       </div>
       <div class="nright">
-        <button class="nb" onclick="toggleLava()" id="LAVA-BTN" style="padding:8px 12px;margin-right:5px">
-           <svg class="ic" style="color:#fde047"><use href="#ic-bolt"/></svg> LAVA
-        </button>
-
         <div class="srv">
           <div class="dot" id="DOT"></div><span id="STXT">Checking…</span>
         </div>
@@ -4170,8 +4140,11 @@
               <option value="kills">Kills</option>
               <option value="final_kills" class="bw-only">Final Kills</option>
               <option value="beds_destroyed" class="bw-only">Beds Broken</option>
-            </select>
+              <option value="deaths">Deaths</option>
+              <option value="coins">Coins</option>
 
+
+            </select>
           </div>
           <div class="p">
             <div id="LB-H" class="lh"
@@ -4749,11 +4722,6 @@
         o.addEventListener('click', e => { if (e.target === o) o.classList.remove('OPEN'); });
       });
 
-      initM(); refreshUI(); updateCart();
-      if (localStorage.getItem('hc_lava') === '1') toggleLava(true);
-    });
-
-
       buildStores();
       checkStatus();
       setInterval(checkStatus, 60000); // Poll every 60s — matches graph resolution
@@ -4906,17 +4874,6 @@
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
       } catch (e) { I('LG-ERR').textContent = e.message; genCap('LG'); }
-    }
-
-
-    let LAVA_ON = false;
-    function toggleLava(initial) {
-      if (!initial) LAVA_ON = !LAVA_ON; else LAVA_ON = true;
-      const el = I('LAVA-LAYER');
-      const btn = I('LAVA-BTN');
-      if (el) el.classList.toggle('ON', LAVA_ON);
-      if (btn) btn.classList.toggle('on', LAVA_ON);
-      localStorage.setItem('hc_lava', LAVA_ON ? '1' : '0');
     }
 
     async function doReg() {
@@ -5211,9 +5168,10 @@
     function updateLBS() {
       const isBW = V('LB-M') === 'bedwars';
       document.querySelectorAll('.bw-only').forEach(el => el.style.display = isBW ? 'block' : 'none');
-      if (!isBW && ['final_kills', 'beds_destroyed', 'level', 'fkdr'].includes(V('LB-S'))) {
+      if (!isBW && ['losses', 'final_kills', 'final_deaths', 'beds_destroyed', 'games_played', 'level', 'xp', 'fkdr', 'wlr', 'kdr'].includes(V('LB-S'))) {
         I('LB-S').value = 'wins';
       }
+
     }
 
     async function loadLB() {
@@ -5223,17 +5181,28 @@
       el.innerHTML = '<div class="ld"><div class="sp"></div>Loading...</div>';
       try {
         const d = await API(`/api/lb/${mode}?stat=${stat}`);
+        if (d.coming_soon) {
+          el.innerHTML = `<div class="empty" style="color:#fde047;font-weight:700;font-size:1.5rem;letter-spacing:1px;text-transform:uppercase;margin-top:40px">
+            <svg class="ic" style="width:2.5rem;height:2.5rem;display:block;margin:0 auto 15px;opacity:0.8"><use href="#ic-clock"/></svg>
+            Coming Soon
+          </div>`;
+          head.innerHTML = '';
+          return;
+        }
         if (!d.length) { el.innerHTML = '<div class="empty">No data yet.</div>'; return; }
+
 
         const isBW = d[0].is_bw1058;
 
         // Friendly label for the value column
         const statLabels = {
-          wins: 'Wins', kills: 'Kills', deaths: 'Deaths',
-          final_kills: 'F. Kills', beds_destroyed: 'Beds',
-          level: 'Level', fkdr: 'FKDR', coins: 'Coins',
-          finalKills: 'F. Kills', bedsBroken: 'Beds'
+          wins: 'Wins', losses: 'Losses', kills: 'Kills', deaths: 'Deaths',
+          final_kills: 'F. Kills', final_deaths: 'F. Deaths',
+          beds_destroyed: 'Beds', games_played: 'Games',
+          level: 'Level', xp: 'XP', fkdr: 'FKDR', wlr: 'WLR', kdr: 'KDR',
+          coins: 'Coins'
         };
+
         const valueLabel = statLabels[stat] || stat;
 
         if (isBW) {
@@ -5251,8 +5220,14 @@
           let cols = '';
           if (isBW) {
             const raw = p.value ?? 0;
-            const val = Number.isInteger(raw) || raw % 1 === 0 ? Math.round(raw) : raw.toFixed(2);
+            let val;
+            if (['fkdr', 'wlr', 'kdr'].includes(stat)) {
+              val = Number(raw).toFixed(2);
+            } else {
+              val = fmt(raw);
+            }
             cols = `<span style="text-align:right;font-weight:700;color:var(--g)">${val}</span>`;
+
           } else {
             const kd = p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : '∞';
             cols = `<span>${p.wins || 0}</span><span>${p.kills || 0}</span><span>${p.deaths || 0}</span><span>${kd}</span>`;
