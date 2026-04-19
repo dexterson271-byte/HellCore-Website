@@ -108,9 +108,9 @@ except Exception as e:
     pusher_client = None
     print(f"⚠ Pusher initialization failed: {e}. Real-time chat disabled.")
 
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
 # DB CONNECTION
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
 def try_connect():
     global _DB_MODE
     if USE_MYSQL_LOCAL:
@@ -123,10 +123,10 @@ def try_connect():
             )
             c.close()
             _DB_MODE = "mysql_local"
-            print(f"✓ Local MySQL connected ({LOCAL_MYSQL_HOST}:{LOCAL_MYSQL_PORT}/{LOCAL_MYSQL_DATABASE})")
+            print(f"[OK] Local MySQL connected ({LOCAL_MYSQL_HOST}:{LOCAL_MYSQL_PORT}/{LOCAL_MYSQL_DATABASE})")
             return
         except Exception as e:
-            print(f"⚠ Local MySQL failed: {e}")
+            print(f"[ERROR] Local MySQL failed: {e}")
 
     if USE_MYSQL_AIVEN:
         try:
@@ -139,13 +139,13 @@ def try_connect():
             )
             c.close()
             _DB_MODE = "mysql_aiven"
-            print(f"✓ Aiven MySQL connected ({AIVEN_HOST})")
+            print(f"[OK] Aiven MySQL connected ({AIVEN_HOST})")
             return
         except Exception as e:
-            print(f"⚠ Aiven MySQL failed: {e}")
+            print(f"[ERROR] Aiven MySQL failed: {e}")
 
     _DB_MODE = "sqlite"
-    print("✓ Using SQLite (hellcore.db) — zero config mode")
+    print("[OK] Using SQLite (hellcore.db) — zero config mode")
 
 # Automatically connect to DB when the app starts
 try_connect()
@@ -215,9 +215,9 @@ def upsert(c, table, cols_vals, conflict_cols):
 def ts(v): return str(v) if v else ""
 def hp(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
 # INIT TABLES
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
 def init_db():
     db = get_db(); c = db_cursor(db)
     mysql = _DB_MODE != "sqlite"
@@ -384,7 +384,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
         c.execute(f"INSERT INTO hc_staff_channels (name, created_by, created_at) VALUES ('#staff-hub', 0, {ph()})", (datetime.now(),))
 
     db.commit(); c.close(); db.close()
-    print(f"✓ Tables ready ({_DB_MODE})")
+    print(f"[OK] Tables ready ({_DB_MODE})")
 
 # ═══════════════════════════════════════════════════════
 # AUTH HELPERS
@@ -1511,13 +1511,27 @@ def staff_messages_post(cid):
 
     return jsonify({"success":True})
 
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
+# STATIC FILES (ads.txt, robots.txt)
+# -------------------------------------------------------
+@app.route("/ads.txt")
+def ads_txt():
+    # Verification for publisher ID provided by user
+    content = "google.com, pub-8470357358025733, DIRECT, f08c47fec0942fa0"
+    return Response(content, mimetype="text/plain")
+
+@app.route("/robots.txt")
+def robots_txt():
+    content = "User-agent: *\nAllow: /\nSitemap: https://hellcore.net/sitemap.xml"
+    return Response(content, mimetype="text/plain")
+
+# -------------------------------------------------------
 # RUN
-# ═══════════════════════════════════════════════════════
+# -------------------------------------------------------
 try:
     init_db()
 except Exception as e:
-    print(f"⚠ DB init error: {e}")
+    print(f"[ERROR] DB init error: {e}")
 
 if __name__ == "__main__":
     print("=" * 56)

@@ -50,14 +50,14 @@ public class HellcoreSync {
                 .repeat(5L, TimeUnit.SECONDS)
                 .schedule();
 
-        // Push Dashboard Heartbeat every 10 seconds
+        // Push Dashboard Heartbeat every 3 seconds (Fast Live Updates)
         server.getScheduler().buildTask(this, this::pushLiveStats)
-                .repeat(10L, TimeUnit.SECONDS)
+                .repeat(3L, TimeUnit.SECONDS)
                 .schedule();
 
-        // Push 24H history snapshot every 15 minutes
+        // Push graph history snapshot every 3 minutes (Granular Graph Data)
         server.getScheduler().buildTask(this, this::pushHistorySnapshot)
-                .repeat(15L, TimeUnit.MINUTES)
+                .repeat(3L, TimeUnit.MINUTES)
                 .schedule();
 
         logger.info("HellcoreSync Plugin Booted successfully!");
