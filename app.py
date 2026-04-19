@@ -52,7 +52,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, request, jsonify, render_template, send_from_directory, Response
+from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect
 
 app = Flask(__name__)
 
@@ -63,6 +63,10 @@ def add_header(r):
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"
     return r
+
+@app.route("/discord")
+def discord_redirect():
+    return redirect("https://discord.gg/z4Yc7EMr4e")
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION — edit these to match your setup
@@ -399,7 +403,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
         
         evs = [
             ("Earn a Free Rank", "Claim your free starter rank today and unlock exclusive lobby furniture!", "/static/logo.png", "/store/free"),
-            ("Join our Discord", "Join 5,000+ members! Get live updates and participate in giveaways.", "/static/logo.png", "https://discord.gg/hellcore"),
+            ("Join our Discord", "Join 5,000+ members! Get live updates and participate in giveaways.", "/static/logo.png", "/discord"),
             ("Double XP Weekend", "2x Experience is currently ACTIVE! Level up your battle pass twice as fast.", "/static/logo.png", "/players"),
             ("Vote for Rewards", "Help Hellcore Network grow on server lists and earn 2x Mystery Boxes!", "/static/logo.png", "/forums"),
             ("Spring Sale: 20% OFF", "Spring is here! Use coupon code 'SPRING20' for a massive discount.", "/static/logo.png", "/store"),
@@ -1741,6 +1745,7 @@ def staff_messages_post(cid):
     })).start()
 
     return jsonify({"success":True})
+
 
 # -------------------------------------------------------
 # STATIC FILES (ads.txt, robots.txt)
