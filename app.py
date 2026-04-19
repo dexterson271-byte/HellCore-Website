@@ -1113,7 +1113,23 @@ def lb_get(gamemode):
     db = get_db(); c = db_cursor(db)
     
     if gamemode == "bedwars":
-        # BedWars1058 Database Integration
+        # First try external BWStatsAPI plugin
+        if BW_API_BASE and BW_API_KEY:
+            try:
+                import urllib.request, json
+                api_stat = stat if stat in ("kills","deaths","final_kills","final_deaths","wins","losses","beds_destroyed", "games_played") else "wins"
+                url = f"{BW_API_BASE}/leaderboard/{api_stat}?apikey={BW_API_KEY}&limit=50"
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                resp = urllib.request.urlopen(req, timeout=3)
+                data = json.loads(resp.read().decode())
+                if data.get("success"):
+                    rows = data.get("entries", [])
+                    c.close(); db.close()
+                    return jsonify(rows)
+            except Exception as e:
+                print("BWStatsAPI Leaderboard failed, reverting to DB:", e)
+
+        # Fallback to BedWars1058 Database Integration
         if stat not in ("kills","deaths","final_kills","final_deaths","wins","losses","beds_destroyed"): stat = "wins"
         try:
             c.execute(
