@@ -3983,40 +3983,14 @@
     </div>
     <!-- FREE STORE -->
     <div class="pg" id="pg-store-free">
-      <div class="W"><button class="bto bsm" onclick="GO('store')" style="margin-bottom:12px">← Back</button>
-
-        <div class="nexus-wrap">
-          <div class="nexus-title">MYSTERY NEXUS</div>
-          <p style="color:var(--tx2)">Watch premium advertisements to unlock Hellcore Mystery Crates.</p>
-
-          <div id="NEXUS-HUB">
-            <div id="NEXUS-BOX" class="nexus-box crate-pulse" onclick="watchAd(1)">
-              <img src="/static/logo.png" alt="Crate">
-            </div>
-            <div id="NEXUS-TIMER" style="font-size:1.2rem;font-weight:700;color:var(--tx3);margin-bottom:20px">READY TO
-              UNLOCK</div>
-            <button id="NEXUS-BTN" class="btn" style="width:200px" onclick="watchAd(1)">WATCH & WIN</button>
-          </div>
-
-          <div style="margin-top:40px;text-align:left">
-            <div class="stitle"><svg class="ic">
-                <use href="#ic-history" />
-              </svg> Recent Global Loot</div>
-            <div class="p" style="padding:0">
-              <table class="loot-table">
-                <thead>
-                  <tr>
-                    <th>Player</th>
-                    <th>Reward</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody id="NEXUS-HISTORY"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
+      <div class="W" style="text-align:center; padding:120px 20px">
+        <h2 style="font-family:'Outfit',sans-serif; font-size:3rem; font-weight:900; margin-bottom:20px; color:#fff">MYSTERY NEXUS</h2>
+        <p style="color:var(--tx2); font-size:1.2rem; max-width:600px; margin:0 auto 40px; line-height:1.6">
+          The Mystery Nexus has moved to our new dedicated store! Enjoy a more premium experience with bigger rewards and smoother crates.
+        </p>
+        <a href="https://store.hellcore.net/nexus" class="btn" style="padding:16px 40px; font-size:1.2rem; display:inline-block; text-decoration:none">
+            CLAIM FREE REWARDS →
+        </a>
       </div>
     </div>
 
@@ -6394,8 +6368,8 @@
     }
 
     function watchAd(num) {
-      if (!ME) { openM('ML'); toast('err', 'Log in to watch ads.'); return; }
-      if (NEXUS_CD > 0) { toast('err', 'Nexus is recharging!'); return; }
+      window.location.href = "https://store.hellcore.net/nexus";
+    }
 
       const btn = I('NEXUS-BTN');
       btn.disabled = true;
