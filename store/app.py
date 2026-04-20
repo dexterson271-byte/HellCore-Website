@@ -57,23 +57,37 @@ _DB_MODE = "sqlite"
 
 def try_connect():
     global _DB_MODE
+    # Force MySQL in production (Railway usually has PORT or RAILWAY_ENVIRONMENT_ID)
+    is_prod = os.environ.get("RAILWAY_ENVIRONMENT_ID") or os.environ.get("PORT")
+    
     if USE_MYSQL_AIVEN and AIVEN_HOST:
         try:
             import mysql.connector
+            print(f"[STORE] Attempting Aiven MySQL connection: {AIVEN_HOST}...")
             c = mysql.connector.connect(
                 host=AIVEN_HOST, port=AIVEN_PORT,
                 user=AIVEN_USER, password=AIVEN_PASSWORD,
                 database=AIVEN_DATABASE, ssl_disabled=False,
-                connection_timeout=8
+                connection_timeout=10
             )
             c.close()
             _DB_MODE = "mysql_aiven"
-            print(f"[STORE] Aiven MySQL connected ({AIVEN_HOST})")
+            print(f"[STORE] SUCCESS: Aiven MySQL connected.")
             return
         except Exception as e:
-            print(f"[STORE] Aiven MySQL failed: {e}")
-    _DB_MODE = "sqlite"
-    print(f"[STORE] Using SQLite ({SQLITE_FILE})")
+            print(f"[STORE] ERROR: Aiven MySQL connection failed: {e}")
+            if is_prod:
+                print("[STORE] WARNING: Running in production but MySQL failed. Fallback to SQLite may result in missing data.")
+    
+    # Check if local SQLite exists before fallback
+    if os.path.exists(SQLITE_FILE):
+        _DB_MODE = "sqlite"
+        print(f"[STORE] Using local SQLite fallback ({SQLITE_FILE})")
+    else:
+        if is_prod:
+            print(f"[STORE] CRITICAL: No MySQL and no SQLite file found at {SQLITE_FILE}")
+        _DB_MODE = "sqlite"
+        print(f"[STORE] Using fresh SQLite (Warning: Table missing errors likely)")
 
 try_connect()
 
