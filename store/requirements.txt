@@ -1,4 +1,5 @@
 flask
+stripe
 mysql-connector-python
 gunicorn
 python-dotenv

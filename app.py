@@ -346,6 +346,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
   ticket_id INTEGER NOT NULL,
   author_id INTEGER NOT NULL,
   content TEXT NOT NULL,
+  image_url VARCHAR(500) DEFAULT '',
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ads(
@@ -906,7 +907,7 @@ def ticket_get(tid):
     if t["author_id"] != u["id"] and u["role"] not in STAFF_ROLES:
         db.close(); return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
-    c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
+    c.execute(f"SELECT m.*, u.username author_name, u.role author_role, u.mc_username FROM hc_ticket_msgs m "
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} ORDER BY m.created_at ASC", (tid,))
     msgs = to_list(c.fetchall())
     for m in msgs: m["created_at"] = ts(m["created_at"])
@@ -917,14 +918,34 @@ def ticket_get(tid):
 @auth_required
 def ticket_msg(tid):
     d = request.get_json(force=True) or {}
-    if not d.get("content"): return jsonify({"error":"Content required"}), 400
+    if not d.get("content") and not d.get("image"): return jsonify({"error":"Content or image required"}), 400
     u = request.cu; db = get_db(); c = db_cursor(db)
+    
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: db.close(); return jsonify({"error":"Not found"}), 404
     if t["author_id"] != u["id"] and u["role"] not in STAFF_ROLES:
         db.close(); return jsonify({"error":"Forbidden"}), 403
-    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content) VALUES({phs(3)})",
-              (tid, u["id"], d["content"]))
+
+    img_url = ""
+    if d.get("image"):
+        try:
+            import base64
+            img_data = d["image"]
+            if "," in img_data: img_data = img_data.split(",")[1]
+            img_bytes = base64.b64decode(img_data)
+            
+            # Save image
+            up_dir = os.path.join(os.path.dirname(__file__), "static", "uploads", "tickets")
+            os.makedirs(up_dir, exist_ok=True)
+            fname = f"{uuid.uuid4().hex}.png"
+            with open(os.path.join(up_dir, fname), "wb") as f:
+                f.write(img_bytes)
+            img_url = f"/static/uploads/tickets/{fname}"
+        except Exception as e:
+            print(f"[TICKET] Image upload failed: {e}")
+
+    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,image_url) VALUES({phs(4)})",
+              (tid, u["id"], d.get("content",""), img_url))
     db.commit(); c.close(); db.close()
     return jsonify({"ok":True})
 

@@ -374,6 +374,7 @@
 let ME = null;
 let PRODUCTS = [];
 let CART = [];
+
 const ADMIN_ROLES = ['helper','mod','dev','admin','owner','founder'];
 const MAIN_SITE = 'https://hellcore.net';
 
@@ -514,7 +515,7 @@ function renderRankCard(p, featured = false) {
     <span class="rank-icon"><svg class="ic" style="width:2.5rem;height:2.5rem;color:${p.color}"><use href="#${p.icon}"/></svg></span>
     <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
     ${p.original_price > p.price ? `<div class="rank-original">was $${p.original_price.toFixed(2)}</div>` : ''}
-    <div class="rank-price"><span class="currency">₹</span>${p.price.toFixed(2)}</div>
+    <div class="rank-price"><span class="currency">$</span>${p.price.toFixed(2)}</div>
     ${savings > 0 ? `<div class="rank-save">SAVE ${savings}%</div>` : ''}
     <ul class="rank-perks">${perks}</ul>
     <button class="btn" style="width:100%;margin-top:auto" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g,"\\'")}',${p.price},'${p.subcategory}')">
@@ -582,7 +583,7 @@ async function renderCart() {
     I('CART-LIST').innerHTML = CART.map(it => `<div class="cart-item">
       <div class="cart-item-info"><h4>${esc(it.item_name)}</h4><small>${it.gamemode || 'Global'}</small></div>
       <div class="cart-item-right">
-        <span class="cart-item-price">₹${parseFloat(it.item_price).toFixed(2)}</span>
+        <span class="cart-item-price">$${parseFloat(it.item_price).toFixed(2)}</span>
         <button class="btn bred bxs" onclick="removeFromCart(${it.id})"><svg class="ic"><use href="#ic-x"/></svg></button>
       </div>
     </div>`).join('');
@@ -590,8 +591,8 @@ async function renderCart() {
     const total = CART.reduce((s, i) => s + parseFloat(i.item_price), 0);
     I('CART-SUMMARY').innerHTML = `<div class="cart-summary">
       <div class="cart-total">
-        <span class="cart-total-label">Total Amount</span>
-        <span class="cart-total-price">₹${total.toFixed(2)}</span>
+        <span class="cart-total-label">Total</span>
+        <span class="cart-total-price">$${total.toFixed(2)}</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="bto bsm" onclick="clearCart()">🗑 Clear Cart</button>
@@ -615,27 +616,18 @@ async function clearCart() {
 
 async function checkout() {
   if (!ME) { openModal('M-LOGIN'); return; }
-  if (!CART.length) return;
-
-  const btn = event.currentTarget;
-  const oldText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<div class="sp sm"></div> Creating Ticket...';
-
   try {
-    const res = await API('/api/checkout/ticket', { method: 'POST' });
-    if (res.ok) {
-      toast('ok', 'Ticket created! Redirecting to pay...');
-      // Redirect to main site tickets page
+    toast('loading', 'Opening your purchase ticket...');
+    const d = await API('/api/checkout', { method: 'POST' });
+    if (d.ok && d.redirect_url) {
+      toast('ok', 'Ticket created! Redirecting...');
       setTimeout(() => {
-        window.location.href = 'https://hellcore.net/tickets?id=' + res.ticket_id;
+        window.location.href = d.redirect_url;
       }, 1500);
+    } else {
+      toast('err', d.error || 'Could not create checkout ticket');
     }
-  } catch (e) {
-    toast('err', e.message);
-    btn.disabled = false;
-    btn.innerHTML = oldText;
-  }
+  } catch (e) { toast('err', e.message); }
 }
 
 // ════════════════════════════════════════════════════════
@@ -758,15 +750,7 @@ async function deleteProduct(id, name) {
 // ════════════════════════════════════════════════════════
 // CHECKOUT SUCCESS HANDLER
 // ════════════════════════════════════════════════════════
-function checkPaymentSuccess() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('session_id')) {
-    toast('ok', '🎉 Payment successful! Your items are being processed.');
-    // Clean URL
-    history.replaceState({}, '', '/');
-    updateCartCount();
-  }
-}
+
 
 // ════════════════════════════════════════════════════════
 // INIT
@@ -775,7 +759,6 @@ async function init() {
   await loadProducts();
   await checkAuth();
   loadHome();
-  checkPaymentSuccess();
 
   // Route based on URL
   const path = window.location.pathname.substring(1).split('/')[0];
