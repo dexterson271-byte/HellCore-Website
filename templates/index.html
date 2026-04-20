@@ -1018,9 +1018,38 @@
       border: 1px solid var(--bd);
       padding: 16px;
       margin: 12px 0;
-      border-radius: 12px;
-      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--tx3);
+      border: 1px solid var(--bd);
     }
+    .tmsg-body { flex: 1; min-width: 0; }
+    .tmsg-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .tmsg-user { font-weight: 600; color: #fff; font-size: 0.95rem; cursor: pointer; }
+    .tmsg-user:hover { text-decoration: underline; }
+    .tmsg-time { font-size: 0.72rem; color: var(--tx3); }
+    .tmsg-content { color: #dcddde; line-height: 1.4; font-size: 0.92rem; word-break: break-word; }
+    .tmsg-content b, .tmsg-content strong { color: #fff; }
+    
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sb-open { background: var(--grn); color: #000; }
+    .sb-closed { background: var(--r2); color: #fff; }
+    .sb-purchase { background: var(--g); color: #fff; }
 
     .frep.staff {
       border-color: rgba(253, 224, 71, 0.3);
@@ -4523,7 +4552,10 @@
           <div id="TIX-L"></div>
         </div>
         <div id="TIX-DET" style="display:none">
-          <button class="bto bsm" onclick="closeTixD()" style="margin-bottom:10px">← Back</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+            <button class="bto bsm" onclick="closeTixD()">← Back to Tickets</button>
+            <div id="TIX-STATUS-BOX"></div>
+          </div>
           <div id="TIX-DET-C"></div>
         </div>
       </div>
@@ -6123,7 +6155,6 @@
 
           if (lk) {
             if (isExt) {
-              // External link: use a real <a> tag
               const btn = document.createElement('a');
               btn.className = 'btn bsm';
               btn.style.cssText = 'display:inline-block;margin-top:14px;text-decoration:none;';
@@ -6133,7 +6164,6 @@
               btn.textContent = 'Learn More';
               card.appendChild(btn);
             } else {
-              // Internal link: real <button>
               const btn = document.createElement('button');
               btn.className = 'btn bsm';
               btn.style.cssText = 'margin-top:14px;';
@@ -6160,6 +6190,116 @@
         const d = await API('/api/forums');
         el.innerHTML = d.map(f => `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
            <div style="font-size:.8rem"><strong>${esc(f.title)}</strong><br><small>By ${esc(f.author_name)} in ${f.category}</small></div>
+           <button class="btn bred bxs" onclick="admPurgeThread(${f.id})"><svg class="ic" style="margin:0"><use href="#ic-trash"/></svg></button>
+         </div>`).join('') || '<div class="empty">No threads to moderate.</div>';
+      } catch (e) { }
+    }
+
+    async function admPurgeThread(id) {
+      if (!confirm('Purge this thread and all replies?')) return;
+      try { await API(`/api/forums/${id}`, { method: 'DELETE' }); loadNexusForums(); toast('ok', 'Purged.'); }
+      catch (e) { }
+    }
+    async function openTix(id) {
+      const pg = I('pg-tickets');
+      if (!pg || !pg.classList.contains('ON')) {
+        GO('tickets');
+        setTimeout(() => openTix(id), 50);
+        return;
+      }
+      const list = I('TIX-LIST'), det = I('TIX-DET'), el = I('TIX-DET-C'), sb = I('TIX-STATUS-BOX');
+      if (list) list.style.display = 'none';
+      if (det) det.style.display = 'block';
+      if (el) el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      if (sb) sb.innerHTML = '';
+
+      try {
+        const d = await API(`/api/tickets/${id}`);
+        const t = d.ticket, msgs = d.messages;
+        
+        // Render Status Badge
+        sb.innerHTML = `<span class="status-badge ${t.status === 'open' ? 'sb-open' : 'sb-closed'}">${t.status}</span>`;
+        if (t.category === 'purchase') sb.innerHTML += `<span class="status-badge sb-purchase" style="margin-left:5px">PURCHASE</span>`;
+
+        let html = `<div style="margin-bottom:24px">
+          <h1 style="font-family:'Outfit',sans-serif;margin-bottom:4px;font-size:1.8rem">${esc(t.title)}</h1>
+          <p style="color:var(--tx3);font-size:0.8rem">Started by ${esc(t.author_name)} on ${fmtD(t.created_at)}</p>
+          <div class="dv"></div>
+          
+          <div class="tmsg" style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;margin-bottom:20px">
+            <div class="tmsg-av">${t.author_name[0].toUpperCase()}</div>
+            <div class="tmsg-body">
+              <div class="tmsg-meta"><span class="tmsg-user">${esc(t.author_name)}</span><span class="tmsg-time">Original Post</span></div>
+              <div class="tmsg-content">${esc(t.description).replace(/\n/g, '<br>')}</div>
+            </div>
+          </div>
+          
+          ${(isStaff() && t.category === 'purchase' && t.status === 'open') ? `
+          <div style="background:var(--g)15;border:1px solid var(--g)30;border-radius:12px;padding:16px;margin:20px 0;display:flex;justify-content:space-between;align-items:center">
+             <div>
+               <div style="font-weight:700;color:var(--g)">Payment Verification Required</div>
+               <div style="font-size:0.75rem;color:var(--tx2)">Check your UPI app for the transaction before approving.</div>
+             </div>
+             <button class="btn bsm" onclick="approvePurchase(${t.id})">Approve & Grant Rank</button>
+          </div>` : ''}
+        </div>`;
+
+        html += msgs.map(m => {
+          const isSystem = m.author_id === 0;
+          return `<div class="tmsg">
+            <div class="tmsg-av" style="${isSystem ? 'background:var(--g);color:#000' : ''}">${isSystem ? '⚙️' : m.author_name[0].toUpperCase()}</div>
+            <div class="tmsg-body">
+              <div class="tmsg-meta">
+                <span class="tmsg-user" style="${isSystem ? 'color:var(--g)' : ''}">${isSystem ? 'HELLCORE SYSTEM' : esc(m.author_name)}</span>
+                <span class="rb rb-${m.author_role}">${m.author_role || 'member'}</span>
+                <span class="tmsg-time">${fmtD(m.created_at)}</span>
+              </div>
+              <div class="tmsg-content">${m.content.replace(/\n/g, '<br>')}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        if (t.status === 'open') {
+          html += `<div style="margin-top:30px;padding:16px;background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid var(--bd)">
+            <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Message #${esc(t.title)}..." style="background:transparent;border:none;padding:0;resize:none"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:10px">
+              <button class="btn bsm" onclick="sendTixMsg(${t.id})">Send Message</button>
+            </div>
+          </div>`;
+        } else {
+          html += `<div class="empty" style="margin-top:20px">This ticket is closed.</div>`;
+        }
+        
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<div class="empty">Error loading ticket.</div>'; }
+    }
+
+    async function approvePurchase(tid) {
+      if (!confirm('Are you sure the payment was received? This will grant the rank instantly.')) return;
+      try {
+        // Find the order ID in the ticket description or messages
+        const d = await API(`/api/tickets/${tid}`);
+        const orderIdMatch = d.ticket.description.match(/Order ID: #(\d+)/);
+        if (!orderIdMatch) return toast('err', 'Could not find Order ID in ticket');
+        const oid = orderIdMatch[1];
+        
+        // Call Store API to approve
+        const storeUrl = 'https://store.hellcore.net/api/admin/orders/approve/' + oid;
+        const res = await fetch(storeUrl, { 
+          method: 'POST', 
+          headers: { 'X-Auth-Token': TOK } 
+        });
+        const rdata = await res.json();
+        if (rdata.ok) {
+          toast('ok', 'Payment Approved! Rank granted.');
+          await API(`/api/tickets/${tid}/msg`, { method: 'POST', body: { content: "✅ **Payment Verified!** Your rank has been granted. Thank you for supporting Hellcore Network!" } });
+          closeTix(tid);
+        } else {
+          throw new Error(rdata.error || 'Failed to approve');
+        }
+      } catch (e) { toast('err', e.message); }
+    }
+${f.category}</small></div>
            <button class="btn bred bxs" onclick="admPurgeThread(${f.id})"><svg class="ic" style="margin:0"><use href="#ic-trash"/></svg></button>
          </div>`).join('') || '<div class="empty">No threads to moderate.</div>';
       } catch (e) { }

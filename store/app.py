@@ -30,27 +30,25 @@ try:
 except ImportError:
     pass
 
-import stripe
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect
 
 app = Flask(__name__)
 
 # ═══════════════════════════════════════════════════════
-# STRIPE
+# CONFIG
 # ═══════════════════════════════════════════════════════
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
-STRIPE_PUB_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
-STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
+STORE_DOMAIN = os.environ.get("STORE_DOMAIN", "https://store.hellcore.net")
+UPI_ID = "lakshitdhirani@fam"
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION (shared with main site)
 # ═══════════════════════════════════════════════════════
 USE_MYSQL_AIVEN = os.environ.get("USE_MYSQL_AIVEN", "True").lower() == "true"
-AIVEN_HOST     = os.environ.get("AIVEN_HOST", "")
-AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", 19513))
-AIVEN_USER     = os.environ.get("AIVEN_USER", "")
-AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
-AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
+AIVEN_HOST     = os.environ.get("AIVEN_HOST", "").strip('"')
+AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", "19513").strip('"'))
+AIVEN_USER     = os.environ.get("AIVEN_USER", "").strip('"')
+AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "").strip('"')
+AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "").strip('"')
 
 SQLITE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'hellcore.db')
 _DB_MODE = "sqlite"
@@ -73,11 +71,11 @@ def try_connect():
             c.close()
             _DB_MODE = "mysql_aiven"
             print(f"[STORE] SUCCESS: Aiven MySQL connected.")
-            return
         except Exception as e:
             print(f"[STORE] ERROR: Aiven MySQL connection failed: {e}")
+            print(f"[STORE] DEBUG: Parameters used - Host: {AIVEN_HOST}, User: {AIVEN_USER}, DB: {AIVEN_DATABASE}")
             if is_prod:
-                print("[STORE] WARNING: Running in production but MySQL failed. Fallback to SQLite may result in missing data.")
+                print("[STORE] WARNING: Running in production but MySQL failed. LOGIN WILL NOT WORK.")
     
     # Check if local SQLite exists before fallback
     if os.path.exists(SQLITE_FILE):
@@ -136,6 +134,8 @@ def init_store_db():
     mysql = _DB_MODE != "sqlite"
     AI  = "AUTO_INCREMENT" if mysql else "AUTOINCREMENT"
     DT  = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+    D_TXT = "" if mysql else " DEFAULT ''"
+    D_JSON = "" if mysql else " DEFAULT '[]'"
 
     tables = [
 f"""CREATE TABLE IF NOT EXISTS hc_store_products(
@@ -146,8 +146,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_products(
   subcategory VARCHAR(30) DEFAULT '',
   price REAL NOT NULL,
   original_price REAL DEFAULT 0,
-  description TEXT DEFAULT '',
-  perks TEXT DEFAULT '[]',
+  description TEXT{D_TXT},
+  perks TEXT{D_JSON},
   icon VARCHAR(50) DEFAULT 'ic-star',
   color VARCHAR(20) DEFAULT '#FF512F',
   download_url VARCHAR(500) DEFAULT '',
@@ -163,16 +163,14 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_events(
   event_type VARCHAR(30) NOT NULL,
   product_id INTEGER,
   product_name VARCHAR(100) DEFAULT '',
-  metadata TEXT DEFAULT '',
+  metadata TEXT{D_TXT},
   ip_address VARCHAR(50) DEFAULT '',
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
-  stripe_session_id VARCHAR(255) DEFAULT '',
-  stripe_payment_id VARCHAR(255) DEFAULT '',
-  items TEXT DEFAULT '[]',
+  items TEXT{D_JSON},
   total REAL DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
   mc_username VARCHAR(50) DEFAULT '',
@@ -180,19 +178,22 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     ]
 
     for sql in tables:
-        try: c.execute(sql)
-        except Exception as e: print(f"  Store table warn: {e}")
+        except Exception as e:
+            print(f"[STORE] Table creation warning/error: {e}")
+    
+    db.commit() # Ensure tables are physically created before we query them
 
-    db.commit()
-
-    # Seed products if empty
-    c.execute("SELECT COUNT(*) as cnt FROM hc_store_products")
-    row = c.fetchone()
-    count = row['cnt'] if isinstance(row, dict) else row[0]
-    if count == 0:
-        seed_products(c, db)
-
-    c.close(); db.close()
+    try:
+        c.execute("SELECT COUNT(*) as count FROM hc_store_products")
+        row = c.fetchone()
+        count = row['count'] if isinstance(row, dict) else row[0]
+        if count == 0:
+            seed_products(c, db)
+    except Exception as e:
+        print(f"[STORE] Skipping seed: {e}")
+    
+    try: c.close(); db.close()
+    except: pass
     print("[STORE] Tables ready")
 
 def seed_products(c, db):
@@ -379,130 +380,112 @@ def cart_clear():
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
-# STRIPE CHECKOUT
+# TICKET CHECKOUT
 # ═══════════════════════════════════════════════════════
-@app.route("/api/checkout", methods=["POST"])
+@app.route("/api/checkout/ticket", methods=["POST"])
 @auth_required
-def create_checkout():
-    """Create a Stripe Checkout session from the user's cart."""
-    if not stripe.api_key:
-        return jsonify({"error": "Stripe is not configured. Contact an admin."}), 500
-
+def create_purchase_ticket():
+    """Create a Purchase Ticket and a pending order for the user's cart."""
     db = get_db(); c = db_cursor(db)
+    
+    # 1. Get Cart
     c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     cart_items = to_list(c.fetchall())
-    c.close(); db.close()
-
+    
     if not cart_items:
+        c.close(); db.close()
         return jsonify({"error": "Cart is empty"}), 400
 
-    # Build Stripe line items
-    line_items = []
-    for item in cart_items:
-        line_items.append({
-            "price_data": {
-                "currency": "usd",
-                "product_data": {
-                    "name": item["item_name"],
-                    "description": f"Hellcore Network — {item.get('gamemode', 'Global')}",
-                },
-                "unit_amount": int(float(item["item_price"]) * 100),  # cents
-            },
-            "quantity": 1,
-        })
+    total = sum(float(i["item_price"]) for i in cart_items)
+    items_summary = ", ".join([i["item_name"] for i in cart_items])
+    items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
+    mc_user = request.cu.get("mc_username", "Unknown")
 
     try:
-        # Create order record
-        db = get_db(); c = db_cursor(db)
-        total = sum(float(i["item_price"]) for i in cart_items)
-        items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
-
+        # 2. Create Order Record
         c.execute(f"""INSERT INTO hc_store_orders
             (user_id, items, total, status, mc_username)
             VALUES({phs(5)})""",
-            (request.cu["id"], items_json, total, "pending", request.cu.get("mc_username", "")))
+            (request.cu["id"], items_json, total, "pending_ticket", mc_user))
         order_id = c.lastrowid
-        db.commit()
 
-        # Create Stripe session
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=line_items,
-            mode="payment",
-            success_url=STORE_DOMAIN + f"/checkout/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order_id}",
-            cancel_url=STORE_DOMAIN + "/checkout/cancel",
-            metadata={
-                "order_id": str(order_id),
-                "user_id": str(request.cu["id"]),
-                "mc_username": request.cu.get("mc_username", ""),
-            },
-            customer_email=request.cu.get("email", ""),
-        )
+        # 3. Create Support Ticket (on main site DB schema)
+        title = f"[Purchase] {items_summary}"
+        desc = (f"Hello! I would like to purchase the following:\n\n"
+               f"Items: {items_summary}\n"
+               f"Total Price: ₹{total:.2f}\n"
+               f"Minecraft Username: {mc_user}\n\n"
+               f"Order ID: #{order_id}")
+        
+        c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category) VALUES({phs(4)})",
+                  (title, desc, request.cu["id"], "purchase"))
+        ticket_id = c.lastrowid
 
-        # Update order with session ID
-        c.execute(f"UPDATE hc_store_orders SET stripe_session_id={ph()} WHERE id={ph()}", (session.id, order_id))
+        # 4. Post Automated Staff Message with UPI Instructions
+        instr = (f"**[SYSTEM] Hello {request.cu['username']}!**\n\n"
+                 f"To complete your purchase of **{items_summary}**, please follow these steps:\n\n"
+                 f"1️⃣ Send **₹{total:.2f}** to our official UPI ID: `{UPI_ID}`\n"
+                 f"2️⃣ Once paid, please upload a **Screenshot** of the payment proof here.\n"
+                 f"3️⃣ Our staff will verify and grant your rank instantly!")
+        
+        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content) VALUES({phs(3)})",
+                  (ticket_id, 0, instr)) # 0 = System/Console UID
+
+        # Link order to ticket
+        c.execute(f"UPDATE hc_store_orders SET metadata={ph()} WHERE id={ph()}", 
+                  (json.dumps({"ticket_id": ticket_id}), order_id))
+        
+        # 5. Clear Cart
+        c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
+        
         db.commit(); c.close(); db.close()
 
-        # Track checkout event
-        track_event("checkout", None, f"Order #{order_id}", request.cu["id"], json.dumps({"total": total}))
+        # Track
+        track_event("ticket_checkout", order_id, items_summary, request.cu["id"], json.dumps({"total": total, "ticket_id": ticket_id}))
 
-        return jsonify({"url": session.url, "session_id": session.id})
+        return jsonify({"ok": True, "ticket_id": ticket_id, "order_id": order_id})
 
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
+        db.close()
+        return jsonify({"error": f"Failed to create ticket: {str(e)}"}), 500
 
-@app.route("/checkout/success")
-def checkout_success():
-    session_id = request.args.get("session_id", "")
-    order_id = request.args.get("order_id", "")
+@app.route("/api/admin/orders/approve/<int:order_id>", methods=["POST"])
+@admin_required
+def approve_order(order_id):
+    """Admin manually approves an order and grants the items."""
+    db = get_db(); c = db_cursor(db)
+    
+    # 1. Find Order
+    c.execute(f"SELECT * FROM hc_store_orders WHERE id={ph()}", (order_id,))
+    order = to_dict(c.fetchone())
+    if not order:
+        c.close(); db.close(); return jsonify({"error":"Order not found"}), 404
+    
+    if order["status"] == "completed":
+        c.close(); db.close(); return jsonify({"error":"Order already completed"}), 400
 
-    if session_id and order_id:
-        try:
-            # Verify with Stripe
-            session = stripe.checkout.Session.retrieve(session_id)
-            if session.payment_status == "paid":
-                db = get_db(); c = db_cursor(db)
-                c.execute(f"UPDATE hc_store_orders SET status='completed', stripe_payment_id={ph()} WHERE id={ph()}",
-                          (session.payment_intent, order_id))
-                # Clear user's cart
-                c.execute(f"DELETE FROM hc_cart WHERE user_id=(SELECT user_id FROM hc_store_orders WHERE id={ph()})", (order_id,))
-                db.commit(); c.close(); db.close()
-                track_event("payment_completed", None, f"Order #{order_id}", None, json.dumps({"payment_intent": session.payment_intent}))
-        except Exception as e:
-            print(f"[STORE] Checkout success verification error: {e}")
+    # 2. Mark as Completed
+    c.execute(f"UPDATE hc_store_orders SET status='completed' WHERE id={ph()}", (order_id,))
+    
+    # 3. Grant Ranks (Add to command queue if mc_username exists)
+    if order["mc_username"]:
+        items = json.loads(order["items"])
+        for item in items:
+            name = item["name"].lower()
+            rank_map = {"vip": "vip", "vip+": "vip-plus", "mvp": "mvp", "mvp+": "mvp-plus", "mvp++": "mvp-plus-plus"}
+            final_rank = ""
+            for k,v in rank_map.items():
+                if k in name: final_rank = v; break
+            
+            if final_rank:
+                cmd = f"lp user {order['mc_username']} parent add {final_rank}"
+                c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+    
+    db.commit(); c.close(); db.close()
+    track_event("admin_approve", order_id, f"Order #{order_id}", request.cu["id"])
+    return jsonify({"ok": True})
 
-    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
-
-@app.route("/checkout/cancel")
-def checkout_cancel():
-    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
-
-@app.route("/api/webhook/stripe", methods=["POST"])
-def stripe_webhook():
-    """Handle Stripe webhook events."""
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get("Stripe-Signature", "")
-    endpoint_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-
-    if endpoint_secret:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-    else:
-        event = json.loads(payload)
-
-    if event.get("type") == "checkout.session.completed":
-        session = event["data"]["object"]
-        order_id = session.get("metadata", {}).get("order_id")
-        if order_id:
-            db = get_db(); c = db_cursor(db)
-            c.execute(f"UPDATE hc_store_orders SET status='completed', stripe_payment_id={ph()} WHERE id={ph()}",
-                      (session.get("payment_intent",""), order_id))
-            db.commit(); c.close(); db.close()
-
-    return jsonify({"ok": True}), 200
 
 # ═══════════════════════════════════════════════════════
 # AUTH ROUTES (for store login/verification)
