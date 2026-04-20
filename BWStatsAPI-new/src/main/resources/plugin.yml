@@ -1,0 +1,19 @@
+name: BWStatsAPI
+version: 1.4.0
+main: com.bwstatsapi.BWStatsAPI
+api-version: "1.13"
+depend: [BedWars1058]
+softdepend: [Guilds, BedWars1058-GroupStats, LuckPerms]
+
+commands:
+  apikey:
+    description: Manage your BedWars API key
+    usage: /apikey <create|revoke|info|admin>
+
+permissions:
+  bwstatsapi.use:
+    description: Allows creating, revoking and viewing API keys
+    default: true
+  bwstatsapi.admin:
+    description: Allows access to the admin GUI
+    default: op

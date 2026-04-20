@@ -1,0 +1,31 @@
+# -----------------------------------------------
+#  BWStatsAPI  –  Configuration
+# -----------------------------------------------
+
+# Port the embedded HTTP server listens on.
+# Make sure this port is open / forwarded on your host.
+http-port: 7070
+
+# Bind address – use 0.0.0.0 to listen on all interfaces
+http-bind: "0.0.0.0"
+
+# Max simultaneous connections the server will accept
+http-max-connections: 50
+
+# How many threads the HTTP server uses
+http-threads: 4
+
+# Rate-limiting: max requests per minute per API key (0 = unlimited)
+rate-limit: 60
+
+# Whether to log every API request to console
+log-requests: false
+
+# Messages sent to players (supports & color codes)
+messages:
+  key-created: "&aYour API key has been created! &e%key%"
+  key-revoked: "&cYour API key has been revoked."
+  key-info: "&6Your current API key: &e%key%"
+  no-key: "&cYou don't have an API key. Use /apikey create"
+  already-has-key: "&cYou already have an API key. Use /apikey revoke first, then create again."
+  no-permission: "&cYou don't have permission to do that."
