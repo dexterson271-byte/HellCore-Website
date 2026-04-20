@@ -9,9 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://js.stripe.com/v3/"></script>
 
-  <meta name="description" content="Hellcore Network Store — Buy ranks, plugins, and more for the best Minecraft Bedwars & Skywars experience.">
-  <meta property="og:title" content="Hellcore Store — Ranks & Plugins">
-  <meta property="og:description" content="Get VIP, MVP, MVP++ ranks and premium plugins for Hellcore Network.">
+  <meta name="description" content="Hellcore Network Store — Buy ranks and more for the best Minecraft Bedwars & Skywars experience.">
+  <meta property="og:title" content="Hellcore Store — Ranks & More">
+  <meta property="og:description" content="Get VIP, MVP, MVP++ ranks and exclusive perks for Hellcore Network.">
   <meta property="og:image" content="https://hellcore.net/static/logo.png">
   <meta property="og:url" content="https://store.hellcore.net">
   <meta name="theme-color" content="#FF512F">
@@ -258,7 +258,7 @@
       <div class="nav-links">
         <button class="nb on" onclick="GO('home')"><svg class="ic"><use href="#ic-home"/></svg> Home</button>
         <button class="nb" onclick="GO('ranks')"><svg class="ic"><use href="#ic-star"/></svg> Ranks</button>
-        <button class="nb" onclick="GO('plugins')"><svg class="ic"><use href="#ic-package"/></svg> Plugins</button>
+
         <button class="nb" onclick="GO('cart')"><svg class="ic"><use href="#ic-cart"/></svg> Cart</button>
         <button class="nb" id="NB-ADMIN" style="display:none" onclick="GO('admin')"><svg class="ic"><use href="#ic-chart"/></svg> Admin</button>
       </div>
@@ -280,10 +280,10 @@
         <div class="hero">
           <div class="hero-badge"><span class="dot"></span> Official Hellcore Network Store</div>
           <h1>Power Up Your<br>Game Experience</h1>
-          <p>Unlock exclusive ranks, premium plugins, and special perks. Join thousands of players who've upgraded their Hellcore experience.</p>
+          <p>Unlock exclusive ranks and special perks. Join thousands of players who've upgraded their Hellcore experience.</p>
           <div class="hero-actions">
             <button class="btn" onclick="GO('ranks')"><svg class="ic"><use href="#ic-star"/></svg> Browse Ranks</button>
-            <button class="bto" onclick="GO('plugins')"><svg class="ic"><use href="#ic-package"/></svg> Explore Plugins</button>
+
           </div>
         </div>
 
@@ -294,12 +294,7 @@
           <div class="g5" id="FEATURED-RANKS"></div>
         </div>
 
-        <!-- Plugins Preview -->
-        <div style="margin-top:60px">
-          <div class="stitle">🧩 Popular Plugins</div>
-          <p class="ssub">Free and premium server plugins</p>
-          <div class="g3" id="FEATURED-PLUGINS"></div>
-        </div>
+
       </div>
     </div>
 
@@ -312,19 +307,7 @@
       </div>
     </div>
 
-    <!-- ═══ PLUGINS PAGE ═══ -->
-    <div class="pg" id="pg-plugins">
-      <div class="W">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">🧩 Plugin Marketplace</div>
-        <p class="ssub">Server plugins for your Minecraft network — free and premium</p>
-        <div class="tabs" id="PLUGIN-TABS">
-          <button class="tab ON" onclick="filterPlugins('all')">All</button>
-          <button class="tab" onclick="filterPlugins('free')">Free</button>
-          <button class="tab" onclick="filterPlugins('paid')">Paid</button>
-        </div>
-        <div class="g3" id="PLUGINS-GRID"></div>
-      </div>
-    </div>
+
 
     <!-- ═══ CART PAGE ═══ -->
     <div class="pg" id="pg-cart">
@@ -379,7 +362,7 @@
       <h2 style="margin-bottom:12px">Menu</h2>
       <button class="bto" style="width:100%;text-align:left" onclick="GO('home');closeModal('M-MOBILE')">🏠 Home</button>
       <button class="bto" style="width:100%;text-align:left" onclick="GO('ranks');closeModal('M-MOBILE')">⭐ Ranks</button>
-      <button class="bto" style="width:100%;text-align:left" onclick="GO('plugins');closeModal('M-MOBILE')">🧩 Plugins</button>
+
       <button class="bto" style="width:100%;text-align:left" onclick="GO('cart');closeModal('M-MOBILE')">🛒 Cart</button>
       <button class="bto" style="width:100%;text-align:left;display:none" id="MOB-ADMIN" onclick="GO('admin');closeModal('M-MOBILE')">📊 Admin</button>
     </div>
@@ -441,7 +424,7 @@ function GO(id) {
   ({
     home: loadHome,
     ranks: loadRanks,
-    plugins: () => loadPlugins(),
+
     cart: renderCart,
     admin: () => loadAdmin('overview'),
   })[id]?.();
@@ -523,7 +506,7 @@ async function loadProducts() {
 }
 
 function getRanks() { return PRODUCTS.filter(p => p.category === 'rank').sort((a,b) => a.sort_order - b.sort_order); }
-function getPlugins() { return PRODUCTS.filter(p => p.category === 'plugin').sort((a,b) => a.sort_order - b.sort_order); }
+
 
 function renderRankCard(p, featured = false) {
   const perks = (Array.isArray(p.perks) ? p.perks : []).map(pk => `<li>${esc(pk)}</li>`).join('');
@@ -542,29 +525,7 @@ function renderRankCard(p, featured = false) {
   </div>`;
 }
 
-function renderPluginCard(p) {
-  const perks = (Array.isArray(p.perks) ? p.perks : []);
-  const isFree = p.is_free || p.price <= 0;
-  return `<div class="plugin-card">
-    <div class="plugin-header">
-      <div class="plugin-icon" style="background:${p.color}15;color:${p.color}">
-        <svg class="ic" style="width:1.5rem;height:1.5rem"><use href="#${p.icon}"/></svg>
-      </div>
-      <div class="plugin-meta">
-        <h3>${esc(p.name)}</h3>
-        <span class="tag ${isFree ? 'tag-free' : 'tag-paid'}">${isFree ? 'Free' : '$' + p.price.toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="plugin-desc">${esc(p.description || '')}</div>
-    <div class="plugin-footer">
-      ${perks.length > 0 ? `<span style="color:var(--tx3);font-size:0.75rem">${perks.length} features</span>` : '<span></span>'}
-      ${isFree
-        ? `<button class="bto bsm" onclick="toast('ok','Download link coming soon!')"><svg class="ic"><use href="#ic-download"/></svg> Download</button>`
-        : `<button class="btn bsm" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g,"\\'")}',${p.price},'${p.subcategory}')"><svg class="ic"><use href="#ic-cart"/></svg> Buy</button>`
-      }
-    </div>
-  </div>`;
-}
+
 
 // ════════════════════════════════════════════════════════
 // HOME PAGE
@@ -572,8 +533,7 @@ function renderPluginCard(p) {
 function loadHome() {
   const ranks = getRanks();
   I('FEATURED-RANKS').innerHTML = ranks.map(r => renderRankCard(r, r.is_featured)).join('');
-  const plugins = getPlugins().slice(0, 3);
-  I('FEATURED-PLUGINS').innerHTML = plugins.map(renderPluginCard).join('');
+
 }
 
 // ════════════════════════════════════════════════════════
@@ -587,19 +547,7 @@ function loadRanks() {
 // ════════════════════════════════════════════════════════
 // PLUGINS PAGE
 // ════════════════════════════════════════════════════════
-function loadPlugins(filter = 'all') {
-  let plugins = getPlugins();
-  if (filter === 'free') plugins = plugins.filter(p => p.is_free || p.price <= 0);
-  if (filter === 'paid') plugins = plugins.filter(p => !p.is_free && p.price > 0);
-  I('PLUGINS-GRID').innerHTML = plugins.length
-    ? plugins.map(renderPluginCard).join('')
-    : '<div class="empty"><div class="empty-icon">🧩</div>No plugins in this category.</div>';
-}
-function filterPlugins(f) {
-  document.querySelectorAll('#PLUGIN-TABS .tab').forEach(t => t.classList.remove('ON'));
-  event.target.classList.add('ON');
-  loadPlugins(f);
-}
+
 
 // ════════════════════════════════════════════════════════
 // CART
@@ -778,7 +726,7 @@ function editProduct(p = null) {
   const name = prompt('Product Name:', p?.name || '');
   if (!name) return;
   const slug = prompt('Slug (url-friendly):', p?.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-  const category = prompt('Category (rank/plugin):', p?.category || 'rank');
+  const category = prompt('Category (e.g. rank):', p?.category || 'rank');
   const price = parseFloat(prompt('Price ($):', p?.price ?? '0'));
   const description = prompt('Description:', p?.description || '');
   const perksStr = prompt('Perks (comma-separated):', (p?.perks || []).join(', '));
