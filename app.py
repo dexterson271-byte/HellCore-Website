@@ -205,32 +205,6 @@ def seed_products(c, db):
          "The ultimate rank. Pink prestige, host private games, and exclusive everything.",
          '["[MVP++] Pink Tag","MVP++ Kit","25% Store Discount","All MVP+ Perks","Host Private Games","Exclusive Cosmetics","Monthly Crate"]',
          "ic-bolt", "#d946ef", 1, 5),
-
-        # ── PLUGINS (Placeholders) ──
-        ("BedWars1058 Config Pack", "bw-config-pack", "plugin", "bedwars", 0, 0,
-         "Pre-configured BedWars1058 setup with balanced gameplay, custom shops, and optimized arenas.",
-         '["Ready-to-use config","Balanced shop prices","Arena templates","Custom messages"]',
-         "ic-bed", "#FF512F", 0, 10),
-        ("SkyWars Engine", "skywars-engine", "plugin", "skywars", 4.99, 7.99,
-         "Full SkyWars plugin with kits, cages, loot tables, and leaderboard integration.",
-         '["Custom kits system","Cage selector","Loot tables","Leaderboard API","Auto-arena rotation"]',
-         "ic-cloud", "#38bdf8", 0, 11),
-        ("HellcoreSync", "hellcore-sync", "plugin", "global", 0, 0,
-         "Velocity proxy plugin for syncing player data across servers.",
-         '["Cross-server sync","Velocity compatible","Lightweight","Open source"]',
-         "ic-refresh", "#a78bfa", 0, 12),
-        ("Custom Enchants Pack", "custom-enchants", "plugin", "global", 2.99, 4.99,
-         "50+ custom enchantments with balanced progression and visual effects.",
-         '["50+ enchantments","Custom anvil GUI","Enchant scrolls","XP balancing"]',
-         "ic-bolt", "#fbbf24", 0, 13),
-        ("Economy Core", "economy-core", "plugin", "global", 0, 0,
-         "Server economy system with shops, auctions, and player trading.",
-         '["Player shops","Auction house","Admin shop","Trade system","API for devs"]',
-         "ic-coins", "#10b981", 0, 14),
-        ("Anti-Cheat Shield", "anticheat-shield", "plugin", "global", 9.99, 14.99,
-         "Advanced anti-cheat with ML-based detection and custom punishment system.",
-         '["Movement checks","Combat checks","Auto-ban system","Staff alerts","Low false-positive rate"]',
-         "ic-shield", "#ef4444", 0, 15),
     ]
 
     for p in products:
