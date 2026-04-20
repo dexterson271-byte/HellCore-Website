@@ -1,7 +1,7 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║      HELLCORE STORE — Flask Backend (store.hellcore.net)    ║
-║  pip install flask stripe mysql-connector-python gunicorn   ║
+║  pip install flask mysql-connector-python gunicorn          ║
 ║  python app.py  →  http://localhost:5001                    ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -44,11 +44,11 @@ UPI_ID = "lakshitdhirani@fam"
 # DATABASE CONFIGURATION (shared with main site)
 # ═══════════════════════════════════════════════════════
 USE_MYSQL_AIVEN = os.environ.get("USE_MYSQL_AIVEN", "True").lower() == "true"
-AIVEN_HOST     = os.environ.get("AIVEN_HOST", "").strip('"')
-AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", "19513").strip('"'))
-AIVEN_USER     = os.environ.get("AIVEN_USER", "").strip('"')
-AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "").strip('"')
-AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "").strip('"')
+AIVEN_HOST     = os.environ.get("AIVEN_HOST", "")
+AIVEN_PORT     = int(os.environ.get("AIVEN_PORT", 19513))
+AIVEN_USER     = os.environ.get("AIVEN_USER", "")
+AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
+AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
 
 SQLITE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'hellcore.db')
 _DB_MODE = "sqlite"
@@ -71,7 +71,7 @@ def try_connect():
             c.close()
             _DB_MODE = "mysql_aiven"
             print(f"[STORE] SUCCESS: Aiven MySQL connected.")
-        except Exception as e:
+            return
             print(f"[STORE] ERROR: Aiven MySQL connection failed: {e}")
             print(f"[STORE] DEBUG: Parameters used - Host: {AIVEN_HOST}, User: {AIVEN_USER}, DB: {AIVEN_DATABASE}")
             if is_prod:
@@ -134,8 +134,6 @@ def init_store_db():
     mysql = _DB_MODE != "sqlite"
     AI  = "AUTO_INCREMENT" if mysql else "AUTOINCREMENT"
     DT  = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-    D_TXT = "" if mysql else " DEFAULT ''"
-    D_JSON = "" if mysql else " DEFAULT '[]'"
 
     tables = [
 f"""CREATE TABLE IF NOT EXISTS hc_store_products(
@@ -146,8 +144,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_products(
   subcategory VARCHAR(30) DEFAULT '',
   price REAL NOT NULL,
   original_price REAL DEFAULT 0,
-  description TEXT{D_TXT},
-  perks TEXT{D_JSON},
+  description TEXT DEFAULT '',
+  perks TEXT DEFAULT '[]',
   icon VARCHAR(50) DEFAULT 'ic-star',
   color VARCHAR(20) DEFAULT '#FF512F',
   download_url VARCHAR(500) DEFAULT '',
@@ -163,14 +161,16 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_events(
   event_type VARCHAR(30) NOT NULL,
   product_id INTEGER,
   product_name VARCHAR(100) DEFAULT '',
-  metadata TEXT{D_TXT},
+  metadata TEXT DEFAULT '',
   ip_address VARCHAR(50) DEFAULT '',
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
-  items TEXT{D_JSON},
+  stripe_session_id VARCHAR(255) DEFAULT '',
+  stripe_payment_id VARCHAR(255) DEFAULT '',
+  items TEXT DEFAULT '[]',
   total REAL DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
   mc_username VARCHAR(50) DEFAULT '',
@@ -178,24 +178,19 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     ]
 
     for sql in tables:
-        try:
-            c.execute(sql)
-        except Exception as e:
-            print(f"[STORE] Table creation warning/error: {e}")
-    
-    db.commit() # Ensure tables are physically created before we query them
+        try: c.execute(sql)
+        except Exception as e: print(f"  Store table warn: {e}")
 
-    try:
-        c.execute("SELECT COUNT(*) as count FROM hc_store_products")
-        row = c.fetchone()
-        count = row['count'] if isinstance(row, dict) else row[0]
-        if count == 0:
-            seed_products(c, db)
-    except Exception as e:
-        print(f"[STORE] Skipping seed: {e}")
-    
-    try: c.close(); db.close()
-    except: pass
+    db.commit()
+
+    # Seed products if empty
+    c.execute("SELECT COUNT(*) as cnt FROM hc_store_products")
+    row = c.fetchone()
+    count = row['cnt'] if isinstance(row, dict) else row[0]
+    if count == 0:
+        seed_products(c, db)
+
+    c.close(); db.close()
     print("[STORE] Tables ready")
 
 def seed_products(c, db):
