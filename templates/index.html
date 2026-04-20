@@ -1038,18 +1038,104 @@
       letter-spacing: 1px;
     }
 
-    /* ═══════ TICKETS ═══════ */
+    /* ═══════ TICKETS (DISCORD UI) ═══════ */
     .tmsg {
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 12px 0;
-      border-left: 4px solid var(--bd);
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      margin: 4px 0;
+      transition: background 0.2s;
     }
 
-    .tmsg.mine {
-      background: rgba(255, 81, 47, 0.05);
+    .tmsg:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tmsg-av {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--p2);
+      flex-shrink: 0;
+      border: 1px solid var(--bd);
+      overflow: hidden;
+    }
+
+    .tmsg-av img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .tmsg-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tmsg-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .tmsg-user {
+      font-weight: 700;
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .tmsg-user:hover {
+      text-decoration: underline;
+    }
+
+    .tmsg-time {
+      font-size: 0.72rem;
+      color: var(--tx3);
+      font-weight: 500;
+    }
+
+    .tmsg-content {
+      color: #dbdee1;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* System Embed Style */
+    .tmsg.system {
+      background: rgba(43, 45, 49, 0.3);
       border-left: 4px solid var(--g);
+      border-radius: 4px 8px 8px 4px;
+      margin-left: 58px;
+      padding: 16px;
+      display: block; /* Overrides flex for embeds */
+    }
+
+    .tmsg.system .tmsg-header {
+      margin-bottom: 8px;
+    }
+
+    .tmsg-img {
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--bd);
+      max-width: 100%;
+      max-height: 400px;
+      cursor: zoom-in;
+    }
+
+    .tmsg-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: var(--g);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      margin-left: 4px;
     }
 
     /* ═══════ HERO ═══════ */
@@ -4717,6 +4803,18 @@
       genCap('LG'); genCap('RG');
       checkAnn();
 
+      // Deep Linking
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get('page');
+      const tid = params.get('id');
+      if (page === 'tickets') {
+        if (tid) {
+          setTimeout(() => openTix(tid), 300);
+        } else {
+          GO('tickets');
+        }
+      }
+
       // Close overlay on backdrop click
       document.querySelectorAll('.ov').forEach(o => {
         o.addEventListener('click', e => { if (e.target === o) o.classList.remove('OPEN'); });
@@ -6223,11 +6321,9 @@
   </div>`).join('');
     }
     async function openTix(id) {
-      // 🚨 SMART ROUTING: If we are not on the tickets page, go there first
       const pg = I('pg-tickets');
       if (!pg || !pg.classList.contains('ON')) {
         GO('tickets');
-        // Give the DOM a tiny moment to switch
         setTimeout(() => openTix(id), 50);
         return;
       }
@@ -6240,35 +6336,80 @@
       try {
         const d = await API(`/api/tickets/${id}`);
         const t = d.ticket, canCl = ME && (isStaff() || ME.id === t.author_id);
-        el.innerHTML = `<div class="p" style="margin-bottom:13px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-        <div>
-          <h2 style="font-family:'Oxanium',sans-serif;color:var(--g)">${esc(t.title)}</h2>
-          <div style="font-size:.73rem;color:var(--tx2);margin-top:4px">${t.category} · ${fmtD(t.created_at)} · By ${esc(t.author_name)}
-            · <span style="color:${t.status === 'open' ? 'var(--grn)' : 'var(--r2)'};font-weight:700">${t.status.toUpperCase()}</span></div>
+        
+        let html = `
+        <div style="padding:16px;border-bottom:1px solid var(--bd);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.4rem">${esc(t.title)}</h2>
+            <div style="font-size:.75rem;color:var(--tx3);margin-top:2px">
+              ID: #${t.id} · Category: <span style="color:var(--g);font-weight:700">${t.category.toUpperCase()}</span> · 
+              Status: <span style="color:${t.status === 'open' ? 'var(--grn)' : 'var(--r2)'};font-weight:800">${t.status.toUpperCase()}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            ${canCl && t.status === 'open' ? `<button class="bto bsm" style="color:var(--r2);border-color:var(--r2)" onclick="closeTix(${t.id})">Close Ticket</button>` : ''}
+            ${isAdmin() ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}
+          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${canCl && t.status === 'open' ? `<button class="bto bsm" style="color:var(--r2);border-color:var(--r2)" onclick="closeTix(${t.id})">Close Ticket</button>` : ''}
-          ${isAdmin() ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}
-        </div>
-      </div>
-      <div class="dv"></div>
-      <p style="color:var(--tx2);line-height:1.85">${esc(t.description).replace(/\n/g, '<br>')}</p>
-    </div>
-    <div style="color:var(--g);font-family:'Oxanium',sans-serif;font-size:.84rem;margin-bottom:8px">Messages</div>
-    ${d.messages.map(m => {
-          const mine = ME && m.author_id === ME.id; return `<div class="tmsg${mine ? ' mine' : ''}">
-      <div style="font-size:.7rem;color:var(--tx2);margin-bottom:4px"><strong style="color:var(--tx)">${esc(m.author_name)}</strong>
-        <span class="rb rb-${m.author_role}" style="margin-left:3px">${m.author_role}</span>
-        · ${fmtD(m.created_at)}</div>
-      <p style="font-size:.83rem">${esc(m.content).replace(/\n/g, '<br>')}</p>
-    </div>`;
-        }).join('')}
-    ${t.status === 'open' ? `<div class="p" style="margin-top:11px">
-      <div class="fg"><textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message…"></textarea></div>
-      <button class="btn" onclick="sendTixMsg(${t.id})">Send</button>
-    </div>`: '<div class="empty">This ticket is closed.</div>'}`;
-      } catch (e) { el.innerHTML = '<div class="empty" style="color:var(--r2)">Could not load.</div>'; }
+        <div style="padding:0 16px 16px">
+          <div class="tmsg system">
+            <div class="tmsg-header">
+              <span class="tmsg-user" style="color:var(--g)">[TICKET DESCRIPTION]</span>
+            </div>
+            <div class="tmsg-content">${esc(t.description).replace(/\n/g, '<br>')}</div>
+          </div>
+          
+          <div style="margin:24px 0 12px;font-size:.7rem;color:var(--tx3);font-weight:800;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+            Message History
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+          </div>
+          
+          ${d.messages.map(m => {
+            const isSys = m.author_id === 1;
+            const av = isSys ? '/main-static/logo.png' : `https://mc-heads.net/avatar/${m.mc_username || m.author_name}/42`;
+            const name = isSys ? 'Hellcore System' : esc(m.author_name);
+            
+            if (isSys) {
+              return `<div class="tmsg system">
+                <div class="tmsg-header">
+                  <span class="tmsg-user" style="color:var(--g)">${name}</span>
+                  <span class="tmsg-badge">System</span>
+                  <span class="tmsg-time">${fmtD(m.created_at)}</span>
+                </div>
+                <div class="tmsg-content">${esc(m.content).replace(/\n/g, '<br>')}</div>
+              </div>`;
+            }
+            
+            return `<div class="tmsg">
+              <div class="tmsg-av"><img src="${av}" alt=""></div>
+              <div class="tmsg-main">
+                <div class="tmsg-header">
+                  <span class="tmsg-user">${name}</span>
+                  <span class="rb rb-${m.author_role}" style="font-size:0.6rem">${m.author_role}</span>
+                  <span class="tmsg-time">${fmtD(m.created_at)}</span>
+                </div>
+                <div class="tmsg-content">${esc(m.content).replace(/\n/g, '<br>')}</div>
+                ${m.image_url ? `<img src="${m.image_url}" class="tmsg-img" onclick="window.open(this.src)">` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+          
+          ${t.status === 'open' ? `
+          <div style="margin-top:24px;background:rgba(0,0,0,0.2);border:1px solid var(--bd);border-radius:12px;padding:16px">
+            <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Message #${t.title}..." style="background:transparent;border:none;padding:0;resize:none"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+              <div style="display:flex;gap:8px">
+                <input type="file" id="TIX-IMG" style="display:none" accept="image/*" onchange="I('TIX-IMG-NM').textContent = this.files[0].name">
+                <button class="bto bsm" onclick="I('TIX-IMG').click()"><svg class="ic"><use href="#ic-plus"/></svg> Attach Screenshot</button>
+                <span id="TIX-IMG-NM" style="font-size:.7rem;color:var(--tx3);display:flex;align-items:center"></span>
+              </div>
+              <button class="btn bsm" onclick="sendTixMsg(${t.id})">Send Message</button>
+            </div>
+          </div>` : '<div class="empty">This ticket is closed.</div>'}
+        </div>`;
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<div class="empty" style="color:var(--r2)">Could not load ticket.</div>'; }
     }
     function closeTixD() { I('TIX-LIST').style.display = ''; I('TIX-DET').style.display = 'none'; loadTix(); }
     async function submitTix() {
@@ -6282,9 +6423,28 @@
       catch (e) { toast('err', e.message); }
     }
     async function sendTixMsg(id) {
-      const c = V('TIX-RPLY')?.trim(); if (!c) return;
-      try { await API(`/api/tickets/${id}/msg`, { method: 'POST', body: { content: c } }); openTix(id); }
-      catch (e) { toast('err', e.message); }
+      const c = V('TIX-RPLY')?.trim();
+      const file = I('TIX-IMG')?.files[0];
+      if (!c && !file) return;
+
+      toast('info', 'Sending message...');
+      
+      let base64 = null;
+      if (file) {
+        base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      try {
+        await API(`/api/tickets/${id}/msg`, { 
+          method: 'POST', 
+          body: { content: c, image: base64 } 
+        });
+        openTix(id);
+      } catch (e) { toast('err', e.message); }
     }
     async function closeTix(id) { await API(`/api/tickets/${id}/close`, { method: 'POST' }); toast('ok', 'Ticket closed.'); openTix(id); }
     async function delTix(id) { if (!confirm('Delete ticket?')) return; await API(`/api/tickets/${id}`, { method: 'DELETE' }); closeTixD(); toast('ok', 'Deleted.'); }

@@ -37,6 +37,7 @@ import re
 import traceback
 import secrets
 import io
+import base64
 import threading
 import random
 import datetime as dt
@@ -346,6 +347,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
   ticket_id INTEGER NOT NULL,
   author_id INTEGER NOT NULL,
   content TEXT NOT NULL,
+  image_url VARCHAR(255) DEFAULT '',
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ads(
@@ -413,6 +415,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
     for col in ["is_pinned", "is_locked"]:
         try: c.execute(f"ALTER TABLE hc_forums ADD COLUMN {col} INTEGER DEFAULT 0")
         except: pass
+
+    # MIGRATION: Add image_url to ticket messages
+    try: c.execute("ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''")
+    except: pass
 
     db.commit()
 
@@ -917,14 +923,41 @@ def ticket_get(tid):
 @auth_required
 def ticket_msg(tid):
     d = request.get_json(force=True) or {}
-    if not d.get("content"): return jsonify({"error":"Content required"}), 400
+    content = d.get("content", "").strip()
+    img_data = d.get("image") # base64 string
+    
+    if not content and not img_data:
+        return jsonify({"error":"Content or image required"}), 400
+        
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: db.close(); return jsonify({"error":"Not found"}), 404
     if t["author_id"] != u["id"] and u["role"] not in STAFF_ROLES:
         db.close(); return jsonify({"error":"Forbidden"}), 403
-    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content) VALUES({phs(3)})",
-              (tid, u["id"], d["content"]))
+        
+    img_url = ""
+    if img_data:
+        try:
+            # Handle base64 image
+            if "," in img_data: img_data = img_data.split(",")[1]
+            ext = "png" # default
+            if "image/jpeg" in img_data: ext = "jpg"
+            elif "image/gif" in img_data: ext = "gif"
+            
+            fname = f"tix_{tid}_{u['id']}_{int(time.time())}.{ext}"
+            up_dir = os.path.join(app.static_folder, 'uploads', 'tickets')
+            os.makedirs(up_dir, exist_ok=True)
+            fpath = os.path.join(up_dir, fname)
+            
+            with open(fpath, "wb") as fh:
+                fh.write(base64.b64decode(img_data))
+            img_url = f"/static/uploads/tickets/{fname}"
+        except Exception as e:
+            print(f"[TICKETS] Image Save Error: {e}")
+            # Continue without image if it fails
+            
+    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,image_url) VALUES({phs(4)})",
+              (tid, u["id"], content, img_url))
     db.commit(); c.close(); db.close()
     return jsonify({"ok":True})
 
