@@ -7,6 +7,7 @@
   <link rel="icon" href="/main-static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
 
   <meta name="description" content="Hellcore Network Store — Buy ranks and more for the best Minecraft Bedwars & Skywars experience.">
   <meta property="og:title" content="Hellcore Store — Ranks & More">
@@ -374,7 +375,7 @@
 let ME = null;
 let PRODUCTS = [];
 let CART = [];
-
+const STRIPE_KEY = '{{ stripe_pub_key }}';
 const ADMIN_ROLES = ['helper','mod','dev','admin','owner','founder'];
 const MAIN_SITE = 'https://hellcore.net';
 
@@ -596,7 +597,7 @@ async function renderCart() {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="bto bsm" onclick="clearCart()">🗑 Clear Cart</button>
-        <button class="btn" style="flex:1" onclick="checkout()"><svg class="ic"><use href="#ic-ticket"/></svg> Open Purchase Ticket</button>
+        <button class="btn" style="flex:1" onclick="checkout()"><svg class="ic"><use href="#ic-check"/></svg> Checkout with Stripe</button>
       </div>
     </div>`;
     updateCartCount();
@@ -616,16 +617,13 @@ async function clearCart() {
 
 async function checkout() {
   if (!ME) { openModal('M-LOGIN'); return; }
+  if (!STRIPE_KEY) { toast('err', 'Stripe is not configured yet.'); return; }
   try {
-    toast('loading', 'Opening your purchase ticket...');
     const d = await API('/api/checkout', { method: 'POST' });
-    if (d.ok && d.redirect_url) {
-      toast('ok', 'Ticket created! Redirecting...');
-      setTimeout(() => {
-        window.location.href = d.redirect_url;
-      }, 1500);
+    if (d.url) {
+      window.location.href = d.url;
     } else {
-      toast('err', d.error || 'Could not create checkout ticket');
+      toast('err', 'Could not create checkout session');
     }
   } catch (e) { toast('err', e.message); }
 }
@@ -750,7 +748,15 @@ async function deleteProduct(id, name) {
 // ════════════════════════════════════════════════════════
 // CHECKOUT SUCCESS HANDLER
 // ════════════════════════════════════════════════════════
-
+function checkPaymentSuccess() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('session_id')) {
+    toast('ok', '🎉 Payment successful! Your items are being processed.');
+    // Clean URL
+    history.replaceState({}, '', '/');
+    updateCartCount();
+  }
+}
 
 // ════════════════════════════════════════════════════════
 // INIT
@@ -759,6 +765,7 @@ async function init() {
   await loadProducts();
   await checkAuth();
   loadHome();
+  checkPaymentSuccess();
 
   // Route based on URL
   const path = window.location.pathname.substring(1).split('/')[0];

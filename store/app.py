@@ -1,7 +1,7 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║      HELLCORE STORE — Flask Backend (store.hellcore.net)    ║
-║  pip install flask mysql-connector-python gunicorn          ║
+║  pip install flask stripe mysql-connector-python gunicorn   ║
 ║  python app.py  →  http://localhost:5001                    ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -30,14 +30,17 @@ try:
 except ImportError:
     pass
 
-
+import stripe
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect
 
 app = Flask(__name__)
 
+# ═══════════════════════════════════════════════════════
+# STRIPE
+# ═══════════════════════════════════════════════════════
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUB_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
 STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
-MAIN_SITE_URL  = os.environ.get("MAIN_SITE_URL", "https://hellcore.net")
-UPI_ID         = "lakshitdhirani@fam"
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION (shared with main site)
@@ -167,7 +170,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_events(
 f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
-  ticket_id INTEGER DEFAULT 0,
+  stripe_session_id VARCHAR(255) DEFAULT '',
+  stripe_payment_id VARCHAR(255) DEFAULT '',
   items TEXT DEFAULT '[]',
   total REAL DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
@@ -291,7 +295,7 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 @app.route("/")
 def index():
-    return render_template("store.html")
+    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
 
 @app.route("/static/<path:f>")
 def static_f(f):
@@ -375,67 +379,128 @@ def cart_clear():
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
-# TICKET-BASED CHECKOUT
+# STRIPE CHECKOUT
 # ═══════════════════════════════════════════════════════
 @app.route("/api/checkout", methods=["POST"])
 @auth_required
-def create_ticket_checkout():
-    """Create a purchase ticket and link it to an order."""
+def create_checkout():
+    """Create a Stripe Checkout session from the user's cart."""
+    if not stripe.api_key:
+        return jsonify({"error": "Stripe is not configured. Contact an admin."}), 500
+
     db = get_db(); c = db_cursor(db)
-    
-    # Get cart items
     c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     cart_items = to_list(c.fetchall())
-    
+    c.close(); db.close()
+
     if not cart_items:
-        c.close(); db.close()
         return jsonify({"error": "Cart is empty"}), 400
 
+    # Build Stripe line items
+    line_items = []
+    for item in cart_items:
+        line_items.append({
+            "price_data": {
+                "currency": "usd",
+                "product_data": {
+                    "name": item["item_name"],
+                    "description": f"Hellcore Network — {item.get('gamemode', 'Global')}",
+                },
+                "unit_amount": int(float(item["item_price"]) * 100),  # cents
+            },
+            "quantity": 1,
+        })
+
     try:
+        # Create order record
+        db = get_db(); c = db_cursor(db)
         total = sum(float(i["item_price"]) for i in cart_items)
-        items_desc = ", ".join([f"{i['item_name']} (${i['item_price']})" for i in cart_items])
         items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
 
-        # 1. Create Ticket
-        title = f"[PURCHASE] {cart_items[0]['item_name']}" + (f" (+{len(cart_items)-1} more)" if len(cart_items) > 1 else "")
-        description = f"Purchase Intent for: {items_desc}\nTotal Amount: ₹{int(total * 83)} (calculated at 1 USD = 83 INR)"
-        
-        c.execute(f"INSERT INTO hc_tickets(title, description, author_id, category) VALUES({phs(4)})",
-                  (title, description, request.cu["id"], "purchase"))
-        ticket_id = c.lastrowid
-        
-        # 2. Add Payment Instructions from System
-        instr = f"Hello! To complete your purchase, please pay **₹{int(total * 83)}** to UPI ID: **{UPI_ID}**.\n\n" \
-                f"Once paid, please **upload a screenshot** of the success message here. Our staff will verify and grant your rank instantly!"
-        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id, author_id, content) VALUES({phs(3)})",
-                  (ticket_id, 1, instr)) # Author ID 1 is usually System/Admin
-
-        # 3. Create Order Record
         c.execute(f"""INSERT INTO hc_store_orders
-            (user_id, items, total, status, mc_username, ticket_id)
-            VALUES({phs(6)})""",
-            (request.cu["id"], items_json, total, "ticket_open", request.cu.get("mc_username", ""), ticket_id))
+            (user_id, items, total, status, mc_username)
+            VALUES({phs(5)})""",
+            (request.cu["id"], items_json, total, "pending", request.cu.get("mc_username", "")))
         order_id = c.lastrowid
-        
-        # 4. Clear Cart
-        c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
-        
+        db.commit()
+
+        # Create Stripe session
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=line_items,
+            mode="payment",
+            success_url=STORE_DOMAIN + f"/checkout/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order_id}",
+            cancel_url=STORE_DOMAIN + "/checkout/cancel",
+            metadata={
+                "order_id": str(order_id),
+                "user_id": str(request.cu["id"]),
+                "mc_username": request.cu.get("mc_username", ""),
+            },
+            customer_email=request.cu.get("email", ""),
+        )
+
+        # Update order with session ID
+        c.execute(f"UPDATE hc_store_orders SET stripe_session_id={ph()} WHERE id={ph()}", (session.id, order_id))
         db.commit(); c.close(); db.close()
-        
-        # Track
-        track_event("checkout_ticket", None, f"Order #{order_id}", request.cu["id"], json.dumps({"total": total, "ticket_id": ticket_id}))
-        
-        return jsonify({
-            "ok": True, 
-            "ticket_id": ticket_id, 
-            "redirect_url": f"{MAIN_SITE_URL}/?page=tickets&id={ticket_id}"
-        })
+
+        # Track checkout event
+        track_event("checkout", None, f"Order #{order_id}", request.cu["id"], json.dumps({"total": total}))
+
+        return jsonify({"url": session.url, "session_id": session.id})
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
 
+@app.route("/checkout/success")
+def checkout_success():
+    session_id = request.args.get("session_id", "")
+    order_id = request.args.get("order_id", "")
 
+    if session_id and order_id:
+        try:
+            # Verify with Stripe
+            session = stripe.checkout.Session.retrieve(session_id)
+            if session.payment_status == "paid":
+                db = get_db(); c = db_cursor(db)
+                c.execute(f"UPDATE hc_store_orders SET status='completed', stripe_payment_id={ph()} WHERE id={ph()}",
+                          (session.payment_intent, order_id))
+                # Clear user's cart
+                c.execute(f"DELETE FROM hc_cart WHERE user_id=(SELECT user_id FROM hc_store_orders WHERE id={ph()})", (order_id,))
+                db.commit(); c.close(); db.close()
+                track_event("payment_completed", None, f"Order #{order_id}", None, json.dumps({"payment_intent": session.payment_intent}))
+        except Exception as e:
+            print(f"[STORE] Checkout success verification error: {e}")
+
+    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
+
+@app.route("/checkout/cancel")
+def checkout_cancel():
+    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
+
+@app.route("/api/webhook/stripe", methods=["POST"])
+def stripe_webhook():
+    """Handle Stripe webhook events."""
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get("Stripe-Signature", "")
+    endpoint_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+    if endpoint_secret:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+    else:
+        event = json.loads(payload)
+
+    if event.get("type") == "checkout.session.completed":
+        session = event["data"]["object"]
+        order_id = session.get("metadata", {}).get("order_id")
+        if order_id:
+            db = get_db(); c = db_cursor(db)
+            c.execute(f"UPDATE hc_store_orders SET status='completed', stripe_payment_id={ph()} WHERE id={ph()}",
+                      (session.get("payment_intent",""), order_id))
+            db.commit(); c.close(); db.close()
 
     return jsonify({"ok": True}), 200
 
