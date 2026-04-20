@@ -178,6 +178,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     ]
 
     for sql in tables:
+        try:
+            c.execute(sql)
         except Exception as e:
             print(f"[STORE] Table creation warning/error: {e}")
     
