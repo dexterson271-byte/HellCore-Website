@@ -593,8 +593,9 @@ def ads_watch():
         amt = int(res["label"].split()[0])
         c.execute(f"UPDATE hc_users SET xp = IFNULL(xp, 0) + {ph()} WHERE id={ph()}", (amt, u["id"]))
     elif "VIP" in res["label"]:
-        # In a real app, this would update hc_users.role or add to an expires table
-        pass
+        # Award VIP role for permanent wins
+        if "PERMANENT" in res["label"]:
+            c.execute(f"UPDATE hc_users SET role='vip' WHERE id={ph()} AND (role='user' OR role='' OR role IS NULL)", (u["id"],))
 
     db.commit(); c.close(); db.close()
 
