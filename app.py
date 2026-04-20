@@ -30,15 +30,14 @@ try:
 except ImportError:
     pass
 
+
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect
 
 app = Flask(__name__)
 
-# ═══════════════════════════════════════════════════════
-# CONFIG
-# ═══════════════════════════════════════════════════════
-STORE_DOMAIN = os.environ.get("STORE_DOMAIN", "https://store.hellcore.net")
-UPI_ID = "lakshitdhirani@fam"
+STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
+MAIN_SITE_URL  = os.environ.get("MAIN_SITE_URL", "https://hellcore.net")
+UPI_ID         = "lakshitdhirani@fam"
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION (shared with main site)
@@ -72,10 +71,10 @@ def try_connect():
             _DB_MODE = "mysql_aiven"
             print(f"[STORE] SUCCESS: Aiven MySQL connected.")
             return
+        except Exception as e:
             print(f"[STORE] ERROR: Aiven MySQL connection failed: {e}")
-            print(f"[STORE] DEBUG: Parameters used - Host: {AIVEN_HOST}, User: {AIVEN_USER}, DB: {AIVEN_DATABASE}")
             if is_prod:
-                print("[STORE] WARNING: Running in production but MySQL failed. LOGIN WILL NOT WORK.")
+                print("[STORE] WARNING: Running in production but MySQL failed. Fallback to SQLite may result in missing data.")
     
     # Check if local SQLite exists before fallback
     if os.path.exists(SQLITE_FILE):
@@ -168,8 +167,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_events(
 f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
-  stripe_session_id VARCHAR(255) DEFAULT '',
-  stripe_payment_id VARCHAR(255) DEFAULT '',
+  ticket_id INTEGER DEFAULT 0,
   items TEXT DEFAULT '[]',
   total REAL DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
@@ -377,15 +375,15 @@ def cart_clear():
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
-# TICKET CHECKOUT
+# TICKET-BASED CHECKOUT
 # ═══════════════════════════════════════════════════════
-@app.route("/api/checkout/ticket", methods=["POST"])
+@app.route("/api/checkout", methods=["POST"])
 @auth_required
-def create_purchase_ticket():
-    """Create a Purchase Ticket and a pending order for the user's cart."""
+def create_ticket_checkout():
+    """Create a purchase ticket and link it to an order."""
     db = get_db(); c = db_cursor(db)
     
-    # 1. Get Cart
+    # Get cart items
     c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     cart_items = to_list(c.fetchall())
     
@@ -393,96 +391,53 @@ def create_purchase_ticket():
         c.close(); db.close()
         return jsonify({"error": "Cart is empty"}), 400
 
-    total = sum(float(i["item_price"]) for i in cart_items)
-    items_summary = ", ".join([i["item_name"] for i in cart_items])
-    items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
-    mc_user = request.cu.get("mc_username", "Unknown")
-
     try:
-        # 2. Create Order Record
-        c.execute(f"""INSERT INTO hc_store_orders
-            (user_id, items, total, status, mc_username)
-            VALUES({phs(5)})""",
-            (request.cu["id"], items_json, total, "pending_ticket", mc_user))
-        order_id = c.lastrowid
+        total = sum(float(i["item_price"]) for i in cart_items)
+        items_desc = ", ".join([f"{i['item_name']} (${i['item_price']})" for i in cart_items])
+        items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
 
-        # 3. Create Support Ticket (on main site DB schema)
-        title = f"[Purchase] {items_summary}"
-        desc = (f"Hello! I would like to purchase the following:\n\n"
-               f"Items: {items_summary}\n"
-               f"Total Price: ₹{total:.2f}\n"
-               f"Minecraft Username: {mc_user}\n\n"
-               f"Order ID: #{order_id}")
+        # 1. Create Ticket
+        title = f"[PURCHASE] {cart_items[0]['item_name']}" + (f" (+{len(cart_items)-1} more)" if len(cart_items) > 1 else "")
+        description = f"Purchase Intent for: {items_desc}\nTotal Amount: ₹{int(total * 83)} (calculated at 1 USD = 83 INR)"
         
-        c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category) VALUES({phs(4)})",
-                  (title, desc, request.cu["id"], "purchase"))
+        c.execute(f"INSERT INTO hc_tickets(title, description, author_id, category) VALUES({phs(4)})",
+                  (title, description, request.cu["id"], "purchase"))
         ticket_id = c.lastrowid
-
-        # 4. Post Automated Staff Message with UPI Instructions
-        instr = (f"**[SYSTEM] Hello {request.cu['username']}!**\n\n"
-                 f"To complete your purchase of **{items_summary}**, please follow these steps:\n\n"
-                 f"1️⃣ Send **₹{total:.2f}** to our official UPI ID: `{UPI_ID}`\n"
-                 f"2️⃣ Once paid, please upload a **Screenshot** of the payment proof here.\n"
-                 f"3️⃣ Our staff will verify and grant your rank instantly!")
         
-        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content) VALUES({phs(3)})",
-                  (ticket_id, 0, instr)) # 0 = System/Console UID
+        # 2. Add Payment Instructions from System
+        instr = f"Hello! To complete your purchase, please pay **₹{int(total * 83)}** to UPI ID: **{UPI_ID}**.\n\n" \
+                f"Once paid, please **upload a screenshot** of the success message here. Our staff will verify and grant your rank instantly!"
+        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id, author_id, content) VALUES({phs(3)})",
+                  (ticket_id, 1, instr)) # Author ID 1 is usually System/Admin
 
-        # Link order to ticket
-        c.execute(f"UPDATE hc_store_orders SET metadata={ph()} WHERE id={ph()}", 
-                  (json.dumps({"ticket_id": ticket_id}), order_id))
+        # 3. Create Order Record
+        c.execute(f"""INSERT INTO hc_store_orders
+            (user_id, items, total, status, mc_username, ticket_id)
+            VALUES({phs(6)})""",
+            (request.cu["id"], items_json, total, "ticket_open", request.cu.get("mc_username", ""), ticket_id))
+        order_id = c.lastrowid
         
-        # 5. Clear Cart
+        # 4. Clear Cart
         c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
         
         db.commit(); c.close(); db.close()
-
+        
         # Track
-        track_event("ticket_checkout", order_id, items_summary, request.cu["id"], json.dumps({"total": total, "ticket_id": ticket_id}))
-
-        return jsonify({"ok": True, "ticket_id": ticket_id, "order_id": order_id})
+        track_event("checkout_ticket", None, f"Order #{order_id}", request.cu["id"], json.dumps({"total": total, "ticket_id": ticket_id}))
+        
+        return jsonify({
+            "ok": True, 
+            "ticket_id": ticket_id, 
+            "redirect_url": f"{MAIN_SITE_URL}/?page=tickets&id={ticket_id}"
+        })
 
     except Exception as e:
         traceback.print_exc()
-        db.close()
-        return jsonify({"error": f"Failed to create ticket: {str(e)}"}), 500
+        return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
 
-@app.route("/api/admin/orders/approve/<int:order_id>", methods=["POST"])
-@admin_required
-def approve_order(order_id):
-    """Admin manually approves an order and grants the items."""
-    db = get_db(); c = db_cursor(db)
-    
-    # 1. Find Order
-    c.execute(f"SELECT * FROM hc_store_orders WHERE id={ph()}", (order_id,))
-    order = to_dict(c.fetchone())
-    if not order:
-        c.close(); db.close(); return jsonify({"error":"Order not found"}), 404
-    
-    if order["status"] == "completed":
-        c.close(); db.close(); return jsonify({"error":"Order already completed"}), 400
 
-    # 2. Mark as Completed
-    c.execute(f"UPDATE hc_store_orders SET status='completed' WHERE id={ph()}", (order_id,))
-    
-    # 3. Grant Ranks (Add to command queue if mc_username exists)
-    if order["mc_username"]:
-        items = json.loads(order["items"])
-        for item in items:
-            name = item["name"].lower()
-            rank_map = {"vip": "vip", "vip+": "vip-plus", "mvp": "mvp", "mvp+": "mvp-plus", "mvp++": "mvp-plus-plus"}
-            final_rank = ""
-            for k,v in rank_map.items():
-                if k in name: final_rank = v; break
-            
-            if final_rank:
-                cmd = f"lp user {order['mc_username']} parent add {final_rank}"
-                c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
-    
-    db.commit(); c.close(); db.close()
-    track_event("admin_approve", order_id, f"Order #{order_id}", request.cu["id"])
-    return jsonify({"ok": True})
 
+    return jsonify({"ok": True}), 200
 
 # ═══════════════════════════════════════════════════════
 # AUTH ROUTES (for store login/verification)
