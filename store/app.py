@@ -16,6 +16,7 @@ import traceback
 import secrets
 import datetime as dt
 from datetime import datetime, timedelta
+import random
 from functools import wraps
 
 # Load environment variables
@@ -163,6 +164,24 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   status VARCHAR(20) DEFAULT 'pending',
   mc_username VARCHAR(50) DEFAULT '',
   created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_ads(
+  user_id INTEGER PRIMARY KEY,
+  last_ad_time {DT},
+  last_ad_date DATE,
+  ads_today INTEGER DEFAULT 0,
+  ad_streak INTEGER DEFAULT 0,
+  total_ads INTEGER DEFAULT 0)""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_loot_history(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  username VARCHAR(100) DEFAULT '',
+  reward_type VARCHAR(50) NOT NULL,
+  item_name VARCHAR(100) NOT NULL,
+  rarity VARCHAR(20) DEFAULT 'common',
+  icon VARCHAR(50) DEFAULT 'ic-star',
+  created_at {DT})""",
     ]
 
     for sql in tables:
@@ -205,32 +224,6 @@ def seed_products(c, db):
          "The ultimate rank. Pink prestige, host private games, and exclusive everything.",
          '["[MVP++] Pink Tag","MVP++ Kit","25% Store Discount","All MVP+ Perks","Host Private Games","Exclusive Cosmetics","Monthly Crate"]',
          "ic-bolt", "#d946ef", 1, 5),
-
-        # ── PLUGINS (Placeholders) ──
-        ("BedWars1058 Config Pack", "bw-config-pack", "plugin", "bedwars", 0, 0,
-         "Pre-configured BedWars1058 setup with balanced gameplay, custom shops, and optimized arenas.",
-         '["Ready-to-use config","Balanced shop prices","Arena templates","Custom messages"]',
-         "ic-bed", "#FF512F", 0, 10),
-        ("SkyWars Engine", "skywars-engine", "plugin", "skywars", 4.99, 7.99,
-         "Full SkyWars plugin with kits, cages, loot tables, and leaderboard integration.",
-         '["Custom kits system","Cage selector","Loot tables","Leaderboard API","Auto-arena rotation"]',
-         "ic-cloud", "#38bdf8", 0, 11),
-        ("HellcoreSync", "hellcore-sync", "plugin", "global", 0, 0,
-         "Velocity proxy plugin for syncing player data across servers.",
-         '["Cross-server sync","Velocity compatible","Lightweight","Open source"]',
-         "ic-refresh", "#a78bfa", 0, 12),
-        ("Custom Enchants Pack", "custom-enchants", "plugin", "global", 2.99, 4.99,
-         "50+ custom enchantments with balanced progression and visual effects.",
-         '["50+ enchantments","Custom anvil GUI","Enchant scrolls","XP balancing"]',
-         "ic-bolt", "#fbbf24", 0, 13),
-        ("Economy Core", "economy-core", "plugin", "global", 0, 0,
-         "Server economy system with shops, auctions, and player trading.",
-         '["Player shops","Auction house","Admin shop","Trade system","API for devs"]',
-         "ic-coins", "#10b981", 0, 14),
-        ("Anti-Cheat Shield", "anticheat-shield", "plugin", "global", 9.99, 14.99,
-         "Advanced anti-cheat with ML-based detection and custom punishment system.",
-         '["Movement checks","Combat checks","Auto-ban system","Staff alerts","Low false-positive rate"]',
-         "ic-shield", "#ef4444", 0, 15),
     ]
 
     for p in products:
@@ -515,6 +508,100 @@ def stripe_webhook():
             db.commit(); c.close(); db.close()
 
     return jsonify({"ok": True}), 200
+
+# ═══════════════════════════════════════════════════════
+# NEXUS (FREE RANKS) API
+# ═══════════════════════════════════════════════════════
+@app.route("/api/ads/history")
+def ads_history():
+    db = get_db(); c = db_cursor(db)
+    # Global recent loot
+    c.execute(f"SELECT * FROM hc_loot_history ORDER BY id DESC LIMIT 15")
+    rows = to_list(c.fetchall()); c.close(); db.close()
+    for r in rows: r["created_at"] = ts(r.get("created_at",""))
+    return jsonify(rows)
+
+@app.route("/api/ads/watch", methods=["POST"])
+@auth_required
+def ads_watch():
+    u = request.cu; db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_ads WHERE user_id={ph()}", (u["id"],))
+    ad = to_dict(c.fetchone())
+    if not ad:
+        c.execute(f"INSERT INTO hc_ads(user_id) VALUES({ph()})", (u["id"],))
+        db.commit()
+        c.execute(f"SELECT * FROM hc_ads WHERE user_id={ph()}", (u["id"],))
+        ad = to_dict(c.fetchone())
+
+    # 5-MINUTE COOLDOWN CHECK
+    now = datetime.now()
+    last_time = ad.get("last_ad_time")
+    if last_time:
+        if isinstance(last_time, str):
+            try: last_time = datetime.strptime(last_time, "%Y-%m-%d %H:%M:%S")
+            except: last_time = None
+        if last_time and (now - last_time).total_seconds() < 300: # 5 minutes
+            remain = 300 - (now - last_time).total_seconds()
+            return jsonify({"error": f"Cooldown! Next crate in {int(remain)} seconds."}), 429
+
+    today = dt.date.today()
+    last_date = ad.get("last_ad_date")
+    ads_today = ad.get("ads_today", 0)
+    ad_streak = ad.get("ad_streak", 0)
+
+    if last_date:
+        if isinstance(last_date, str):
+            try: last_date = datetime.strptime(last_date, "%Y-%m-%d").date()
+            except: last_date = None
+        if last_date and last_date != today:
+            ads_today = 0
+            if (today - last_date).days > 1: ad_streak = 0
+
+    ads_today += 1
+    if ads_today == 5: ad_streak += 1 # Streak point on 5th ad
+
+    # WEIGHTED REWARD ENGINE
+    # Common (65%), Rare (25%), Epic (8%), Legendary (2%)
+    roll = random.random() * 100
+    res = {"rarity": "common", "label": "300 Coins", "icon": "ic-cart"}
+    
+    if roll < 2: 
+        res = {"rarity": "legendary", "label": "PERMANENT VIP", "icon": "ic-star"}
+    elif roll < 10: 
+        res = {"rarity": "epic", "label": "24H VIP", "icon": "ic-shield"}
+    elif roll < 35: 
+        res = {"rarity": "rare", "label": "2H VIP", "icon": "ic-shield"}
+    else:
+        # Common pool
+        c_roll = random.random()
+        if c_roll < 0.5: res = {"rarity": "common", "label": "300 Coins", "icon": "ic-cart"}
+        else: res = {"rarity": "common", "label": "500 XP", "icon": "ic-bolt"}
+
+    # Update counters
+    c.execute(f"UPDATE hc_ads SET last_ad_time={ph()}, last_ad_date={ph()}, ads_today={ph()}, ad_streak={ph()}, total_ads=total_ads+1 WHERE user_id={ph()}",
+              (now.strftime("%Y-%m-%d %H:%M:%S"), today.strftime("%Y-%m-%d"), ads_today, ad_streak, u["id"]))
+    
+    # Log loot history
+    c.execute(f"INSERT INTO hc_loot_history(user_id, username, reward_type, item_name, rarity, icon) VALUES({phs(6)})",
+              (u["id"], u["username"], "nexus", res["label"], res["rarity"], res["icon"]))
+    
+    # Process reward (simplified: add coins/XP)
+    if "Coins" in res["label"]:
+        amt = int(res["label"].split()[0])
+        c.execute(f"UPDATE hc_users SET coins = IFNULL(coins, 0) + {ph()} WHERE id={ph()}", (amt, u["id"]))
+    elif "XP" in res["label"]:
+        amt = int(res["label"].split()[0])
+        c.execute(f"UPDATE hc_users SET xp = IFNULL(xp, 0) + {ph()} WHERE id={ph()}", (amt, u["id"]))
+    elif "VIP" in res["label"]:
+        # In a real app, this would update hc_users.role or add to an expires table
+        pass
+
+    db.commit(); c.close(); db.close()
+
+    # Track checkout event (simulated as nexus)
+    track_event("nexus_watch", None, "Nexus Crate", u["id"], json.dumps(res))
+
+    return jsonify(res)
 
 # ═══════════════════════════════════════════════════════
 # AUTH ROUTES (for store login/verification)
