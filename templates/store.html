@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Hellcore Store — Ranks, Plugins & More</title>
+  <title>Hellcore Store — Ranks & Rewards</title>
   <link rel="icon" href="/main-static/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://js.stripe.com/v3/"></script>
 
-  <meta name="description" content="Hellcore Network Store — Buy ranks, plugins, and more for the best Minecraft Bedwars & Skywars experience.">
-  <meta property="og:title" content="Hellcore Store — Ranks & Plugins">
-  <meta property="og:description" content="Get VIP, MVP, MVP++ ranks and premium plugins for Hellcore Network.">
+  <meta name="description" content="Hellcore Network Store — Buy ranks and claim free rewards for the best Minecraft Bedwars & Skywars experience.">
+  <meta property="og:title" content="Hellcore Store — Ranks & Rewards">
+  <meta property="og:description" content="Get VIP, MVP, MVP++ ranks and free rewards via the Mystery Nexus.">
   <meta property="og:image" content="https://hellcore.net/static/logo.png">
   <meta property="og:url" content="https://store.hellcore.net">
   <meta name="theme-color" content="#FF512F">
@@ -24,6 +24,7 @@
       --p1: rgba(24,24,27,0.65); --p2: rgba(39,39,42,0.75);
       --bd: rgba(255,255,255,0.1); --bd2: rgba(255,255,255,0.2);
       --tx: #fafafa; --tx2: #a1a1aa; --tx3: #71717a;
+      --common: #94a3b8; --rare: #3b82f6; --epic: #a855f7; --legendary: #eab308;
     }
     *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
     html,body { min-height:100vh; font-family:'Inter',sans-serif; color:var(--tx); background:var(--bg); overflow-x:hidden; -webkit-font-smoothing:antialiased; }
@@ -33,16 +34,10 @@
     #BG::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% -30%, rgba(255,81,47,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(221,36,118,0.08) 0%, transparent 50%); }
     #BG::after { content:''; position:absolute; inset:0; background:var(--bg); opacity:0.85; }
 
-    /* Animated grid */
-    .grid-bg { position:fixed; inset:0; z-index:0; opacity:0.03;
-      background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-      background-size: 60px 60px;
-      animation: gridMove 20s linear infinite;
-    }
+    .grid-bg { position:fixed; inset:0; z-index:0; opacity:0.03; background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 60px 60px; animation: gridMove 20s linear infinite; }
     @keyframes gridMove { from { transform:translate(0,0); } to { transform:translate(60px,60px); } }
 
     #APP { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
-
     ::-webkit-scrollbar { width:8px; }
     ::-webkit-scrollbar-track { background:var(--bg); }
     ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:4px; }
@@ -63,213 +58,84 @@
     .nb.on::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:30%; height:2px; background:var(--g); border-radius:2px 2px 0 0; }
 
     .nav-right { display:flex; align-items:center; gap:10px; margin-left:auto; }
-    .nav-cart { position:relative; background:rgba(255,255,255,0.05); border:1px solid var(--bd); padding:8px 14px; border-radius:10px; color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.2s; display:flex; align-items:center; gap:6px; }
-    .nav-cart:hover { background:rgba(255,255,255,0.1); border-color:var(--bd2); }
-    .cart-badge { position:absolute; top:-6px; right:-6px; background:var(--g); color:#fff; font-size:0.65rem; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
-    .nav-user { background:rgba(255,255,255,0.05); border:1px solid var(--bd); padding:8px 16px; border-radius:10px; color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; transition:all 0.2s; }
-    .nav-user:hover { background:rgba(255,255,255,0.1); }
 
-    /* ═══ BUTTONS ═══ */
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg,var(--g),var(--g2)); color:#fff; border:none; padding:10px 22px; border-radius:8px; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.9rem; cursor:pointer; transition:all 0.25s cubic-bezier(0.4,0,0.2,1); text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap; position:relative; overflow:hidden; box-shadow:0 4px 15px rgba(255,81,47,0.25); }
+    /* ═══ NEXUS UI ═══ */
+    .nexus-card { background:var(--p1); border:1px solid var(--bd); border-radius:24px; padding:40px; text-align:center; backdrop-filter:blur(16px); position:relative; overflow:hidden; }
+    .nexus-box { width:200px; height:200px; margin:0 auto 24px; cursor:pointer; transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275); position:relative; }
+    .nexus-box img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0 20px rgba(255,81,47,0.3)); }
+    .nexus-box:hover { transform:scale(1.1) rotate(5deg); }
+    .crate-pulse { animation: cratePulse 2s infinite ease-in-out; }
+    @keyframes cratePulse { 0%,100% { transform:scale(1); filter:drop-shadow(0 0 10px rgba(255,81,47,0.2)); } 50% { transform:scale(1.05); filter:drop-shadow(0 0 30px rgba(255,81,47,0.5)); } }
+    
+    .loot-table { width:100%; border-collapse:collapse; margin-top:20px; }
+    .loot-table th { padding:12px; text-align:left; color:var(--tx3); font-size:0.75rem; text-transform:uppercase; border-bottom:1px solid var(--bd); }
+    .loot-table td { padding:12px; font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .rarity-common { color:var(--common); } .rarity-rare { color:var(--rare); font-weight:600; } .rarity-epic { color:var(--epic); font-weight:700; } .rarity-legendary { color:var(--legendary); font-weight:800; text-shadow:0 0 10px rgba(234,179,8,0.3); }
+
+    /* CS:GO SPIN */
+    .mx-spin-wrap { position:relative; height:120px; background:rgba(0,0,0,0.4); border:2px solid var(--bd2); border-radius:12px; overflow:hidden; margin:20px 0; }
+    .mx-strip { display:flex; position:absolute; left:0; top:0; height:100%; transition: transform 6s cubic-bezier(0.1, 0, 0.1, 1); will-change: transform; }
+    .slot-item { width:120px; height:100%; flex-shrink:0; border-right:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; font-size:0.7rem; font-weight:700; text-align:center; padding:10px; }
+    .mx-pointer { position:absolute; top:0; left:50%; transform:translateX(-50%); width:4px; height:100%; background:var(--g); z-index:10; box-shadow:0 0 15px var(--g); }
+
+    /* Existing styles preserved... */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg,var(--g),var(--g2)); color:#fff; border:none; padding:10px 22px; border-radius:8px; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.9rem; cursor:pointer; transition:all 0.25s; text-transform:uppercase; letter-spacing:0.05em; box-shadow:0 4px 15px rgba(255,81,47,0.25); }
     .btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(255,81,47,0.45); }
-    .btn:active { transform:translateY(0); }
-    .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
-    .bto { background:rgba(255,255,255,0.03); border:1px solid var(--bd2); color:var(--tx); padding:9px 21px; border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.25s; text-transform:uppercase; letter-spacing:0.05em; }
-    .bto:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.4); color:#fff; transform:translateY(-1px); }
-    .bsm { padding:8px 16px; font-size:0.8rem; border-radius:6px; }
-    .bxs { padding:4px 10px; font-size:0.7rem; border-radius:4px; }
-    .bred { background:linear-gradient(135deg,#e11d48,#be123c); box-shadow:0 4px 15px rgba(225,29,72,0.25); }
-    .bgrn { background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 4px 15px rgba(16,185,129,0.25); }
-
-    /* ═══ PAGES ═══ */
+    .bsm { padding:8px 16px; font-size:0.8rem; }
     .pg { display:none; min-height:100vh; padding:100px 24px 60px; animation:fadeUp 0.5s ease forwards; opacity:0; }
     .pg.ON { display:block; }
     @keyframes fadeUp { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:none; } }
     .W { max-width:1200px; margin:0 auto; }
-
-    /* ═══ HERO ═══ */
-    .hero { text-align:center; padding:60px 0 40px; position:relative; }
-    .hero-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,81,47,0.1); border:1px solid rgba(255,81,47,0.2); padding:6px 16px; border-radius:100px; font-size:0.78rem; font-weight:600; color:var(--g); margin-bottom:20px; letter-spacing:0.05em; text-transform:uppercase; }
-    .hero-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--g); animation:pulse 2s infinite; }
-    @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(255,81,47,0.4); } 70% { box-shadow:0 0 0 6px rgba(255,81,47,0); } }
-    .hero h1 { font-family:'Outfit',sans-serif; font-size:clamp(2.2rem,6vw,3.8rem); font-weight:900; background:linear-gradient(135deg,#fff 30%,var(--g)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:16px; letter-spacing:-0.03em; line-height:1.1; }
-    .hero p { color:var(--tx2); font-size:1.15rem; max-width:600px; margin:0 auto 32px; line-height:1.6; }
-    .hero-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-
-    /* ═══ SECTION TITLES ═══ */
     .stitle { font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#fff; margin-bottom:8px; text-align:center; }
     .ssub { color:var(--tx2); text-align:center; margin-bottom:32px; font-size:0.95rem; }
-
-    /* ═══ GRIDS ═══ */
     .g5 { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; }
-    .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
-    .g3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-    .g2 { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
     @media(max-width:1100px) { .g5 { grid-template-columns:repeat(3,1fr); } }
-    @media(max-width:900px) { .g4,.g5 { grid-template-columns:repeat(2,1fr); } .g3 { grid-template-columns:repeat(2,1fr); } }
-    @media(max-width:580px) { .g2,.g3,.g4,.g5 { grid-template-columns:1fr; } }
-
-    /* ═══ RANK CARDS ═══ */
-    .rank-card { background:var(--p1); border:1px solid var(--bd); border-radius:20px; padding:28px 20px; text-align:center; transition:all 0.35s cubic-bezier(0.4,0,0.2,1); display:flex; flex-direction:column; position:relative; overflow:hidden; backdrop-filter:blur(12px); }
-    .rank-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(--cc,var(--g)),transparent); opacity:0.8; }
-    .rank-card:hover { transform:translateY(-8px); border-color:rgba(255,255,255,0.2); box-shadow:0 20px 50px rgba(0,0,0,0.4), 0 0 40px var(--cc,rgba(255,81,47,0.15)); }
-    .rank-card.featured { border-color:var(--cc,var(--g)); box-shadow:0 0 30px var(--cc,rgba(255,81,47,0.15)); }
-    .rank-card.featured::after { content:'POPULAR'; position:absolute; top:14px; right:-28px; background:var(--cc,var(--g)); color:#fff; font-size:0.6rem; font-weight:800; padding:4px 32px; transform:rotate(45deg); letter-spacing:0.1em; }
-    .rank-icon { font-size:2.5rem; margin-bottom:12px; display:block; transition:all 0.3s; }
-    .rank-card:hover .rank-icon { transform:scale(1.15) rotate(5deg); }
-    .rank-name { font-family:'Outfit',sans-serif; font-size:1.15rem; font-weight:800; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em; }
-    .rank-price { font-size:2rem; font-weight:900; font-family:'Outfit',sans-serif; margin:8px 0; }
-    .rank-price .currency { font-size:1rem; vertical-align:super; opacity:0.7; }
-    .rank-original { color:var(--tx3); font-size:0.85rem; text-decoration:line-through; margin-bottom:8px; }
-    .rank-save { display:inline-block; background:rgba(16,185,129,0.15); color:#34d399; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:4px; margin-bottom:12px; }
-    .rank-perks { list-style:none; text-align:left; margin:16px 0; flex:1; }
-    .rank-perks li { padding:6px 0; font-size:0.82rem; color:var(--tx2); border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; gap:8px; }
-    .rank-perks li::before { content:'✓'; color:var(--cc,var(--g)); font-weight:700; font-size:0.75rem; flex-shrink:0; }
-
-    /* ═══ PLUGIN CARDS ═══ */
-    .plugin-card { background:var(--p1); border:1px solid var(--bd); border-radius:16px; padding:24px; transition:all 0.3s; backdrop-filter:blur(12px); display:flex; flex-direction:column; }
-    .plugin-card:hover { border-color:var(--bd2); transform:translateY(-4px); box-shadow:0 12px 30px rgba(0,0,0,0.3); }
-    .plugin-header { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
-    .plugin-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
-    .plugin-meta h3 { font-family:'Outfit',sans-serif; font-weight:700; font-size:1rem; margin-bottom:2px; }
-    .plugin-meta .tag { font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.05em; }
-    .tag-free { background:rgba(16,185,129,0.15); color:#34d399; }
-    .tag-paid { background:rgba(245,158,11,0.15); color:#fbbf24; }
-    .plugin-desc { color:var(--tx2); font-size:0.85rem; line-height:1.6; margin-bottom:16px; flex:1; }
-    .plugin-footer { display:flex; align-items:center; justify-content:space-between; margin-top:auto; }
-    .plugin-price { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.1rem; }
-
-    /* ═══ CART PANEL ═══ */
-    .cart-item { background:var(--p1); border:1px solid var(--bd); border-radius:12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; transition:all 0.2s; }
-    .cart-item:hover { border-color:var(--bd2); }
-    .cart-item-info h4 { font-weight:600; margin-bottom:2px; }
-    .cart-item-info small { color:var(--tx2); font-size:0.78rem; }
-    .cart-item-right { display:flex; align-items:center; gap:12px; }
-    .cart-item-price { color:var(--g); font-weight:700; font-family:'Outfit',sans-serif; font-size:1rem; }
-    .cart-summary { background:var(--p1); border:1px solid var(--bd); border-radius:16px; padding:24px; margin-top:20px; }
-    .cart-total { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--bd); }
-    .cart-total-label { color:var(--tx2); font-size:0.9rem; }
-    .cart-total-price { font-family:'Outfit',sans-serif; font-weight:900; font-size:1.8rem; color:var(--g); }
-
-    /* ═══ ADMIN PANEL ═══ */
-    .stat-card { background:var(--p1); border:1px solid var(--bd); border-radius:16px; padding:24px; backdrop-filter:blur(12px); }
-    .stat-card .stat-label { color:var(--tx2); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:600; margin-bottom:8px; }
-    .stat-card .stat-value { font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800; }
-    .stat-card .stat-sub { color:var(--tx3); font-size:0.78rem; margin-top:4px; }
-
-    .admin-table { width:100%; border-collapse:collapse; }
-    .admin-table th { text-align:left; color:var(--tx2); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:600; padding:12px 16px; border-bottom:1px solid var(--bd); }
-    .admin-table td { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:0.85rem; }
-    .admin-table tr:hover td { background:rgba(255,255,255,0.02); }
-
-    .tabs { display:flex; background:rgba(0,0,0,0.25); border:1px solid var(--bd); border-radius:10px; padding:4px; margin-bottom:24px; gap:4px; width:max-content; margin-inline:auto; }
-    .tab { padding:8px 18px; background:transparent; border:none; color:var(--tx2); font-family:'Outfit',sans-serif; font-size:0.85rem; font-weight:600; cursor:pointer; border-radius:6px; transition:all 0.2s; white-space:nowrap; }
-    .tab:hover { color:#fff; background:rgba(255,255,255,0.05); }
-    .tab.ON { background:var(--p2); color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
-
-    /* ═══ MODAL ═══ */
-    .modal-bg { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; padding:20px; }
+    @media(max-width:768px) { .nav-links { display:none; } .hero h1 { font-size:2rem; } }
+    .rank-card { background:var(--p1); border:1px solid var(--bd); border-radius:20px; padding:28px 20px; text-align:center; position:relative; overflow:hidden; display:flex; flex-direction:column; backdrop-filter:blur(12px); transition:0.3s; }
+    .rank-card:hover { transform:translateY(-8px); border-color:rgba(255,255,255,0.2); }
+    .rank-name { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.15rem; }
+    .rank-price { font-size:2rem; font-weight:900; margin:8px 0; font-family:'Outfit',sans-serif; }
+    .rank-perks { list-style:none; text-align:left; margin:16px 0; flex:1; font-size:0.82rem; color:var(--tx2); }
+    .rank-perks li::before { content:'✓'; color:var(--g); margin-right:8px; font-weight:700; }
+    .ic { width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+    .modal-bg { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; }
     .modal-bg.show { display:flex; }
-    .modal { background:#18181b; border:1px solid var(--bd2); border-radius:20px; padding:32px; max-width:440px; width:100%; max-height:90vh; overflow-y:auto; position:relative; animation:fadeUp 0.3s ease; }
-    .modal h2 { font-family:'Outfit',sans-serif; font-weight:800; margin-bottom:20px; text-align:center; }
-    .fg { margin-bottom:16px; }
-    .fg label { display:block; font-size:0.8rem; color:var(--tx2); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
-    .inp { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--bd); color:var(--tx); padding:12px 16px; border-radius:8px; font-family:'Inter',sans-serif; font-size:0.95rem; outline:none; transition:all 0.2s; }
-    .inp:focus { border-color:var(--g); box-shadow:0 0 0 3px rgba(255,81,47,0.15); }
-    .ferr { color:var(--r2); font-size:0.8rem; margin-top:6px; min-height:18px; font-weight:500; }
-    .modal-close { position:absolute; top:16px; right:16px; background:none; border:none; color:var(--tx2); cursor:pointer; font-size:1.2rem; padding:4px; }
-
-    /* ═══ FOOTER ═══ */
-    .store-footer { text-align:center; padding:40px 24px; color:var(--tx3); font-size:0.8rem; border-top:1px solid var(--bd); margin-top:60px; }
-    .store-footer a { color:var(--g); text-decoration:none; }
-    .store-footer a:hover { text-decoration:underline; }
-
-    /* ═══ EMPTY STATE ═══ */
-    .empty { text-align:center; padding:60px 20px; color:var(--tx2); }
-    .empty-icon { font-size:3rem; margin-bottom:16px; opacity:0.3; }
-
-    /* ═══ TOAST ═══ */
+    .modal { background:#18181b; border:1px solid var(--bd2); border-radius:20px; padding:32px; max-width:440px; width:100%; position:relative; }
     #TOAST { position:fixed; top:80px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px; }
-    .toast { padding:12px 20px; border-radius:10px; font-size:0.85rem; font-weight:600; animation:slideIn 0.3s ease; backdrop-filter:blur(12px); border:1px solid var(--bd); }
-    .toast-ok { background:rgba(16,185,129,0.15); color:#34d399; border-color:rgba(16,185,129,0.3); }
-    .toast-err { background:rgba(239,68,68,0.15); color:#f87171; border-color:rgba(239,68,68,0.3); }
-    @keyframes slideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:none; } }
-
-    /* ═══ LOADING SPINNER ═══ */
-    .ld { display:flex; justify-content:center; padding:40px; }
+    .toast { padding:12px 20px; border-radius:10px; font-size:0.85rem; font-weight:600; border:1px solid var(--bd); }
+    .toast-ok { background:rgba(16,185,129,0.15); color:#34d399; }
+    .toast-err { background:rgba(239,68,68,0.15); color:#f87171; }
     .sp { width:32px; height:32px; border:3px solid var(--bd); border-top-color:var(--g); border-radius:50%; animation:spin 0.7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
-
-    /* ═══ MOBILE NAV ═══ */
-    .nburger { display:none; background:rgba(255,255,255,0.05); border:1px solid var(--bd2); color:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
-    @media(max-width:768px) {
-      .nav-links { display:none; }
-      .nburger { display:block; }
-      .hero h1 { font-size:2rem; }
-      .hero p { font-size:0.95rem; }
-      #NAV { padding:0 16px; }
-      .pg { padding:80px 16px 40px; }
-    }
-
-    /* ═══ SVG ICONS ═══ */
-    .ic { width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
   </style>
 </head>
 <body>
-  <!-- SVG Sprite -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
     <symbol id="ic-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
-    <symbol id="ic-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
-    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
-    <symbol id="ic-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
-    <symbol id="ic-bolt" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
-    <symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></symbol>
-    <symbol id="ic-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
-    <symbol id="ic-menu" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
     <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
-    <symbol id="ic-package" viewBox="0 0 24 24"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+    <symbol id="ic-cart" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></symbol>
     <symbol id="ic-chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
-    <symbol id="ic-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
-    <symbol id="ic-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
-    <symbol id="ic-bed" viewBox="0 0 24 24"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></symbol>
-    <symbol id="ic-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+    <symbol id="ic-bolt" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
     <symbol id="ic-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
-    <symbol id="ic-coins" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M8 10h8"/><path d="M8 14h8"/></symbol>
-    <symbol id="ic-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-    <symbol id="ic-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
-    <symbol id="ic-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
-    <symbol id="ic-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
-    <symbol id="ic-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
   </svg>
 
-  <div id="BG"></div>
-  <div class="grid-bg"></div>
-  <div id="TOAST"></div>
+  <div id="BG"></div><div class="grid-bg"></div><div id="TOAST"></div>
 
   <div id="APP">
-    <!-- ═══ NAVBAR ═══ -->
     <nav id="NAV">
       <a class="nlogo" href="https://hellcore.net">
-        <img src="/main-static/logo.png" alt="Hellcore">
-        <div class="nlogo-t"><b>Hellcore</b><small>Store</small></div>
+        <img src="/main-static/logo.png" alt="Hellcore"><div class="nlogo-t"><b>Hellcore</b><small>Store</small></div>
       </a>
-
       <div class="nav-links">
         <button class="nb on" onclick="GO('home')"><svg class="ic"><use href="#ic-home"/></svg> Home</button>
         <button class="nb" onclick="GO('ranks')"><svg class="ic"><use href="#ic-star"/></svg> Ranks</button>
-        <button class="nb" onclick="GO('plugins')"><svg class="ic"><use href="#ic-package"/></svg> Plugins</button>
+        <button class="nb" onclick="GO('nexus')"><svg class="ic"><use href="#ic-bolt"/></svg> Free Rewards</button>
         <button class="nb" onclick="GO('cart')"><svg class="ic"><use href="#ic-cart"/></svg> Cart</button>
         <button class="nb" id="NB-ADMIN" style="display:none" onclick="GO('admin')"><svg class="ic"><use href="#ic-chart"/></svg> Admin</button>
       </div>
-
-      <button class="nburger" onclick="toggleMobile()"><svg class="ic"><use href="#ic-menu"/></svg></button>
-
       <div class="nav-right">
-        <button class="nav-cart" onclick="GO('cart')">
-          <svg class="ic"><use href="#ic-cart"/></svg>
-          <span id="CART-COUNT" style="display:none" class="cart-badge">0</span>
-        </button>
+        <button class="nav-cart" onclick="GO('cart')"><svg class="ic"><use href="#ic-cart"/></svg><span id="CART-COUNT" style="display:none" class="cart-badge">0</span></button>
         <button class="nav-user" id="NAV-USER" onclick="handleAuth()">Login</button>
       </div>
     </nav>
@@ -278,130 +144,93 @@
     <div class="pg ON" id="pg-home">
       <div class="W">
         <div class="hero">
-          <div class="hero-badge"><span class="dot"></span> Official Hellcore Network Store</div>
-          <h1>Power Up Your<br>Game Experience</h1>
-          <p>Unlock exclusive ranks, premium plugins, and special perks. Join thousands of players who've upgraded their Hellcore experience.</p>
+          <div class="hero-badge"><span class="dot"></span> Official Hellcore Store</div>
+          <h1>Upgrade Your<br>Game Today</h1>
+          <p>Get permanent ranks and exclusive perks, or try your luck at the Mystery Nexus for free rewards.</p>
           <div class="hero-actions">
             <button class="btn" onclick="GO('ranks')"><svg class="ic"><use href="#ic-star"/></svg> Browse Ranks</button>
-            <button class="bto" onclick="GO('plugins')"><svg class="ic"><use href="#ic-package"/></svg> Explore Plugins</button>
+            <button class="bto" onclick="GO('nexus')"><svg class="ic"><use href="#ic-bolt"/></svg> Open Free Crate</button>
           </div>
         </div>
-
-        <!-- Featured Ranks Preview -->
         <div style="margin-top:60px">
           <div class="stitle">🔥 Featured Ranks</div>
-          <p class="ssub">Permanent ranks with exclusive perks — prices slashed!</p>
+          <p class="ssub">Permanent ranks with premium perks</p>
           <div class="g5" id="FEATURED-RANKS"></div>
-        </div>
-
-        <!-- Plugins Preview -->
-        <div style="margin-top:60px">
-          <div class="stitle">🧩 Popular Plugins</div>
-          <p class="ssub">Free and premium server plugins</p>
-          <div class="g3" id="FEATURED-PLUGINS"></div>
         </div>
       </div>
     </div>
 
     <!-- ═══ RANKS PAGE ═══ -->
-    <div class="pg" id="pg-ranks">
-      <div class="W">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">⭐ Server Ranks</div>
-        <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
-        <div class="g5" id="RANKS-GRID"></div>
-      </div>
-    </div>
+    <div class="pg" id="pg-ranks"><div class="W"><div class="stitle">⭐ Server Ranks</div><p class="ssub">Lifetime perks across all gamemodes.</p><div class="g5" id="RANKS-GRID"></div></div></div>
 
-    <!-- ═══ PLUGINS PAGE ═══ -->
-    <div class="pg" id="pg-plugins">
-      <div class="W">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">🧩 Plugin Marketplace</div>
-        <p class="ssub">Server plugins for your Minecraft network — free and premium</p>
-        <div class="tabs" id="PLUGIN-TABS">
-          <button class="tab ON" onclick="filterPlugins('all')">All</button>
-          <button class="tab" onclick="filterPlugins('free')">Free</button>
-          <button class="tab" onclick="filterPlugins('paid')">Paid</button>
+    <!-- ═══ NEXUS PAGE (FREE RANKS) ═══ -->
+    <div class="pg" id="pg-nexus">
+      <div class="W" style="max-width:800px">
+        <div class="stitle">⚡ Mystery Nexus</div>
+        <p class="ssub">Watch a short advertisement to unlock a free reward crate.</p>
+        
+        <div class="nexus-card">
+          <div id="NEXUS-BOX" class="nexus-box crate-pulse" onclick="watchAd()">
+            <img src="/main-static/logo.png" alt="Crate">
+          </div>
+          <div id="NEXUS-TIMER" style="font-size:1.2rem;font-weight:700;color:var(--tx2);margin-bottom:20px">READY TO UNLOCK</div>
+          <button id="NEXUS-BTN" class="btn" style="width:240px" onclick="watchAd()">WATCH & WIN</button>
+          
+          <div style="margin-top:48px; text-align:left">
+            <div class="stitle" style="font-size:1.1rem; text-align:left">🕒 Recent Global Loot</div>
+            <table class="loot-table">
+              <thead><tr><th>Player</th><th>Reward</th><th>Time</th></tr></thead>
+              <tbody id="LOOT-HISTORY"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="g3" id="PLUGINS-GRID"></div>
       </div>
     </div>
 
     <!-- ═══ CART PAGE ═══ -->
-    <div class="pg" id="pg-cart">
-      <div class="W" style="max-width:700px">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">🛒 Your Cart</div>
-        <p class="ssub">Review your items and proceed to checkout</p>
-        <div id="CART-LIST"><div class="ld"><div class="sp"></div></div></div>
-        <div id="CART-SUMMARY"></div>
-      </div>
-    </div>
+    <div class="pg" id="pg-cart"><div class="W" style="max-width:700px"><div class="stitle">🛒 Your Cart</div><div id="CART-LIST"></div><div id="CART-SUMMARY"></div></div></div>
 
     <!-- ═══ ADMIN PAGE ═══ -->
-    <div class="pg" id="pg-admin">
-      <div class="W">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">📊 Store Admin</div>
-        <p class="ssub">Analytics, orders, and product management</p>
-        <div class="tabs">
-          <button class="tab ON" onclick="adminTab('overview')">Overview</button>
-          <button class="tab" onclick="adminTab('products')">Products</button>
-          <button class="tab" onclick="adminTab('orders')">Orders</button>
-          <button class="tab" onclick="adminTab('events')">Events</button>
-        </div>
-        <div id="ADMIN-CONTENT"><div class="ld"><div class="sp"></div></div></div>
+    <div class="pg" id="pg-admin"><div class="W"><div class="stitle">📊 Admin Dashboard</div><div class="tabs">
+      <button class="tab ON" onclick="adminTab('overview')">Overview</button><button class="tab" onclick="adminTab('products')">Products</button>
+    </div><div id="ADMIN-CONTENT"></div></div></div>
+
+    <div class="store-footer"><p>&copy; 2026 Hellcore Network. <a href="https://hellcore.net">Main Site</a></p></div>
+  </div>
+
+  <!-- ═══ CRATE SPIN MODAL ═══ -->
+  <div class="modal-bg" id="M-NEXUS">
+    <div class="modal" style="max-width:600px">
+      <h2 id="MX-TITLE">Opening Nexus Crate...</h2>
+      <div class="mx-spin-wrap">
+        <div class="mx-pointer"></div>
+        <div id="MX-STRIP" class="mx-strip"></div>
+      </div>
+      <div id="MX-RESULT" style="display:none; text-align:center; animation:fadeUp 0.5s ease">
+        <h3 id="MX-REWARD" style="font-size:1.8rem; margin-bottom:12px"></h3>
+        <p style="color:var(--tx2); margin-bottom:24px">Reward has been added to your account!</p>
+        <button class="btn" onclick="closeModal('M-NEXUS')">AWESOME</button>
       </div>
     </div>
-
-    <!-- ═══ FOOTER ═══ -->
-    <div class="store-footer">
-      <p>&copy; 2024–2026 Hellcore Network. All rights reserved.</p>
-      <p style="margin-top:8px"><a href="https://hellcore.net">Main Site</a> · <a href="https://discord.gg/hellcore">Discord</a> · <a href="https://hellcore.net/rules">Rules</a></p>
-    </div>
   </div>
 
-  <!-- ═══ LOGIN MODAL ═══ -->
+  <!-- AUTH MODAL -->
   <div class="modal-bg" id="M-LOGIN">
     <div class="modal">
-      <button class="modal-close" onclick="closeModal('M-LOGIN')">✕</button>
-      <h2>🔐 Login to Store</h2>
-      <p style="color:var(--tx2); text-align:center; margin-bottom:20px; font-size:0.9rem">Use your Hellcore Network account</p>
-      <div class="fg"><label>Email or Username</label><input class="inp" id="L-ID" placeholder="you@email.com"></div>
-      <div class="fg"><label>Password</label><input class="inp" id="L-PW" type="password" placeholder="••••••••"></div>
-      <div class="ferr" id="L-ERR"></div>
-      <button class="btn" style="width:100%; margin-top:8px" onclick="doLogin()">Login</button>
-      <p style="color:var(--tx3); text-align:center; margin-top:16px; font-size:0.82rem">Don't have an account? <a href="https://hellcore.net" style="color:var(--g)">Register on main site</a></p>
-    </div>
-  </div>
-
-  <!-- ═══ MOBILE MENU ═══ -->
-  <div class="modal-bg" id="M-MOBILE" style="z-index:8000">
-    <div class="modal" style="max-width:100%;height:100%;border-radius:0;display:flex;flex-direction:column;gap:8px">
-      <button class="modal-close" onclick="closeModal('M-MOBILE')">✕</button>
-      <h2 style="margin-bottom:12px">Menu</h2>
-      <button class="bto" style="width:100%;text-align:left" onclick="GO('home');closeModal('M-MOBILE')">🏠 Home</button>
-      <button class="bto" style="width:100%;text-align:left" onclick="GO('ranks');closeModal('M-MOBILE')">⭐ Ranks</button>
-      <button class="bto" style="width:100%;text-align:left" onclick="GO('plugins');closeModal('M-MOBILE')">🧩 Plugins</button>
-      <button class="bto" style="width:100%;text-align:left" onclick="GO('cart');closeModal('M-MOBILE')">🛒 Cart</button>
-      <button class="bto" style="width:100%;text-align:left;display:none" id="MOB-ADMIN" onclick="GO('admin');closeModal('M-MOBILE')">📊 Admin</button>
+      <h2>🔐 Login</h2>
+      <div class="fg"><label>Email/User</label><input class="inp" id="L-ID"></div>
+      <div class="fg"><label>Password</label><input class="inp" id="L-PW" type="password"></div>
+      <div id="L-ERR" class="ferr"></div>
+      <button class="btn" style="width:100%" onclick="doLogin()">Login</button>
     </div>
   </div>
 
 <script>
-// ════════════════════════════════════════════════════════
-// GLOBALS
-// ════════════════════════════════════════════════════════
-let ME = null;
-let PRODUCTS = [];
-let CART = [];
+let ME = null, PRODUCTS = [], CART = [], NEXUS_CD = 0, AD_TIMER = null;
 const STRIPE_KEY = '{{ stripe_pub_key }}';
-const ADMIN_ROLES = ['helper','mod','dev','admin','owner','founder'];
-const MAIN_SITE = 'https://hellcore.net';
-
 function I(id) { return document.getElementById(id); }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// ════════════════════════════════════════════════════════
-// API HELPER
-// ════════════════════════════════════════════════════════
 async function API(url, opts = {}) {
   const token = localStorage.getItem('hc_token') || '';
   const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
@@ -413,417 +242,136 @@ async function API(url, opts = {}) {
   return d;
 }
 
-// ════════════════════════════════════════════════════════
-// TOAST
-// ════════════════════════════════════════════════════════
 function toast(type, msg) {
-  const t = document.createElement('div');
-  t.className = `toast toast-${type}`;
-  t.textContent = msg;
-  I('TOAST').appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  const t = document.createElement('div'); t.className = `toast toast-${type}`; t.textContent = msg;
+  I('TOAST').appendChild(t); setTimeout(() => t.remove(), 3500);
 }
 
-// ════════════════════════════════════════════════════════
-// NAVIGATION
-// ════════════════════════════════════════════════════════
 function GO(id) {
   document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
-  document.querySelectorAll('.nav-links .nb').forEach(b => b.classList.remove('on'));
-  const pg = I('pg-' + id);
-  if (pg) pg.classList.add('ON');
-  window.scrollTo(0, 0);
-  // Mark active nav
-  document.querySelectorAll('.nav-links .nb').forEach(b => {
-    if (b.textContent.trim().toLowerCase().includes(id)) b.classList.add('on');
-  });
-  // Page-specific init
-  ({
-    home: loadHome,
-    ranks: loadRanks,
-    plugins: () => loadPlugins(),
-    cart: renderCart,
-    admin: () => loadAdmin('overview'),
-  })[id]?.();
-  history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
-}
-window.onpopstate = (e) => { if (e.state?.pg) GO(e.state.pg); };
-
-function toggleMobile() { I('M-MOBILE').classList.toggle('show'); }
-function closeModal(id) { I(id).classList.remove('show'); }
-function openModal(id) { I(id).classList.add('show'); }
-
-// ════════════════════════════════════════════════════════
-// AUTH
-// ════════════════════════════════════════════════════════
-function handleAuth() {
-  if (ME) {
-    if (confirm('Log out?')) {
-      localStorage.removeItem('hc_token');
-      ME = null;
-      updateAuthUI();
-      toast('ok', 'Logged out');
-      GO('home');
-    }
-  } else {
-    openModal('M-LOGIN');
-  }
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  I('pg-' + id).classList.add('ON');
+  document.querySelectorAll('.nb').forEach(b => { if(b.textContent.toLowerCase().includes(id)) b.classList.add('on'); });
+  if(id==='nexus') loadNexusHistory();
+  if(id==='home') loadHome();
+  if(id==='ranks') loadRanks();
+  if(id==='cart') renderCart();
 }
 
-async function doLogin() {
-  const id = I('L-ID').value.trim(), pw = I('L-PW').value;
-  I('L-ERR').textContent = '';
-  if (!id || !pw) { I('L-ERR').textContent = 'Fill in all fields'; return; }
+// NEXUS LOGIC
+async function loadNexusHistory() {
   try {
-    const d = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
-    localStorage.setItem('hc_token', d.token);
-    ME = d;
-    closeModal('M-LOGIN');
-    updateAuthUI();
-    toast('ok', `Welcome back, ${d.username}!`);
-    updateCartCount();
-  } catch (e) { I('L-ERR').textContent = e.message; }
-}
-
-async function checkAuth() {
-  const token = localStorage.getItem('hc_token');
-  if (!token) return;
-  try {
-    ME = await API('/api/auth/me');
-    updateAuthUI();
-    updateCartCount();
-  } catch { localStorage.removeItem('hc_token'); }
-}
-
-function updateAuthUI() {
-  const btn = I('NAV-USER');
-  if (ME) {
-    btn.textContent = ME.username;
-    btn.style.background = 'rgba(255,81,47,0.1)';
-    btn.style.borderColor = 'rgba(255,81,47,0.3)';
-    if (ADMIN_ROLES.includes(ME.role)) {
-      I('NB-ADMIN').style.display = '';
-      if (I('MOB-ADMIN')) I('MOB-ADMIN').style.display = '';
-    }
-  } else {
-    btn.textContent = 'Login';
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    I('NB-ADMIN').style.display = 'none';
-    if (I('MOB-ADMIN')) I('MOB-ADMIN').style.display = 'none';
-  }
-}
-
-// ════════════════════════════════════════════════════════
-// PRODUCTS
-// ════════════════════════════════════════════════════════
-async function loadProducts() {
-  try { PRODUCTS = await API('/api/products'); }
-  catch { PRODUCTS = []; }
-}
-
-function getRanks() { return PRODUCTS.filter(p => p.category === 'rank').sort((a,b) => a.sort_order - b.sort_order); }
-function getPlugins() { return PRODUCTS.filter(p => p.category === 'plugin').sort((a,b) => a.sort_order - b.sort_order); }
-
-function renderRankCard(p, featured = false) {
-  const perks = (Array.isArray(p.perks) ? p.perks : []).map(pk => `<li>${esc(pk)}</li>`).join('');
-  const savings = p.original_price > p.price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
-  const isFeatured = featured || p.is_featured;
-  return `<div class="rank-card ${isFeatured ? 'featured' : ''}" style="--cc:${p.color}">
-    <span class="rank-icon"><svg class="ic" style="width:2.5rem;height:2.5rem;color:${p.color}"><use href="#${p.icon}"/></svg></span>
-    <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
-    ${p.original_price > p.price ? `<div class="rank-original">was $${p.original_price.toFixed(2)}</div>` : ''}
-    <div class="rank-price"><span class="currency">$</span>${p.price.toFixed(2)}</div>
-    ${savings > 0 ? `<div class="rank-save">SAVE ${savings}%</div>` : ''}
-    <ul class="rank-perks">${perks}</ul>
-    <button class="btn" style="width:100%;margin-top:auto" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g,"\\'")}',${p.price},'${p.subcategory}')">
-      <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
-    </button>
-  </div>`;
-}
-
-function renderPluginCard(p) {
-  const perks = (Array.isArray(p.perks) ? p.perks : []);
-  const isFree = p.is_free || p.price <= 0;
-  return `<div class="plugin-card">
-    <div class="plugin-header">
-      <div class="plugin-icon" style="background:${p.color}15;color:${p.color}">
-        <svg class="ic" style="width:1.5rem;height:1.5rem"><use href="#${p.icon}"/></svg>
-      </div>
-      <div class="plugin-meta">
-        <h3>${esc(p.name)}</h3>
-        <span class="tag ${isFree ? 'tag-free' : 'tag-paid'}">${isFree ? 'Free' : '$' + p.price.toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="plugin-desc">${esc(p.description || '')}</div>
-    <div class="plugin-footer">
-      ${perks.length > 0 ? `<span style="color:var(--tx3);font-size:0.75rem">${perks.length} features</span>` : '<span></span>'}
-      ${isFree
-        ? `<button class="bto bsm" onclick="toast('ok','Download link coming soon!')"><svg class="ic"><use href="#ic-download"/></svg> Download</button>`
-        : `<button class="btn bsm" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g,"\\'")}',${p.price},'${p.subcategory}')"><svg class="ic"><use href="#ic-cart"/></svg> Buy</button>`
-      }
-    </div>
-  </div>`;
-}
-
-// ════════════════════════════════════════════════════════
-// HOME PAGE
-// ════════════════════════════════════════════════════════
-function loadHome() {
-  const ranks = getRanks();
-  I('FEATURED-RANKS').innerHTML = ranks.map(r => renderRankCard(r, r.is_featured)).join('');
-  const plugins = getPlugins().slice(0, 3);
-  I('FEATURED-PLUGINS').innerHTML = plugins.map(renderPluginCard).join('');
-}
-
-// ════════════════════════════════════════════════════════
-// RANKS PAGE
-// ════════════════════════════════════════════════════════
-function loadRanks() {
-  const ranks = getRanks();
-  I('RANKS-GRID').innerHTML = ranks.map(r => renderRankCard(r)).join('');
-}
-
-// ════════════════════════════════════════════════════════
-// PLUGINS PAGE
-// ════════════════════════════════════════════════════════
-function loadPlugins(filter = 'all') {
-  let plugins = getPlugins();
-  if (filter === 'free') plugins = plugins.filter(p => p.is_free || p.price <= 0);
-  if (filter === 'paid') plugins = plugins.filter(p => !p.is_free && p.price > 0);
-  I('PLUGINS-GRID').innerHTML = plugins.length
-    ? plugins.map(renderPluginCard).join('')
-    : '<div class="empty"><div class="empty-icon">🧩</div>No plugins in this category.</div>';
-}
-function filterPlugins(f) {
-  document.querySelectorAll('#PLUGIN-TABS .tab').forEach(t => t.classList.remove('ON'));
-  event.target.classList.add('ON');
-  loadPlugins(f);
-}
-
-// ════════════════════════════════════════════════════════
-// CART
-// ════════════════════════════════════════════════════════
-async function addToCart(id, name, price, gm) {
-  if (!ME) { openModal('M-LOGIN'); toast('err', 'Login to add items'); return; }
-  try {
-    await API('/api/cart', { method: 'POST', body: { item_id: String(id), item_name: name, item_price: price, gamemode: gm } });
-    updateCartCount();
-    toast('ok', `✓ ${name} added to cart!`);
-  } catch (e) { toast('err', e.message); }
-}
-
-async function updateCartCount() {
-  if (!ME) return;
-  try {
-    CART = await API('/api/cart');
-    const badge = I('CART-COUNT');
-    if (CART.length) { badge.style.display = 'flex'; badge.textContent = CART.length; }
-    else { badge.style.display = 'none'; }
+    const d = await API('/api/ads/history');
+    I('LOOT-HISTORY').innerHTML = d.map(x => `<tr>
+      <td><b>${esc(x.username)}</b></td>
+      <td class="rarity-${x.rarity}">${esc(x.item_name)}</td>
+      <td style="color:var(--tx3)">${x.created_at}</td>
+    </tr>`).join('');
   } catch {}
 }
 
-async function renderCart() {
-  if (!ME) { I('CART-LIST').innerHTML = '<div class="empty"><div class="empty-icon">🔐</div>Login to view your cart.<br><br><button class="btn" onclick="openModal(\'M-LOGIN\')">Login</button></div>'; I('CART-SUMMARY').innerHTML = ''; return; }
-  I('CART-LIST').innerHTML = '<div class="ld"><div class="sp"></div></div>';
-  try {
-    CART = await API('/api/cart');
-    if (!CART.length) {
-      I('CART-LIST').innerHTML = '<div class="empty"><div class="empty-icon">🛒</div>Your cart is empty.<br><br><button class="btn" onclick="GO(\'ranks\')">Browse Ranks</button></div>';
-      I('CART-SUMMARY').innerHTML = '';
-      return;
-    }
-    I('CART-LIST').innerHTML = CART.map(it => `<div class="cart-item">
-      <div class="cart-item-info"><h4>${esc(it.item_name)}</h4><small>${it.gamemode || 'Global'}</small></div>
-      <div class="cart-item-right">
-        <span class="cart-item-price">$${parseFloat(it.item_price).toFixed(2)}</span>
-        <button class="btn bred bxs" onclick="removeFromCart(${it.id})"><svg class="ic"><use href="#ic-x"/></svg></button>
-      </div>
-    </div>`).join('');
-
-    const total = CART.reduce((s, i) => s + parseFloat(i.item_price), 0);
-    I('CART-SUMMARY').innerHTML = `<div class="cart-summary">
-      <div class="cart-total">
-        <span class="cart-total-label">Total</span>
-        <span class="cart-total-price">$${total.toFixed(2)}</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="bto bsm" onclick="clearCart()">🗑 Clear Cart</button>
-        <button class="btn" style="flex:1" onclick="checkout()"><svg class="ic"><use href="#ic-check"/></svg> Checkout with Stripe</button>
-      </div>
-    </div>`;
-    updateCartCount();
-  } catch (e) { I('CART-LIST').innerHTML = `<div class="empty" style="color:var(--r2)">Error loading cart: ${e.message}</div>`; }
-}
-
-async function removeFromCart(id) {
-  try { await API(`/api/cart/${id}`, { method: 'DELETE' }); renderCart(); toast('ok', 'Removed'); }
-  catch (e) { toast('err', e.message); }
-}
-
-async function clearCart() {
-  if (!confirm('Clear your cart?')) return;
-  try { await API('/api/cart/clear', { method: 'DELETE' }); renderCart(); toast('ok', 'Cart cleared'); }
-  catch (e) { toast('err', e.message); }
-}
-
-async function checkout() {
+function watchAd() {
   if (!ME) { openModal('M-LOGIN'); return; }
-  if (!STRIPE_KEY) { toast('err', 'Stripe is not configured yet.'); return; }
+  if (NEXUS_CD > 0) { toast('err', 'Nexus is recharging!'); return; }
+
+  const btn = I('NEXUS-BTN');
+  btn.disabled = true;
+  let countdown = 10; // Shorter for demo
+  AD_TIMER = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) { clearInterval(AD_TIMER); completeAd(); }
+    else { btn.innerHTML = `Watching Ad: ${countdown}s`; }
+  }, 1000);
+}
+
+async function completeAd() {
   try {
-    const d = await API('/api/checkout', { method: 'POST' });
-    if (d.url) {
-      window.location.href = d.url;
-    } else {
-      toast('err', 'Could not create checkout session');
-    }
-  } catch (e) { toast('err', e.message); }
+    const d = await API('/api/ads/watch', { method: 'POST' });
+    openCrate(d);
+    NEXUS_CD = 300;
+    updateNexusCD();
+  } catch (e) { toast('err', e.message); I('NEXUS-BTN').disabled = false; I('NEXUS-BTN').innerHTML = 'WATCH & WIN'; }
 }
 
-// ════════════════════════════════════════════════════════
-// ADMIN
-// ════════════════════════════════════════════════════════
-let ADMIN_TAB = 'overview';
-function adminTab(t) {
-  ADMIN_TAB = t;
-  document.querySelectorAll('#pg-admin .tabs .tab').forEach((b, i) => b.classList.toggle('ON', ['overview','products','orders','events'][i] === t));
-  loadAdmin(t);
+function openCrate(data) {
+  openModal('M-NEXUS');
+  const strip = I('MX-STRIP');
+  const pool = [
+    { rarity: 'common', label: '300 Coins', icon: 'ic-cart' },
+    { rarity: 'rare', label: '2H VIP', icon: 'ic-shield' },
+    { rarity: 'common', label: '500 XP', icon: 'ic-bolt' },
+    { rarity: 'epic', label: '24H VIP', icon: 'ic-gold' }
+  ];
+  let html = '';
+  for (let i = 0; i < 30; i++) {
+    const it = pool[Math.floor(Math.random() * pool.length)];
+    html += `<div class="slot-item rarity-${it.rarity}"><svg class="ic" style="width:2rem;height:2rem"><use href="#${it.icon}"/></svg><span>${it.label}</span></div>`;
+  }
+  html += `<div class="slot-item rarity-${data.rarity}"><svg class="ic" style="width:2rem;height:2rem"><use href="#${data.icon}"/></svg><span>${data.label}</span></div>`;
+  for (let i = 0; i < 5; i++) {
+    const it = pool[Math.floor(Math.random() * pool.length)];
+    html += `<div class="slot-item rarity-${it.rarity}"><svg class="ic" style="width:2rem;height:2rem"><use href="#${it.icon}"/></svg><span>${it.label}</span></div>`;
+  }
+  strip.innerHTML = html;
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+  
+  setTimeout(() => {
+    strip.style.transition = 'transform 5s cubic-bezier(0.1, 0, 0.1, 1)';
+    const targetPos = - (30 * 120) + (I('.mx-spin-wrap').offsetWidth / 2) - 60;
+    strip.style.transform = `translateX(${targetPos}px)`;
+  }, 50);
+
+  setTimeout(() => {
+    I('MX-RESULT').style.display = 'block';
+    I('MX-REWARD').textContent = data.label;
+    I('MX-REWARD').className = `rarity-${data.rarity}`;
+    I('MX-TITLE').textContent = 'WINNER!';
+    loadNexusHistory();
+  }, 5500);
 }
 
-async function loadAdmin(tab) {
-  if (!ME || !ADMIN_ROLES.includes(ME.role)) { GO('home'); toast('err', 'Admin access required'); return; }
-  const el = I('ADMIN-CONTENT');
-  el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
-
-  try {
-    if (tab === 'overview') {
-      const d = await API('/api/admin/analytics');
-      const o = d.overview;
-      const t = d.today;
-      el.innerHTML = `
-        <div class="g4" style="margin-bottom:24px">
-          <div class="stat-card"><div class="stat-label">Total Views</div><div class="stat-value">${o.total_views.toLocaleString()}</div><div class="stat-sub">Today: ${t.views}</div></div>
-          <div class="stat-card"><div class="stat-label">Cart Additions</div><div class="stat-value" style="color:#f59e0b">${o.total_cart_adds.toLocaleString()}</div><div class="stat-sub">Today: ${t.cart_adds}</div></div>
-          <div class="stat-card"><div class="stat-label">Checkouts</div><div class="stat-value" style="color:var(--g)">${o.total_checkouts.toLocaleString()}</div><div class="stat-sub">Today: ${t.checkouts}</div></div>
-          <div class="stat-card"><div class="stat-label">Conversion Rate</div><div class="stat-value" style="color:var(--grn)">${o.conversion_rate}%</div><div class="stat-sub">Cart → Checkout</div></div>
-        </div>
-        <div class="g2" style="margin-bottom:24px">
-          <div class="stat-card"><div class="stat-label">Completed Orders</div><div class="stat-value" style="color:var(--grn)">${o.completed_orders}</div></div>
-          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" style="color:#fbbf24">$${o.total_revenue.toFixed(2)}</div><div class="stat-sub">Pending: ${o.pending_orders} orders</div></div>
-        </div>
-        <div class="stitle" style="text-align:left;font-size:1.1rem;margin-top:32px">🔥 Top Products</div>
-        <div style="background:var(--p1);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-top:12px">
-          <table class="admin-table"><thead><tr><th>Product</th><th style="text-align:right">Cart Adds</th></tr></thead><tbody>
-            ${d.top_products.length ? d.top_products.map(p => `<tr><td>${esc(p.product_name)}</td><td style="text-align:right;font-weight:700;color:var(--g)">${p.cnt}</td></tr>`).join('') : '<tr><td colspan="2" style="text-align:center;color:var(--tx3);padding:20px">No data yet</td></tr>'}
-          </tbody></table>
-        </div>`;
-
-    } else if (tab === 'products') {
-      const products = await API('/api/admin/products');
-      el.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <span style="color:var(--tx2)">${products.length} products</span>
-          <button class="btn bsm" onclick="editProduct()"><svg class="ic"><use href="#ic-plus"/></svg> Add Product</button>
-        </div>
-        <div style="background:var(--p1);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
-          <table class="admin-table"><thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>
-            ${products.map(p => `<tr>
-              <td><strong>${esc(p.name)}</strong></td>
-              <td><span class="tag ${p.category === 'rank' ? 'tag-paid' : 'tag-free'}">${p.category}</span></td>
-              <td style="font-weight:700">${p.price <= 0 ? 'Free' : '$' + p.price.toFixed(2)}</td>
-              <td>${p.status === 'active' ? '🟢' : '⚪'} ${p.status}</td>
-              <td style="text-align:right">
-                <button class="bto bxs" onclick='editProduct(${JSON.stringify(p).replace(/'/g,"\\'")})'>Edit</button>
-                <button class="btn bred bxs" onclick="deleteProduct(${p.id},'${esc(p.name)}')"><svg class="ic"><use href="#ic-trash"/></svg></button>
-              </td>
-            </tr>`).join('')}
-          </tbody></table>
-        </div>`;
-
-    } else if (tab === 'orders') {
-      const orders = await API('/api/admin/orders');
-      el.innerHTML = `
-        <div style="background:var(--p1);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
-          <table class="admin-table"><thead><tr><th>Order</th><th>Player</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>
-            ${orders.length ? orders.map(o => `<tr>
-              <td>#${o.id}</td>
-              <td>${esc(o.username || 'Unknown')}<br><small style="color:var(--tx3)">${esc(o.mc_name || '')}</small></td>
-              <td>${(Array.isArray(o.items) ? o.items : []).map(i => esc(i.name)).join(', ') || '—'}</td>
-              <td style="font-weight:700;color:var(--g)">$${(o.total || 0).toFixed(2)}</td>
-              <td>${o.status === 'completed' ? '✅' : o.status === 'pending' ? '⏳' : '❌'} ${o.status}</td>
-              <td style="color:var(--tx3);font-size:0.8rem">${o.created_at}</td>
-            </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px">No orders yet</td></tr>'}
-          </tbody></table>
-        </div>`;
-
-    } else if (tab === 'events') {
-      const d = await API('/api/admin/analytics');
-      el.innerHTML = `
-        <div style="background:var(--p1);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
-          <table class="admin-table"><thead><tr><th>Event</th><th>Product</th><th>User</th><th>Time</th></tr></thead><tbody>
-            ${d.recent_events.length ? d.recent_events.map(e => `<tr>
-              <td><span class="tag ${e.event_type === 'checkout' ? 'tag-paid' : 'tag-free'}">${e.event_type}</span></td>
-              <td>${esc(e.product_name || '—')}</td>
-              <td>${esc(e.username || 'Anonymous')}</td>
-              <td style="color:var(--tx3);font-size:0.8rem">${e.created_at}</td>
-            </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:20px">No events yet</td></tr>'}
-          </tbody></table>
-        </div>`;
-    }
-  } catch (e) { el.innerHTML = `<div class="empty" style="color:var(--r2)">Error: ${e.message}</div>`; }
-}
-
-function editProduct(p = null) {
-  // Simple prompt-based editor for now
-  const name = prompt('Product Name:', p?.name || '');
-  if (!name) return;
-  const slug = prompt('Slug (url-friendly):', p?.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-  const category = prompt('Category (rank/plugin):', p?.category || 'rank');
-  const price = parseFloat(prompt('Price ($):', p?.price ?? '0'));
-  const description = prompt('Description:', p?.description || '');
-  const perksStr = prompt('Perks (comma-separated):', (p?.perks || []).join(', '));
-  const perks = perksStr ? perksStr.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-  API('/api/admin/products', {
-    method: 'POST',
-    body: { id: p?.id, name, slug, category, subcategory: p?.subcategory || 'global', price, original_price: p?.original_price || 0, description, perks, icon: p?.icon || 'ic-star', color: p?.color || '#FF512F', is_free: price <= 0 ? 1 : 0, is_featured: p?.is_featured || 0, sort_order: p?.sort_order || 0, status: 'active' }
-  }).then(() => { toast('ok', 'Product saved!'); loadAdmin('products'); loadProducts(); })
-    .catch(e => toast('err', e.message));
-}
-
-async function deleteProduct(id, name) {
-  if (!confirm(`Delete "${name}"?`)) return;
-  try { await API(`/api/admin/products/${id}`, { method: 'DELETE' }); toast('ok', 'Deleted'); loadAdmin('products'); loadProducts(); }
-  catch (e) { toast('err', e.message); }
-}
-
-// ════════════════════════════════════════════════════════
-// CHECKOUT SUCCESS HANDLER
-// ════════════════════════════════════════════════════════
-function checkPaymentSuccess() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('session_id')) {
-    toast('ok', '🎉 Payment successful! Your items are being processed.');
-    // Clean URL
-    history.replaceState({}, '', '/');
-    updateCartCount();
+function updateNexusCD() {
+  const t = I('NEXUS-TIMER'), b = I('NEXUS-BTN');
+  if (NEXUS_CD > 0) {
+    const m = Math.floor(NEXUS_CD / 60), s = NEXUS_CD % 60;
+    t.innerHTML = `RECHARGING: ${m}:${s < 10 ? '0' : ''}${s}`;
+    b.disabled = true; b.innerHTML = 'COOLDOWN'; NEXUS_CD--;
+    setTimeout(updateNexusCD, 1000);
+  } else {
+    t.innerHTML = 'READY TO UNLOCK'; b.disabled = false; b.innerHTML = 'WATCH & WIN';
   }
 }
 
-// ════════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════════
-async function init() {
-  await loadProducts();
-  await checkAuth();
-  loadHome();
-  checkPaymentSuccess();
-
-  // Route based on URL
-  const path = window.location.pathname.substring(1).split('/')[0];
-  if (path && path !== 'checkout') GO(path);
+// Preserved Logic
+function openModal(id) { I(id).classList.add('show'); }
+function closeModal(id) { I(id).classList.remove('show'); }
+async function loadProducts() { try { PRODUCTS = await API('/api/products'); } catch {} }
+function loadRanks() { const r = PRODUCTS.filter(p => p.category === 'rank'); I('RANKS-GRID').innerHTML = r.map(p => renderRankCard(p)).join(''); }
+function loadHome() { const r = PRODUCTS.filter(p => p.category === 'rank'); I('FEATURED-RANKS').innerHTML = r.map(p => renderRankCard(p, true)).join(''); }
+function renderRankCard(p, f=false) {
+  const perks = (p.perks||[]).map(pk => `<li>${esc(pk)}</li>`).join('');
+  return `<div class="rank-card" style="--cc:${p.color}">
+    <div class="rank-name" style="color:${p.color}">${p.name}</div>
+    <div class="rank-price">$${p.price.toFixed(2)}</div>
+    <ul class="rank-perks">${perks}</ul>
+    <button class="btn" style="width:100%" onclick="addToCart(${p.id},'${p.name}',${p.price})">ADD TO CART</button>
+  </div>`;
 }
 
+async function handleAuth() { if (ME) { localStorage.removeItem('hc_token'); ME = null; updateAuthUI(); GO('home'); } else openModal('M-LOGIN'); }
+async function doLogin() {
+  const id = I('L-ID').value, pw = I('L-PW').value;
+  try {
+    const d = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
+    localStorage.setItem('hc_token', d.token); ME = d; closeModal('M-LOGIN'); updateAuthUI(); toast('ok', 'Welcome!');
+  } catch (e) { I('L-ERR').textContent = e.message; }
+}
+async function checkAuth() { const t = localStorage.getItem('hc_token'); if(t) try { ME = await API('/api/auth/me'); updateAuthUI(); } catch {} }
+function updateAuthUI() { const b = I('NAV-USER'); b.textContent = ME ? ME.username : 'Login'; }
+function I(id) { return id.startsWith('.') ? document.querySelector(id) : document.getElementById(id); }
+
+async function init() { await loadProducts(); await checkAuth(); loadHome(); }
 init();
 </script>
 </body>
