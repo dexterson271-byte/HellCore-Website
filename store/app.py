@@ -298,7 +298,7 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 @app.route("/")
 def index():
-    return render_template("store.html", stripe_pub_key=STRIPE_PUB_KEY)
+    return render_template("store.html")
 
 @app.route("/static/<path:f>")
 def static_f(f):
