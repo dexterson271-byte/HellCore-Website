@@ -339,7 +339,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_tickets(
   category VARCHAR(40) DEFAULT 'general',
   description TEXT NOT NULL,
   author_id INTEGER NOT NULL,
+  priority VARCHAR(20) DEFAULT 'normal',
+  assigned_to INTEGER,
   status VARCHAR(20) DEFAULT 'open',
+  last_message_at {DT},
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
@@ -347,7 +350,17 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
   ticket_id INTEGER NOT NULL,
   author_id INTEGER NOT NULL,
   content TEXT NOT NULL,
+  is_internal INTEGER DEFAULT 0,
+  message_type VARCHAR(20) DEFAULT 'user',
+  meta_json TEXT,
   image_url VARCHAR(255) DEFAULT '',
+  created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_ticket_activity(
+  id INTEGER PRIMARY KEY {AI},
+  ticket_id INTEGER NOT NULL,
+  actor_id INTEGER NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  details TEXT,
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ads(
@@ -419,6 +432,17 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
     # MIGRATION: Add image_url to ticket messages
     try: c.execute("ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''")
     except: pass
+    # MIGRATION: Ticket system enhancements
+    for sql in [
+        "ALTER TABLE hc_tickets ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'",
+        "ALTER TABLE hc_tickets ADD COLUMN assigned_to INTEGER",
+        "ALTER TABLE hc_tickets ADD COLUMN last_message_at TIMESTAMP",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN is_internal INTEGER DEFAULT 0",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN message_type VARCHAR(20) DEFAULT 'user'",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT"
+    ]:
+        try: c.execute(sql)
+        except: pass
 
     db.commit()
 
@@ -494,6 +518,22 @@ def log_audit(admin_id, action, target_id=None, details=""):
                   (admin_id, action, target_id, details))
         db.commit(); c.close(); db.close()
     except: traceback.print_exc()
+
+def normalize_ticket_priority(v):
+    p = str(v or "normal").strip().lower()
+    return p if p in ("low", "normal", "high", "urgent") else "normal"
+
+def can_view_ticket(ticket, user):
+    return bool(user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES))
+
+def can_manage_ticket(ticket, user):
+    return bool(user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES))
+
+def add_ticket_activity(c, ticket_id, actor_id, action, details=""):
+    c.execute(
+        f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
+        (ticket_id, actor_id, action, details)
+    )
 
 # ═══════════════════════════════════════════════════════
 # CORS
@@ -879,14 +919,28 @@ def reply_del(rid):
 def tickets_list():
     u = request.cu; db = get_db(); c = db_cursor(db)
     if u["role"] in STAFF_ROLES:
-        c.execute("SELECT t.*, u.username author_name FROM hc_tickets t "
-                  "JOIN hc_users u ON t.author_id=u.id ORDER BY t.created_at DESC")
+        c.execute("SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
+                  "JOIN hc_users u ON t.author_id=u.id "
+                  "LEFT JOIN hc_users a ON t.assigned_to=a.id "
+                  "ORDER BY COALESCE(t.last_message_at, t.created_at) DESC")
     else:
-        c.execute(f"SELECT t.*, u.username author_name FROM hc_tickets t "
-                  f"JOIN hc_users u ON t.author_id=u.id WHERE t.author_id={ph()} ORDER BY t.created_at DESC",
+        c.execute(f"SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
+                  f"JOIN hc_users u ON t.author_id=u.id "
+                  f"LEFT JOIN hc_users a ON t.assigned_to=a.id "
+                  f"WHERE t.author_id={ph()} ORDER BY COALESCE(t.last_message_at, t.created_at) DESC",
                   (u["id"],))
-    rows = to_list(c.fetchall()); c.close(); db.close()
-    for r in rows: r["created_at"] = ts(r["created_at"])
+    rows = to_list(c.fetchall())
+    for r in rows:
+        r["created_at"] = ts(r["created_at"])
+        r["last_message_at"] = ts(r.get("last_message_at") or r["created_at"])
+        c.execute(f"SELECT COUNT(*) cnt FROM hc_ticket_msgs WHERE ticket_id={ph()}", (r["id"],))
+        mc = to_dict(c.fetchone())
+        c.execute(f"SELECT id FROM hc_ticket_msgs WHERE ticket_id={ph()} ORDER BY id DESC LIMIT 1", (r["id"],))
+        lm = to_dict(c.fetchone())
+        r["message_count"] = int(mc["cnt"]) if mc else 0
+        r["last_message_id"] = int(lm["id"]) if lm else 0
+        r["priority"] = normalize_ticket_priority(r.get("priority"))
+    c.close(); db.close()
     return jsonify(rows)
 
 @app.route("/api/tickets", methods=["POST"])
@@ -896,8 +950,10 @@ def ticket_create():
     if not d.get("title") or not d.get("description"):
         return jsonify({"error":"All fields required"}), 400
     db = get_db(); c = db_cursor(db)
-    c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category) VALUES({phs(4)})",
-              (d["title"], d["description"], request.cu["id"], d.get("category","general")))
+    pr = normalize_ticket_priority(d.get("priority"))
+    now = datetime.now()
+    c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category,priority,last_message_at) VALUES({phs(6)})",
+              (d["title"], d["description"], request.cu["id"], d.get("category","general"), pr, now))
     db.commit(); tid = c.lastrowid; c.close(); db.close()
     return jsonify({"id":tid,"ok":True})
 
@@ -905,19 +961,42 @@ def ticket_create():
 @auth_required
 def ticket_get(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
-    c.execute(f"SELECT t.*, u.username author_name FROM hc_tickets t "
-              f"JOIN hc_users u ON t.author_id=u.id WHERE t.id={ph()}", (tid,))
+    c.execute(f"SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
+              f"JOIN hc_users u ON t.author_id=u.id LEFT JOIN hc_users a ON t.assigned_to=a.id WHERE t.id={ph()}", (tid,))
     t = to_dict(c.fetchone())
     if not t: db.close(); return jsonify({"error":"Not found"}), 404
-    if t["author_id"] != u["id"] and u["role"] not in STAFF_ROLES:
+    if not can_view_ticket(t, u):
         db.close(); return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
+    t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
+    t["priority"] = normalize_ticket_priority(t.get("priority"))
+    perms = {
+        "can_manage": can_manage_ticket(t, u),
+        "can_delete": bool(t["author_id"] == u["id"] or u["role"] in ADMIN_ROLES),
+        "can_assign": bool(u["role"] in STAFF_ROLES),
+        "can_internal_note": bool(u["role"] in STAFF_ROLES),
+        "can_rank_grant": bool(u["role"] in ADMIN_ROLES),
+    }
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} ORDER BY m.created_at ASC", (tid,))
     msgs = to_list(c.fetchall())
-    for m in msgs: m["created_at"] = ts(m["created_at"])
+    for m in msgs:
+        m["created_at"] = ts(m["created_at"])
+        m["is_internal"] = int(m.get("is_internal") or 0)
+        if m["is_internal"] and u["role"] not in STAFF_ROLES:
+            m["content"] = "[Internal note]"
+    if u["role"] not in STAFF_ROLES:
+        msgs = [m for m in msgs if int(m.get("is_internal") or 0) == 0]
+    c.execute(f"SELECT a.*, u.username actor_name FROM hc_ticket_activity a "
+              f"JOIN hc_users u ON a.actor_id=u.id WHERE a.ticket_id={ph()} ORDER BY a.created_at DESC LIMIT 40", (tid,))
+    acts = to_list(c.fetchall())
+    for a in acts: a["created_at"] = ts(a["created_at"])
+    staff = []
+    if u["role"] in STAFF_ROLES:
+        c.execute("SELECT id, username, role FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder') ORDER BY username ASC")
+        staff = to_list(c.fetchall())
     c.close(); db.close()
-    return jsonify({"ticket":t,"messages":msgs})
+    return jsonify({"ticket":t,"messages":msgs,"activity":acts,"staff":staff,"permissions":perms})
 
 @app.route("/api/tickets/<int:tid>/msg", methods=["POST"])
 @auth_required
@@ -925,6 +1004,7 @@ def ticket_msg(tid):
     d = request.get_json(force=True) or {}
     content = d.get("content", "").strip()
     img_data = d.get("image") # base64 string
+    is_internal = 1 if bool(d.get("is_internal")) else 0
     
     if not content and not img_data:
         return jsonify({"error":"Content or image required"}), 400
@@ -932,8 +1012,10 @@ def ticket_msg(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: db.close(); return jsonify({"error":"Not found"}), 404
-    if t["author_id"] != u["id"] and u["role"] not in STAFF_ROLES:
+    if not can_view_ticket(t, u):
         db.close(); return jsonify({"error":"Forbidden"}), 403
+    if is_internal and u["role"] not in STAFF_ROLES:
+        db.close(); return jsonify({"error":"Staff only note"}), 403
         
     img_url = ""
     if img_data:
@@ -956,18 +1038,155 @@ def ticket_msg(tid):
             print(f"[TICKETS] Image Save Error: {e}")
             # Continue without image if it fails
             
-    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,image_url) VALUES({phs(4)})",
-              (tid, u["id"], content, img_url))
+    mtype = "internal" if is_internal else "user"
+    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,image_url,is_internal,message_type) VALUES({phs(6)})",
+              (tid, u["id"], content, img_url, is_internal, mtype))
+    mid = c.lastrowid
+    c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
+    if is_internal:
+        add_ticket_activity(c, tid, u["id"], "internal_note", content[:120])
+    db.commit()
+    c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
+              f"JOIN hc_users u ON m.author_id=u.id WHERE m.id={ph()}", (mid,))
+    msg = to_dict(c.fetchone())
+    msg["created_at"] = ts(msg["created_at"])
+    c.close(); db.close()
+    return jsonify({"ok":True,"message":msg})
+
+@app.route("/api/tickets/<int:tid>/updates")
+@auth_required
+def ticket_updates(tid):
+    after_id = int(request.args.get("after_id", "0") or 0)
+    u = request.cu; db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
+    t = to_dict(c.fetchone())
+    if not t: db.close(); return jsonify({"error":"Not found"}), 404
+    if not can_view_ticket(t, u):
+        db.close(); return jsonify({"error":"Forbidden"}), 403
+    c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
+              f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
+    msgs = to_list(c.fetchall())
+    for m in msgs: m["created_at"] = ts(m["created_at"])
+    if u["role"] not in STAFF_ROLES:
+        msgs = [m for m in msgs if int(m.get("is_internal") or 0) == 0]
+    c.execute(f"SELECT status,priority,assigned_to,last_message_at FROM hc_tickets WHERE id={ph()}", (tid,))
+    meta = to_dict(c.fetchone()) or {}
+    meta["last_message_at"] = ts(meta.get("last_message_at"))
+    c.close(); db.close()
+    return jsonify({"messages":msgs, "ticket_meta":meta})
+
+@app.route("/api/tickets/<int:tid>/action", methods=["POST"])
+@auth_required
+def ticket_action(tid):
+    d = request.get_json(force=True) or {}
+    action = str(d.get("action", "")).strip().lower()
+    u = request.cu; db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
+    t = to_dict(c.fetchone())
+    if not t: db.close(); return jsonify({"error":"Not found"}), 404
+    if not can_manage_ticket(t, u):
+        db.close(); return jsonify({"error":"Forbidden"}), 403
+
+    if action == "close":
+        c.execute(f"UPDATE hc_tickets SET status='closed' WHERE id={ph()}", (tid,))
+        add_ticket_activity(c, tid, u["id"], "status", "closed")
+    elif action == "reopen":
+        c.execute(f"UPDATE hc_tickets SET status='open' WHERE id={ph()}", (tid,))
+        add_ticket_activity(c, tid, u["id"], "status", "open")
+    elif action == "assign":
+        if u["role"] not in STAFF_ROLES:
+            db.close(); return jsonify({"error":"Staff only"}), 403
+        assigned_to = d.get("assigned_to")
+        if assigned_to in (None, "", 0):
+            c.execute(f"UPDATE hc_tickets SET assigned_to=NULL WHERE id={ph()}", (tid,))
+            add_ticket_activity(c, tid, u["id"], "assignment", "unassigned")
+        else:
+            c.execute(f"SELECT id, username FROM hc_users WHERE id={ph()}", (int(assigned_to),))
+            au = to_dict(c.fetchone())
+            if not au:
+                db.close(); return jsonify({"error":"Assignee not found"}), 404
+            c.execute(f"UPDATE hc_tickets SET assigned_to={ph()} WHERE id={ph()}", (au["id"], tid))
+            add_ticket_activity(c, tid, u["id"], "assignment", f"assigned_to:{au['username']}")
+    elif action == "priority":
+        if u["role"] not in STAFF_ROLES:
+            db.close(); return jsonify({"error":"Staff only"}), 403
+        p = normalize_ticket_priority(d.get("priority"))
+        c.execute(f"UPDATE hc_tickets SET priority={ph()} WHERE id={ph()}", (p, tid))
+        add_ticket_activity(c, tid, u["id"], "priority", p)
+    elif action in ("payment_received", "payment_pending", "need_details"):
+        if u["role"] not in STAFF_ROLES:
+            db.close(); return jsonify({"error":"Staff only"}), 403
+        add_ticket_activity(c, tid, u["id"], "payment", action)
+    else:
+        db.close(); return jsonify({"error":"Unknown action"}), 400
+
+    c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     db.commit(); c.close(); db.close()
     return jsonify({"ok":True})
 
 @app.route("/api/tickets/<int:tid>/close", methods=["POST"])
 @auth_required
 def ticket_close(tid):
-    db = get_db(); c = db_cursor(db)
-    c.execute(f"UPDATE hc_tickets SET status='closed' WHERE id={ph()}", (tid,))
+    u = request.cu; db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
+    t = to_dict(c.fetchone())
+    if not t: db.close(); return jsonify({"error":"Not found"}), 404
+    if not can_manage_ticket(t, u):
+        db.close(); return jsonify({"error":"Forbidden"}), 403
+    c.execute(f"UPDATE hc_tickets SET status='closed', last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
+    add_ticket_activity(c, tid, u["id"], "status", "closed")
     db.commit(); c.close(); db.close()
     return jsonify({"ok":True})
+
+@app.route("/api/tickets/<int:tid>/rank", methods=["POST"])
+@auth_required
+def ticket_rank_grant(tid):
+    u = request.cu
+    if u["role"] not in ADMIN_ROLES:
+        return jsonify({"error":"Admin required"}), 403
+    d = request.get_json(force=True) or {}
+    username = str(d.get("username", "")).strip()
+    rank = str(d.get("rank", "")).strip().lower()
+    mode = str(d.get("mode", "perm_set")).strip().lower()
+    duration = str(d.get("duration", "7d")).strip().lower()
+    if not username or not rank:
+        return jsonify({"error":"username and rank required"}), 400
+    if not re.match(r"^[a-zA-Z0-9_]{3,16}$", username):
+        return jsonify({"error":"Invalid username"}), 400
+    if not re.match(r"^[a-zA-Z0-9_+\-]{2,24}$", rank):
+        return jsonify({"error":"Invalid rank"}), 400
+    if mode == "temp_add":
+        if not re.match(r"^[0-9]{1,3}[smhdw]$", duration):
+            return jsonify({"error":"Invalid duration, example: 30d"}), 400
+        cmd = f"lp user {username} parent addtemp {rank} {duration}"
+    else:
+        mode = "perm_set"
+        cmd = f"lp user {username} parent set {rank}"
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
+    t = to_dict(c.fetchone())
+    if not t: db.close(); return jsonify({"error":"Ticket not found"}), 404
+    c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+    add_ticket_activity(c, tid, u["id"], "rank_grant", f"{mode}:{username}:{rank}:{duration}")
+    c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,is_internal,message_type) VALUES({phs(5)})",
+              (tid, u["id"], f"Rank grant queued for {username} -> {rank} ({mode}{' '+duration if mode=='temp_add' else ''})", 1, "system"))
+    c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
+    db.commit(); c.close(); db.close()
+    return jsonify({"ok":True, "queued_command":cmd})
+
+@app.route("/api/tickets/canned")
+@auth_required
+def ticket_canned():
+    u = request.cu
+    if u["role"] not in STAFF_ROLES:
+        return jsonify([])
+    rows = [
+        {"id":"pay_received","label":"Payment received","text":"Payment confirmed. Your order is now being processed."},
+        {"id":"need_proof","label":"Need payment proof","text":"Please send a screenshot of the completed UPI transaction with transaction ID."},
+        {"id":"need_ign","label":"Need in-game username","text":"Please confirm your exact Minecraft username so we can grant the rank."},
+        {"id":"eta","label":"Processing ETA","text":"Thanks for your patience. Processing is in progress and usually completes in 5-10 minutes."}
+    ]
+    return jsonify(rows)
 
 @app.route("/api/tickets/<int:tid>", methods=["DELETE"])
 @auth_required
@@ -978,6 +1197,7 @@ def ticket_del(tid):
     if t["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
         db.close(); return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_ticket_msgs WHERE ticket_id={ph()}", (tid,))
+    c.execute(f"DELETE FROM hc_ticket_activity WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_tickets WHERE id={ph()}", (tid,))
     db.commit(); c.close(); db.close()
     return jsonify({"ok":True})
