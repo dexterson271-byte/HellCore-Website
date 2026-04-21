@@ -197,7 +197,9 @@ def try_connect():
             print(f"[ERROR] Railway MySQL failed: {e}")
 
     _DB_MODE = "sqlite"
-    print("[OK] Using SQLite (hellcore.db) — zero config mode")
+    print(f"[OK] Falling back to SQLite (hellcore.db) because no MySQL connection was successful.")
+    print("     Hint: If you are on Railway, check your MYSQL_HOST/PORT/USER/PASSWORD/DATABASE env vars.")
+    print("     Hint: If you are local, ensure mysql-connector-python is installed and MySQL is running.")
 
 # Automatically connect to DB when the app starts
 try_connect()
@@ -459,8 +461,13 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
     ]
 
     for sql in tables:
-        try: c.execute(sql)
-        except Exception as e: print(f"  Table warn: {e}")
+        try: 
+            c.execute(sql)
+        except Exception as e: 
+            print(f"  [DB WARN] Failed to create table: {e}")
+    
+    db.commit() # <── CRITICAL: Commit core tables immediately after creation
+    print(f"  [DB INFO] Core tables committed.")
 
     # MIGRATION: Add is_pinned and is_locked if missing
     for col in ["is_pinned", "is_locked"]:
@@ -483,33 +490,39 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
         except: pass
 
     # MIGRATION: User last_seen
-    try: c.execute("ALTER TABLE hc_users ADD COLUMN last_seen DATETIME")
-    except: pass
+    try: 
+        c.execute("ALTER TABLE hc_users ADD COLUMN last_seen DATETIME")
+    except: 
+        pass
 
-    db.commit()
+    db.commit() # <── Commit migrations
+    print(f"  [DB INFO] Migrations committed.")
 
     # --- BOOTSTRAP EVENTS ---
     def bootstrap_events(curr):
-        # One-time purge to fix missing link_url in existing records
-        curr.execute("DELETE FROM hc_events")
-        
-        evs = [
-            ("Earn a Free Rank", "Claim your free starter rank today and unlock exclusive lobby furniture!", "/static/logo.png", "/store/free"),
-            ("Join our Discord", "Join 5,000+ members! Get live updates and participate in giveaways.", "/static/logo.png", "/discord"),
-            ("Double XP Weekend", "2x Experience is currently ACTIVE! Level up your battle pass twice as fast.", "/static/logo.png", "/players"),
-            ("Vote for Rewards", "Help Hellcore Network grow on server lists and earn 2x Mystery Boxes!", "/static/logo.png", "/forums"),
-            ("Spring Sale: 20% OFF", "Spring is here! Use coupon code 'SPRING20' for a massive discount.", "/static/logo.png", "/store"),
-            ("Guild Tournament", "The weekly Guild Wars have begun! Top guilds win sharing chests of Gold.", "/static/logo.png", "/players"),
-            ("Mystery Nexus Boost", "Nexus rates are BOOSTED! Watch ads for a higher chance of Legendary loot.", "/static/logo.png", "/store/free")
-        ]
-        for title, desc, img, link in evs:
-            curr.execute(f"INSERT INTO hc_events (title, description, image_url, link_url, created_at) VALUES ({phs(5)})", 
-                        (title, desc, img, link, datetime.now()))
-        print("[OK] Purged and Re-boostrapped 7 events.")
+        try:
+            # One-time purge to fix missing link_url in existing records
+            curr.execute("DELETE FROM hc_events")
+            
+            evs = [
+                ("Earn a Free Rank", "Claim your free starter rank today and unlock exclusive lobby furniture!", "/static/logo.png", "/store/free"),
+                ("Join our Discord", "Join 5,000+ members! Get live updates and participate in giveaways.", "/static/logo.png", "/discord"),
+                ("Double XP Weekend", "2x Experience is currently ACTIVE! Level up your battle pass twice as fast.", "/static/logo.png", "/players"),
+                ("Vote for Rewards", "Help Hellcore Network grow on server lists and earn 2x Mystery Boxes!", "/static/logo.png", "/forums"),
+                ("Spring Sale: 20% OFF", "Spring is here! Use coupon code 'SPRING20' for a massive discount.", "/static/logo.png", "/store"),
+                ("Guild Tournament", "The weekly Guild Wars have begun! Top guilds win sharing chests of Gold.", "/static/logo.png", "/players"),
+                ("Mystery Nexus Boost", "Nexus rates are BOOSTED! Watch ads for a higher chance of Legendary loot.", "/static/logo.png", "/store/free")
+            ]
+            for title, desc, img, link in evs:
+                curr.execute(f"INSERT INTO hc_events (title, description, image_url, link_url, created_at) VALUES ({phs(5)})", 
+                            (title, desc, img, link, datetime.now()))
+            print("[OK] Purged and Re-boostrapped 7 events.")
+        except Exception as e:
+            print(f"  [DB WARN] Bootstrap failed (ignoring): {e}")
 
     bootstrap_events(c)
-    db.commit(); c.close(); db.close()
-    print(f"[OK] Tables ready ({_DB_MODE})")
+    db.commit(); c.close(); db.close() # Final commit for bootstrap
+    print(f"[OK] Database fully initialized ({_DB_MODE})")
 
 # ═══════════════════════════════════════════════════════
 # AUTH HELPERS
