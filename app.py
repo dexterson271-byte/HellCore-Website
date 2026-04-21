@@ -952,9 +952,26 @@ def ticket_create():
     db = get_db(); c = db_cursor(db)
     pr = normalize_ticket_priority(d.get("priority"))
     now = datetime.now()
+    category = d.get("category","general")
     c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category,priority,last_message_at) VALUES({phs(6)})",
-              (d["title"], d["description"], request.cu["id"], d.get("category","general"), pr, now))
+              (d["title"], d["description"], request.cu["id"], category, pr, now))
     db.commit(); tid = c.lastrowid; c.close(); db.close()
+
+    if category == "purchase":
+        try:
+            import requests
+            wh = globals().get("STAFF_WEBHOOK", "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj")
+            requests.post(wh, json={
+                "content": f"🚨 **New Payment Ticket** created by **{request.cu['username']}** (Ticket #{tid})",
+                "embeds": [{
+                    "title": d["title"],
+                    "description": d["description"][:500] + ("..." if len(d["description"]) > 500 else ""),
+                    "color": 0xFF512F
+                }]
+            }, timeout=3)
+        except Exception as e:
+            print("Webhook failed:", e)
+
     return jsonify({"id":tid,"ok":True})
 
 @app.route("/api/tickets/<int:tid>")

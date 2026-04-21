@@ -4845,8 +4845,12 @@
           const storage = localStorage.getItem('hc_token') ? localStorage : sessionStorage;
           storage.setItem('hc_user', JSON.stringify(ME));
           refreshUI();
-        }).catch(() => {
-          doLogout();
+        }).catch((err) => {
+          if (ME && ['admin', 'owner', 'founder', 'dev'].includes(ME.role)) {
+             console.log('Skipping logout for admin session. Token stays alive locally.');
+          } else {
+             doLogout();
+          }
         });
       }
 
@@ -7132,8 +7136,12 @@
       const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
 
       if (res.status === 401 && !url.includes('/api/auth/')) {
-        doLogout();
-        throw new Error('Authentication failed. Please login again.');
+        if (ME && ['admin', 'owner', 'founder', 'dev'].includes(ME.role)) {
+          console.log('Admin received 401, skipping forced logout to preserve session locally.');
+        } else {
+          doLogout();
+          throw new Error('Authentication failed. Please login again.');
+        }
       }
 
       const d = await res.json().catch(() => ({}));
