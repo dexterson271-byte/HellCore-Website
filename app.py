@@ -995,6 +995,10 @@ def ticket_create():
                      for x in f:
                          if "VAPID_PRIVATE_KEY" in x: vapid_priv = x.split("=")[1].strip()
 
+            if vapid_priv and os.path.exists(vapid_priv):
+                with open(vapid_priv, "r") as f:
+                    vapid_priv = f.read().strip()
+
             if vapid_priv and subs:
                 payload = json.dumps({"title": "New Payment Ticket", "body": f"Created by {request.cu['username']}"})
                 for s in subs:
