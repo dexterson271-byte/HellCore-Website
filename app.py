@@ -235,7 +235,7 @@ def get_db():
         return conn
 
 def db_cursor(conn):
-    if _DB_MODE in ("mysql_local", "mysql_aiven"):
+    if _DB_MODE in ("mysql_local", "mysql_aiven", "mysql_railway"):
         return conn.cursor(dictionary=True)
     return conn.cursor()
 
