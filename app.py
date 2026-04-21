@@ -109,6 +109,14 @@ AIVEN_USER     = os.environ.get("AIVEN_USER", "")
 AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
 AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
 
+# ── RAILWAY MYSQL (cloud) ─────────────────────────────
+USE_MYSQL_RAILWAY = os.environ.get("USE_MYSQL_RAILWAY", "True").lower() == "true"
+RAILWAY_HOST     = os.environ.get("MYSQL_HOST", "")
+RAILWAY_PORT     = int(os.environ.get("MYSQL_PORT", 3306))
+RAILWAY_USER     = os.environ.get("MYSQL_USER", "root")
+RAILWAY_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+RAILWAY_DATABASE = os.environ.get("MYSQL_DATABASE", "railway")
+
 # ── SQLITE (zero-config fallback) ─────────────────────
 SQLITE_FILE = "hellcore.db"
 
@@ -156,7 +164,7 @@ def try_connect():
         except Exception as e:
             print(f"[ERROR] Local MySQL failed: {e}")
 
-    if USE_MYSQL_AIVEN:
+    if USE_MYSQL_AIVEN and AIVEN_HOST:
         try:
             import mysql.connector
             c = mysql.connector.connect(
@@ -172,6 +180,22 @@ def try_connect():
         except Exception as e:
             print(f"[ERROR] Aiven MySQL failed: {e}")
 
+    if USE_MYSQL_RAILWAY and RAILWAY_HOST:
+        try:
+            import mysql.connector
+            c = mysql.connector.connect(
+                host=RAILWAY_HOST, port=RAILWAY_PORT,
+                user=RAILWAY_USER, password=RAILWAY_PASSWORD,
+                database=RAILWAY_DATABASE,
+                connection_timeout=8
+            )
+            c.close()
+            _DB_MODE = "mysql_railway"
+            print(f"[OK] Railway MySQL connected ({RAILWAY_HOST})")
+            return
+        except Exception as e:
+            print(f"[ERROR] Railway MySQL failed: {e}")
+
     _DB_MODE = "sqlite"
     print("[OK] Using SQLite (hellcore.db) — zero config mode")
 
@@ -180,13 +204,20 @@ try_connect()
 
 def get_db():
 
-    if _DB_MODE in ("mysql_local", "mysql_aiven"):
+    if _DB_MODE in ("mysql_local", "mysql_aiven", "mysql_railway"):
         import mysql.connector
         if _DB_MODE == "mysql_local":
             return mysql.connector.connect(
                 host=LOCAL_MYSQL_HOST, port=LOCAL_MYSQL_PORT,
                 user=LOCAL_MYSQL_USER, password=LOCAL_MYSQL_PASSWORD,
                 database=LOCAL_MYSQL_DATABASE
+            )
+        elif _DB_MODE == "mysql_railway":
+            return mysql.connector.connect(
+                host=RAILWAY_HOST, port=RAILWAY_PORT,
+                user=RAILWAY_USER, password=RAILWAY_PASSWORD,
+                database=RAILWAY_DATABASE,
+                autocommit=True
             )
         else:
             return mysql.connector.connect(

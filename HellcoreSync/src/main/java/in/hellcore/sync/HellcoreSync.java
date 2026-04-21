@@ -75,17 +75,33 @@ public class HellcoreSync {
             if (!Files.exists(dataDirectory)) {
                 Files.createDirectories(dataDirectory);
             }
-            File configFile = new File(dataDirectory.toFile(), "config.properties");
+            
+            // Search Locations for config.properties
+            File[] searchPaths = {
+                new File(dataDirectory.toFile(), "config.properties"), // plugins/hellcoresync/
+                new File("plugins" + File.separator + "HellcoreSync" + File.separator + "config.properties"), // plugins/HellcoreSync/
+                new File("config.properties") // root folder
+            };
+
+            File configFile = searchPaths[0];
+            for (File path : searchPaths) {
+                if (path.exists()) {
+                    configFile = path;
+                    break;
+                }
+            }
+
+            logger.info("Using config file found at: " + configFile.getAbsolutePath());
             Properties props = new Properties();
             if (!configFile.exists()) {
-                logger.info("Configuration file not found. Creating default at: " + configFile.getPath());
+                logger.info("Configuration file not found. Creating default at: " + searchPaths[0].getPath());
                 props.setProperty("mysql.host", "localhost");
                 props.setProperty("mysql.port", "3306");
                 props.setProperty("mysql.database", "hellcore");
                 props.setProperty("mysql.user", "root");
                 props.setProperty("mysql.password", "");
                 props.setProperty("discord.webhook", "https://discord.com/api/webhooks/1495063212415254648/Wb66npovkjNTZLesUAHn3Mli9yD7nUr8utc-ZvLvtz3hY5C_sjOlPu-Jr_8SKHyn0LkO");
-                try (FileOutputStream out = new FileOutputStream(configFile)) {
+                try (FileOutputStream out = new FileOutputStream(searchPaths[0])) {
                     props.store(out, "HellcoreSync Configuration");
                 }
             } else {
@@ -97,8 +113,15 @@ public class HellcoreSync {
             String webhookUrl = props.getProperty("discord.webhook", "").trim();
 
             logger.info("Initializing MySQL Connection Pool...");
+            String host = props.getProperty("mysql.host");
+            String port = props.getProperty("mysql.port");
+            String database = props.getProperty("mysql.database");
+            logger.info("Target: " + host + ":" + port + "/" + database);
+
             HikariConfig config = new HikariConfig();
-            config.setJdbcUrl("jdbc:mysql://" + props.getProperty("mysql.host") + ":" + props.getProperty("mysql.port") + "/" + props.getProperty("mysql.database") + "?useSSL=true&autoReconnect=true");
+            // Use SSL=false for Railway to avoid trustStore issues, keep it for others
+            String sslParam = host.contains("rlwy.net") ? "useSSL=false" : "useSSL=true"; 
+            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?" + sslParam + "&autoReconnect=true&allowPublicKeyRetrieval=true");
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             config.setUsername(props.getProperty("mysql.user"));
             config.setPassword(props.getProperty("mysql.password"));
