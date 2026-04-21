@@ -1138,24 +1138,6 @@
       margin-left: 4px;
     }
 
-    .tix-dc { display:grid; grid-template-columns:300px 1fr 320px; gap:12px; min-height:72vh; }
-    .tix-left,.tix-mid,.tix-right { background:rgba(8,8,8,0.45); border:1px solid var(--bd); border-radius:12px; overflow:hidden; }
-    .tix-head { padding:12px; border-bottom:1px solid var(--bd); display:grid; gap:8px; }
-    .tix-item { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; }
-    .tix-item:hover { background:rgba(255,255,255,0.04); }
-    .tix-item.on { background:rgba(255,81,47,0.12); border-left:3px solid var(--g); }
-    .tix-chat-head { padding:12px 16px; border-bottom:1px solid var(--bd); font-weight:700; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-    .tix-chat-body { min-height:48vh; max-height:52vh; overflow:auto; padding:8px 0; }
-    .tix-composer { border-top:1px solid var(--bd); padding:12px; background:rgba(0,0,0,0.2); }
-    .tix-side { padding:12px; display:grid; gap:12px; }
-    .tix-chip { font-size:.68rem; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.05em; }
-    .tix-chip.open { background:rgba(16,185,129,0.2); color:#34d399; }
-    .tix-chip.closed { background:rgba(239,68,68,0.2); color:#f87171; }
-    .tix-mention { color:#fbbf24; background:rgba(251,191,36,0.12); padding:1px 4px; border-radius:4px; }
-    .tix-act { border:1px solid var(--bd); border-radius:10px; padding:8px 10px; font-size:.78rem; background:rgba(255,255,255,0.02); }
-    @media(max-width:1200px){ .tix-dc { grid-template-columns:260px 1fr; } .tix-right { grid-column:1 / -1; } }
-    @media(max-width:800px){ .tix-dc { grid-template-columns:1fr; } }
-
     /* ═══════ HERO ═══════ */
     .hero {
       text-align: center;
@@ -4616,40 +4598,19 @@
     <!-- ════════════ TICKETS PAGE ════════════ -->
     <div class="pg" id="pg-tickets">
       <div class="Ws">
-        <div class="ptitle"><svg class="ic"><use href="#ic-ticket" /></svg> Support Tickets</div>
-        <div class="tix-dc">
-          <aside class="tix-left">
-            <div class="tix-head">
-              <button class="btn bsm" onclick="NL(()=>openM('MT'))">+ New Ticket</button>
-              <input id="TIX-FILTER" class="inp" placeholder="Search tickets..." oninput="filterTicketList()">
-            </div>
-            <div id="TIX-L"></div>
-          </aside>
-          <section class="tix-mid">
-            <div id="TIX-CHAT-HEAD" class="tix-chat-head">Select a ticket to start.</div>
-            <div id="TIX-CHAT" class="tix-chat-body"></div>
-            <div id="TIX-COMPOSER" class="tix-composer" style="display:none">
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                <select id="TIX-CANNED" class="inp" onchange="applyCannedReply()">
-                  <option value="">Insert canned response...</option>
-                </select>
-                <button class="bto bsm" onclick="toggleInternalNote()">Internal Note</button>
-                <span id="TIX-INTERNAL-BADGE" style="display:none;font-size:.7rem;color:#fbbf24">Internal note mode</span>
-              </div>
-              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..."></textarea>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-                <div style="display:flex;gap:8px;align-items:center">
-                  <input type="file" id="TIX-IMG" style="display:none" accept="image/*" onchange="previewTicketImage(this)">
-                  <button class="bto bsm" onclick="I('TIX-IMG').click()">Attach</button>
-                  <span id="TIX-IMG-NM" style="font-size:.72rem;color:var(--tx2)"></span>
-                </div>
-                <button class="btn bsm" onclick="sendActiveTixMsg()">Send</button>
-              </div>
-            </div>
-          </section>
-          <aside class="tix-right">
-            <div id="TIX-SIDE" class="tix-side">Select a ticket to view details.</div>
-          </aside>
+        <div class="ptitle"><svg class="ic">
+            <use href="#ic-ticket" />
+          </svg> Support Tickets</div>
+        <div id="TIX-LIST">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <p style="color:var(--tx2);font-size:.83rem">Get help from our staff team</p>
+            <button class="btn" onclick="NL(()=>openM('MT'))">+ New Ticket</button>
+          </div>
+          <div id="TIX-L"></div>
+        </div>
+        <div id="TIX-DET" style="display:none">
+          <button class="bto bsm" onclick="closeTixD()" style="margin-bottom:10px">← Back</button>
+          <div id="TIX-DET-C"></div>
         </div>
       </div>
     </div>
@@ -4789,14 +4750,6 @@
             <option value="purchase">Purchase Issue</option>
             <option value="bug">Bug Report</option>
             <option value="report">Player Report</option>
-          </select>
-        </div>
-        <div class="fg"><label>Priority</label>
-          <select id="NT-PR" class="inp">
-            <option value="low">Low</option>
-            <option value="normal" selected>Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
           </select>
         </div>
         <div class="fg"><label>Description</label><textarea id="NT-DE" class="inp" rows="5"
@@ -6413,180 +6366,137 @@
     }
 
     // ════════════════════════════════════════════════════
-    // TICKETS (DISCORD WORKSPACE)
+    // TICKETS
     // ════════════════════════════════════════════════════
-    const TIX = { list: [], activeId: null, active: null, messages: [], activity: [], staff: [], perms: {}, poll: null, internal: false, canned: [] };
-    const tixSeenKey = id => `hc_tix_seen_${ME?.id || 0}_${id}`;
-    const tixMarkSeen = (id, mid) => { try { localStorage.setItem(tixSeenKey(id), String(mid || 0)); } catch (e) { } };
-    const tixGetSeen = id => { try { return parseInt(localStorage.getItem(tixSeenKey(id)) || '0', 10) || 0; } catch (e) { return 0; } };
-
     async function loadTix() {
       if (!ME) return;
       const el = I('TIX-L'); if (!el) return;
       el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
-      try {
-        const [tickets, canned] = await Promise.all([
-          API('/api/tickets'),
-          isStaff() ? API('/api/tickets/canned') : Promise.resolve([])
-        ]);
-        TIX.list = tickets || [];
-        TIX.canned = canned || [];
-        renderTixList(TIX.list, el);
-        renderCannedReplies();
-      } catch (e) { el.innerHTML = '<div class="empty">Log in to view tickets.</div>'; }
+      try { const d = await API('/api/tickets'); renderTixList(d, el); }
+      catch (e) { el.innerHTML = '<div class="empty">Log in to view tickets.</div>'; }
     }
     async function loadProfTix() {
       if (!ME) return;
       const el = I('PR-TIX-L'); if (!el) return;
-      try { const d = await API('/api/tickets'); renderTixList(d, el, true); } catch (e) { }
+      try { const d = await API('/api/tickets'); renderTixList(d, el); } catch (e) { }
     }
-    function renderTixList(d, el, simple = false) {
-      const q = (I('TIX-FILTER')?.value || '').toLowerCase().trim();
-      const list = (d || []).filter(t => !q || `${t.title} ${t.category} ${t.author_name}`.toLowerCase().includes(q));
-      if (!list.length) { el.innerHTML = '<div class="empty">No tickets.</div>'; return; }
-      el.innerHTML = list.map(t => {
-        const seen = tixGetSeen(t.id);
-        const unread = Math.max(0, (t.last_message_id || 0) - seen);
-        const st = t.status === 'open' ? 'open' : 'closed';
-        if (simple) {
-          return `<div class="p" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px" onclick="openTix(${t.id})">
-            <div><div style="font-weight:600">${esc(t.title)}</div><div style="font-size:.72rem;color:var(--tx2)">${t.category} · ${fmtD(t.created_at)} · By ${esc(t.author_name)}</div></div>
-            <span style="font-size:.75rem;font-weight:700;color:${t.status === 'open' ? 'var(--grn)' : 'var(--r2)'}">${t.status.toUpperCase()}</span></div>`;
-        }
-        return `<div class="tix-item ${TIX.activeId === t.id ? 'on' : ''}" onclick="openTix(${t.id})">
-          <div style="display:flex;justify-content:space-between;gap:8px"><strong>${esc(t.title)}</strong><span class="tix-chip ${st}">${st}</span></div>
-          <div style="font-size:.72rem;color:var(--tx2);margin-top:2px">${esc(t.category)} · ${esc(t.author_name)} · ${fmtD(t.last_message_at || t.created_at)}</div>
-          <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:.7rem">
-            <span style="color:${t.priority === 'urgent' ? '#f87171' : t.priority === 'high' ? '#fb923c' : 'var(--tx3)'}">Priority: ${esc(t.priority || 'normal')}</span>
-            ${unread ? `<span style="color:#fbbf24;font-weight:800">${unread} unread</span>` : '<span style="color:var(--tx3)">No unread</span>'}
-          </div>
-        </div>`;
-      }).join('');
+    function renderTixList(d, el) {
+      if (!d.length) { el.innerHTML = '<div class="empty">No tickets.</div>'; return; }
+      el.innerHTML = d.map(t => `<div class="p" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px" onclick="openTix(${t.id})">
+    <div><div style="font-weight:600">${esc(t.title)}</div>
+      <div style="font-size:.72rem;color:var(--tx2)">${t.category} · ${fmtD(t.created_at)} · By ${esc(t.author_name)}</div></div>
+    <span style="font-size:.75rem;font-weight:700;color:${t.status === 'open' ? 'var(--grn)' : 'var(--r2)'}">${t.status.toUpperCase()}</span>
+  </div>`).join('');
     }
-    function filterTicketList() { renderTixList(TIX.list, I('TIX-L')); }
-
     async function openTix(id) {
       const pg = I('pg-tickets');
-      if (!pg || !pg.classList.contains('ON')) { GO('tickets'); setTimeout(() => openTix(id), 60); return; }
+      if (!pg || !pg.classList.contains('ON')) {
+        GO('tickets');
+        setTimeout(() => openTix(id), 50);
+        return;
+      }
+
+      const list = I('TIX-LIST'), det = I('TIX-DET'), el = I('TIX-DET-C');
+      if (list) list.style.display = 'none';
+      if (det) det.style.display = 'block';
+      if (el) el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+
       try {
         const d = await API(`/api/tickets/${id}`);
-        TIX.activeId = id;
-        TIX.active = d.ticket;
-        TIX.messages = d.messages || [];
-        TIX.activity = d.activity || [];
-        TIX.staff = d.staff || [];
-        TIX.perms = d.permissions || {};
-        renderTixList(TIX.list, I('TIX-L'));
-        renderTicketWorkspace();
-        startTicketPolling();
-      } catch (e) { toast('err', e.message); }
-    }
-    function closeTixD() {
-      if (TIX.poll) clearInterval(TIX.poll);
-      TIX.poll = null;
-      TIX.activeId = null;
-      TIX.active = null;
-      I('TIX-CHAT-HEAD').textContent = 'Select a ticket to start.';
-      I('TIX-CHAT').innerHTML = '';
-      I('TIX-SIDE').innerHTML = 'Select a ticket to view details.';
-      I('TIX-COMPOSER').style.display = 'none';
-      loadTix();
-    }
-    function renderTicketWorkspace() {
-      const t = TIX.active; if (!t) return;
-      const head = I('TIX-CHAT-HEAD');
-      const canManage = !!TIX.perms.can_manage;
-      head.innerHTML = `<div>#${t.id} ${esc(t.title)}</div><div style="display:flex;gap:8px">${canManage && t.status === 'open' ? `<button class="bto bsm" onclick="ticketAction('close')">Close</button>` : ''}${canManage && t.status !== 'open' ? `<button class="bto bsm" onclick="ticketAction('reopen')">Reopen</button>` : ''}${TIX.perms.can_delete ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}</div>`;
-      I('TIX-COMPOSER').style.display = t.status === 'open' ? '' : 'none';
-      renderTicketMessages();
-      renderTicketSide();
-      const last = TIX.messages.length ? TIX.messages[TIX.messages.length - 1].id : 0;
-      tixMarkSeen(t.id, last);
-    }
-    function highlightMentions(text) {
-      const msg = esc(text || '').replace(/\n/g, '<br>');
-      if (!ME?.username) return msg;
-      const r = new RegExp(`@${ME.username}\\b`, 'gi');
-      return msg.replace(r, `<span class="tix-mention">@${ME.username}</span>`);
-    }
-    function renderOneMessage(m) {
-      const isSys = m.author_id === 1 || m.message_type === 'system';
-      const isInternal = Number(m.is_internal || 0) === 1;
-      const av = isSys ? '/main-static/logo.png' : `/api/skin/head/${enc(m.mc_username || m.author_name)}/42`;
-      const badge = isInternal ? '<span class="tmsg-badge" style="background:#f59e0b">Internal</span>' : (isSys ? '<span class="tmsg-badge">System</span>' : '');
-      return `<div class="tmsg ${isSys ? 'system' : ''}">
-        ${isSys ? '' : `<div class="tmsg-av"><img src="${av}" alt=""></div>`}
-        <div class="tmsg-main">
-          <div class="tmsg-header"><span class="tmsg-user">${esc(isSys ? 'Hellcore System' : m.author_name)}</span>${m.author_role ? `<span class="rb rb-${m.author_role}" style="font-size:.6rem">${m.author_role}</span>` : ''}${badge}<span class="tmsg-time">${fmtD(m.created_at)}</span></div>
-          <div class="tmsg-content">${highlightMentions(m.content || '')}</div>
-          ${m.image_url ? `<img src="${m.image_url}" class="tmsg-img" onclick="window.open(this.src)">` : ''}
+        const t = d.ticket, canCl = ME && (isStaff() || ME.id === t.author_id);
+        
+        let html = `
+        <div style="padding:16px;border-bottom:1px solid var(--bd);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.4rem">${esc(t.title)}</h2>
+            <div style="font-size:.75rem;color:var(--tx3);margin-top:2px">
+              ID: #${t.id} · Category: <span style="color:var(--g);font-weight:700">${t.category.toUpperCase()}</span> · 
+              Status: <span style="color:${t.status === 'open' ? 'var(--grn)' : 'var(--r2)'};font-weight:800">${t.status.toUpperCase()}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            ${canCl && t.status === 'open' ? `<button class="bto bsm" style="color:var(--r2);border-color:var(--r2)" onclick="closeTix(${t.id})">Close Ticket</button>` : ''}
+            ${isAdmin() ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}
+          </div>
         </div>
-      </div>`;
+        <div style="padding:0 16px 16px">
+          <div class="tmsg system">
+            <div class="tmsg-header">
+              <span class="tmsg-user" style="color:var(--g)">[TICKET DESCRIPTION]</span>
+            </div>
+            <div class="tmsg-content">${esc(t.description).replace(/\n/g, '<br>')}</div>
+          </div>
+          
+          <div style="margin:24px 0 12px;font-size:.7rem;color:var(--tx3);font-weight:800;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+            Message History
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+          </div>
+          
+          ${d.messages.map(m => {
+            const isSys = m.author_id === 1;
+            const av = isSys ? '/main-static/logo.png' : `https://mc-heads.net/avatar/${m.mc_username || m.author_name}/42`;
+            const name = isSys ? 'Hellcore System' : esc(m.author_name);
+            
+            if (isSys) {
+              return `<div class="tmsg system">
+                <div class="tmsg-header">
+                  <span class="tmsg-user" style="color:var(--g)">${name}</span>
+                  <span class="tmsg-badge">System</span>
+                  <span class="tmsg-time">${fmtD(m.created_at)}</span>
+                </div>
+                <div class="tmsg-content">${esc(m.content).replace(/\n/g, '<br>')}</div>
+              </div>`;
+            }
+            
+            return `<div class="tmsg">
+              <div class="tmsg-av"><img src="${av}" alt=""></div>
+              <div class="tmsg-main">
+                <div class="tmsg-header">
+                  <span class="tmsg-user">${name}</span>
+                  <span class="rb rb-${m.author_role}" style="font-size:0.6rem">${m.author_role}</span>
+                  <span class="tmsg-time">${fmtD(m.created_at)}</span>
+                </div>
+                <div class="tmsg-content">${esc(m.content).replace(/\n/g, '<br>')}</div>
+                ${m.image_url ? `<img src="${m.image_url}" class="tmsg-img" onclick="window.open(this.src)">` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+          
+          ${t.status === 'open' ? `
+          <div style="margin-top:24px;background:rgba(0,0,0,0.2);border:1px solid var(--bd);border-radius:12px;padding:16px">
+            <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Message #${t.title}..." style="background:transparent;border:none;padding:0;resize:none"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+              <div style="display:flex;gap:8px">
+                <input type="file" id="TIX-IMG" style="display:none" accept="image/*" onchange="I('TIX-IMG-NM').textContent = this.files[0].name">
+                <button class="bto bsm" onclick="I('TIX-IMG').click()"><svg class="ic"><use href="#ic-plus"/></svg> Attach Screenshot</button>
+                <span id="TIX-IMG-NM" style="font-size:.7rem;color:var(--tx3);display:flex;align-items:center"></span>
+              </div>
+              <button class="btn bsm" onclick="sendTixMsg(${t.id})">Send Message</button>
+            </div>
+          </div>` : '<div class="empty">This ticket is closed.</div>'}
+        </div>`;
+        el.innerHTML = html;
+      } catch (e) { el.innerHTML = '<div class="empty" style="color:var(--r2)">Could not load ticket.</div>'; }
     }
-    function renderTicketMessages() {
-      const el = I('TIX-CHAT');
-      const q = (I('TIX-MSG-SEARCH')?.value || '').toLowerCase().trim();
-      const list = (TIX.messages || []).filter(m => !q || String(m.content || '').toLowerCase().includes(q));
-      el.innerHTML = list.length ? list.map(renderOneMessage).join('') : '<div class="empty">No messages.</div>';
-      el.scrollTop = el.scrollHeight;
-    }
-    function renderTicketSide() {
-      const t = TIX.active, el = I('TIX-SIDE'); if (!t || !el) return;
-      const staffOpt = ['<option value="">Unassigned</option>'].concat((TIX.staff || []).map(s => `<option value="${s.id}" ${Number(t.assigned_to) === Number(s.id) ? 'selected' : ''}>${esc(s.username)} (${s.role})</option>`)).join('');
-      const canAssign = TIX.perms.can_assign;
-      const canRank = TIX.perms.can_rank_grant;
-      const canNote = TIX.perms.can_internal_note;
-      el.innerHTML = `
-        <div class="p"><div class="stitle" style="font-size:1rem">Ticket Details</div>
-          <div style="font-size:.8rem;color:var(--tx2)">Category: <strong>${esc(t.category)}</strong></div>
-          <div style="font-size:.8rem;color:var(--tx2)">Author: <strong>${esc(t.author_name)}</strong></div>
-          <div style="font-size:.8rem;color:var(--tx2)">Created: <strong>${fmtD(t.created_at)}</strong></div>
-          <div style="margin-top:8px;display:flex;gap:8px"><span class="tix-chip ${t.status === 'open' ? 'open' : 'closed'}">${esc(t.status)}</span><span class="tix-chip">${esc(t.priority || 'normal')}</span></div>
-        </div>
-        <div class="p"><div class="stitle" style="font-size:1rem">Search Messages</div><input id="TIX-MSG-SEARCH" class="inp" placeholder="Find in chat..." oninput="renderTicketMessages()"></div>
-        <div class="p"><div class="stitle" style="font-size:1rem">Priority</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('priority', { priority:this.value })"><option value="low" ${t.priority === 'low' ? 'selected' : ''}>low</option><option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>normal</option><option value="high" ${t.priority === 'high' ? 'selected' : ''}>high</option><option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>urgent</option></select></div>
-        <div class="p"><div class="stitle" style="font-size:1rem">Assignee</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('assign', { assigned_to:this.value || null })">${staffOpt}</select></div>
-        ${canRank ? `<div class="p"><div class="stitle" style="font-size:1rem">Grant Rank (HellcoreSync)</div><div class="fg"><label>Username</label><input id="TR-USER" class="inp" placeholder="minecraft username"></div><div class="fg"><label>Rank</label><input id="TR-RANK" class="inp" placeholder="vip"></div><div class="g2"><div class="fg"><label>Mode</label><select id="TR-MODE" class="inp"><option value="perm_set">Permanent</option><option value="temp_add">Temporary</option></select></div><div class="fg"><label>Duration</label><input id="TR-DUR" class="inp" value="7d"></div></div><button class="btn bsm" onclick="grantTicketRank()">Queue Rank Grant</button></div>` : ''}
-        <div class="p"><div class="stitle" style="font-size:1rem">Payment Quick Actions</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="bto bsm" onclick="ticketAction('payment_received')">Payment Received</button><button class="bto bsm" onclick="ticketAction('payment_pending')">Pending Proof</button><button class="bto bsm" onclick="ticketAction('need_details')">Need Details</button></div></div>
-        ${canNote ? `<div class="p"><div class="stitle" style="font-size:1rem">Internal Notes</div><button class="bto bsm" onclick="toggleInternalNote()">Toggle Internal Mode</button></div>` : ''}
-        <div class="p"><div class="stitle" style="font-size:1rem">Timeline</div>${(TIX.activity || []).length ? TIX.activity.map(a => `<div class="tix-act"><strong>${esc(a.action)}</strong><div style="color:var(--tx2)">${esc(a.details || '')}</div><div style="font-size:.68rem;color:var(--tx3)">${esc(a.actor_name || '')} · ${fmtD(a.created_at)}</div></div>`).join('') : '<div class="empty">No activity yet.</div>'}</div>
-      `;
-    }
-    function toggleInternalNote() {
-      TIX.internal = !TIX.internal;
-      I('TIX-INTERNAL-BADGE').style.display = TIX.internal ? '' : 'none';
-    }
-    function previewTicketImage(input) {
-      const f = input?.files?.[0];
-      I('TIX-IMG-NM').textContent = f ? `${f.name} (${Math.round(f.size / 1024)} KB)` : '';
-    }
-    function renderCannedReplies() {
-      const s = I('TIX-CANNED'); if (!s) return;
-      const opts = ['<option value="">Insert canned response...</option>'].concat((TIX.canned || []).map(c => `<option value="${esc(c.text)}">${esc(c.label)}</option>`));
-      s.innerHTML = opts.join('');
-    }
-    function applyCannedReply() {
-      const s = I('TIX-CANNED'), t = I('TIX-RPLY');
-      if (!s?.value) return;
-      t.value = t.value ? `${t.value}\n${s.value}` : s.value;
-      s.value = '';
-    }
+    function closeTixD() { I('TIX-LIST').style.display = ''; I('TIX-DET').style.display = 'none'; loadTix(); }
     async function submitTix() {
       if (!ME) { closeM('MT'); openM('ML'); return; }
       const ti = V('NT-TI'), de = V('NT-DE'), ca = V('NT-CA');
       if (!ti || !de) { toast('err', 'Fill all fields'); return; }
       try {
-        const pr = (I('NT-PR')?.value || 'normal');
-        await API('/api/tickets', { method: 'POST', body: { title: ti, description: de, category: ca, priority: pr } });
-        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); await loadTix(); loadProfTix();
+        await API('/api/tickets', { method: 'POST', body: { title: ti, description: de, category: ca } });
+        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); loadTix(); loadProfTix();
       }
       catch (e) { toast('err', e.message); }
     }
-    async function sendActiveTixMsg() { if (TIX.activeId) await sendTixMsg(TIX.activeId); }
     async function sendTixMsg(id) {
       const c = V('TIX-RPLY')?.trim();
       const file = I('TIX-IMG')?.files[0];
       if (!c && !file) return;
+
+      toast('info', 'Sending message...');
+      
       let base64 = null;
       if (file) {
         base64 = await new Promise((resolve) => {
@@ -6595,68 +6505,17 @@
           reader.readAsDataURL(file);
         });
       }
+
       try {
-        const r = await API(`/api/tickets/${id}/msg`, {
-          method: 'POST',
-          body: { content: c, image: base64, is_internal: TIX.internal ? 1 : 0 }
+        await API(`/api/tickets/${id}/msg`, { 
+          method: 'POST', 
+          body: { content: c, image: base64 } 
         });
-        if (r.message) TIX.messages.push(r.message);
-        SV('TIX-RPLY', '');
-        if (I('TIX-IMG')) I('TIX-IMG').value = '';
-        I('TIX-IMG-NM').textContent = '';
-        TIX.internal = false;
-        I('TIX-INTERNAL-BADGE').style.display = 'none';
-        renderTicketMessages();
-        const last = TIX.messages.length ? TIX.messages[TIX.messages.length - 1].id : 0;
-        tixMarkSeen(id, last);
-        loadTix();
+        openTix(id);
       } catch (e) { toast('err', e.message); }
     }
-    async function ticketAction(action, body = {}) {
-      if (!TIX.activeId) return;
-      try {
-        await API(`/api/tickets/${TIX.activeId}/action`, { method: 'POST', body: { action, ...body } });
-        await openTix(TIX.activeId);
-        await loadTix();
-      } catch (e) { toast('err', e.message); }
-    }
-    async function closeTix(id) { TIX.activeId = id; await ticketAction('close'); }
-    async function reopenTix(id) { TIX.activeId = id; await ticketAction('reopen'); }
-    async function delTix(id) {
-      if (!confirm('Delete ticket?')) return;
-      try { await API(`/api/tickets/${id}`, { method: 'DELETE' }); closeTixD(); toast('ok', 'Deleted.'); }
-      catch (e) { toast('err', e.message); }
-    }
-    async function grantTicketRank() {
-      if (!TIX.activeId) return;
-      const username = V('TR-USER').trim(), rank = V('TR-RANK').trim(), mode = V('TR-MODE'), duration = V('TR-DUR').trim();
-      if (!username || !rank) { toast('err', 'Username and rank required'); return; }
-      try {
-        await API(`/api/tickets/${TIX.activeId}/rank`, { method: 'POST', body: { username, rank, mode, duration } });
-        toast('ok', 'Rank grant queued in HellcoreSync.');
-        openTix(TIX.activeId);
-      } catch (e) { toast('err', e.message); }
-    }
-    function startTicketPolling() {
-      if (TIX.poll) clearInterval(TIX.poll);
-      if (!TIX.activeId) return;
-      TIX.poll = setInterval(async () => {
-        try {
-          const last = TIX.messages.length ? TIX.messages[TIX.messages.length - 1].id : 0;
-          const d = await API(`/api/tickets/${TIX.activeId}/updates?after_id=${last}`);
-          if (Array.isArray(d.messages) && d.messages.length) {
-            TIX.messages = TIX.messages.concat(d.messages);
-            renderTicketMessages();
-            tixMarkSeen(TIX.activeId, TIX.messages[TIX.messages.length - 1].id);
-            loadTix();
-          }
-          if (d.ticket_meta && TIX.active) {
-            TIX.active.status = d.ticket_meta.status || TIX.active.status;
-            TIX.active.priority = d.ticket_meta.priority || TIX.active.priority;
-          }
-        } catch (e) { }
-      }, 4000);
-    }
+    async function closeTix(id) { await API(`/api/tickets/${id}/close`, { method: 'POST' }); toast('ok', 'Ticket closed.'); openTix(id); }
+    async function delTix(id) { if (!confirm('Delete ticket?')) return; await API(`/api/tickets/${id}`, { method: 'DELETE' }); closeTixD(); toast('ok', 'Deleted.'); }
 
     // ════════════════════════════════════════════════════
     // STORE
