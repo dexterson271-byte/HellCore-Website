@@ -482,6 +482,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
         try: c.execute(sql)
         except: pass
 
+    # MIGRATION: User last_seen
+    try: c.execute("ALTER TABLE hc_users ADD COLUMN last_seen DATETIME")
+    except: pass
+
     db.commit()
 
     # --- BOOTSTRAP EVENTS ---
@@ -743,6 +747,39 @@ def register():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error":f"Server error: {e}"}), 500
+
+@app.route("/api/auth/heartbeat", methods=["POST"])
+@auth_required
+def heartbeat():
+    u = request.cu
+    try:
+        db = get_db(); c = db_cursor(db)
+        # Use datetime.now() compatible with both sqlite and mysql
+        now = datetime.now()
+        c.execute(f"UPDATE hc_users SET last_seen={ph()} WHERE id={ph()}", (now, u["id"]))
+        db.commit(); c.close(); db.close()
+        return jsonify({"success": True})
+    except:
+        traceback.print_exc()
+        return jsonify({"error": "Failed to update status"}), 500
+
+@app.route("/api/staff/online")
+@staff_required
+def get_online_staff():
+    try:
+        # Threshold: 5 minutes
+        threshold = datetime.now() - timedelta(minutes=5)
+        db = get_db(); c = db_cursor(db)
+        # Query for staff active in the last 5 minutes
+        placeholders = ",".join([ph() for _ in STAFF_ROLES])
+        sql = f"SELECT id, username, role, last_seen FROM hc_users WHERE role IN ({placeholders}) AND last_seen > {ph()} ORDER BY last_seen DESC"
+        params = list(STAFF_ROLES) + [threshold]
+        c.execute(sql, tuple(params))
+        rows = c.fetchall(); c.close(); db.close()
+        return jsonify(to_list(rows))
+    except:
+        traceback.print_exc()
+        return jsonify([])
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():

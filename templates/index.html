@@ -585,12 +585,30 @@
     }
 
     @media(max-width: 580px) {
+      .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    }
 
-      .g2,
-      .g3,
-      .g4 {
-        grid-template-columns: 1fr;
+    /* ═══════ ADMIN RESPONSIVENESS ═══════ */
+    @media(max-width: 850px) {
+      #ADM-CHAT-GRID {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
       }
+      #ADM-CHAT-GRID > div:first-child {
+        max-height: 200px;
+      }
+      .tabs {
+        width: 100% !important;
+        overflow-x: auto;
+        justify-content: flex-start !important;
+        padding: 6px;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      
+      #pg-admin .g4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+      .ptitle { font-size: 1.8rem; }
     }
 
     /* ═══════ FORMS ═══════ */
@@ -3885,6 +3903,12 @@
             <div class="stitle">Recent Network Activity</div>
             <div id="ADM-LOGS-MINI" style="max-height:300px;overflow-y:auto;font-size:0.8rem"></div>
           </div>
+          <div class="p" style="margin-top:14px">
+            <div class="stitle"><svg class="ic"><use href="#ic-user" /></svg> Active Staff Now</div>
+            <div id="ADM-ONLINE-TEAM" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:10px">
+               <div style="color:var(--tx3);font-size:0.8rem">No staff members active in the last 5 minutes.</div>
+            </div>
+          </div>
         </div>
 
         <!-- Player Management -->
@@ -3940,8 +3964,10 @@
             <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                 <div class="stitle" style="margin:0">Channels</div>
-                <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()"
-                  style="display:none">+</button>
+                <div style="display:flex;gap:5px">
+                   <button class="bto bxs" id="CHAT-SET-BTN" onclick="openM('M-CHAT-SET')" title="Chat Settings"><svg class="ic" style="margin:0"><use href="#ic-wrench" /></svg></button>
+                   <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()" style="display:none">+</button>
+                </div>
               </div>
               <div id="CHAT-CHANNELS" style="display:flex;flex-direction:column;gap:5px"></div>
             </div>
@@ -4802,6 +4828,37 @@
         <div class="fg"><label>Description</label><textarea id="NT-DE" class="inp" rows="5"
             placeholder="Describe your issue…"></textarea></div>
         <button class="btn" style="width:100%" onclick="submitTix()">Submit Ticket</button>
+      </div>
+    </div>
+
+    <!-- CHAT SETTINGS MODAL -->
+    <div class="ov" id="M-CHAT-SET">
+      <div class="mdl" style="max-width:400px">
+        <div class="mhd">Staff Chat Settings <button class="mcl" onclick="closeM('M-CHAT-SET')"><svg class="ic"><use href="#ic-x" /></svg></button></div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem">Mention Sounds</div>
+              <div style="font-size:0.75rem;color:var(--tx3)">Play a notification sound when mentioned</div>
+            </div>
+            <input type="checkbox" id="SET-CHAT-SOUND" style="width:20px;height:20px;accent-color:var(--g)" checked>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem">Darker Chat</div>
+              <div style="font-size:0.75rem;color:var(--tx3)">Extra dark background for focused chatting</div>
+            </div>
+            <input type="checkbox" id="SET-CHAT-DARK" style="width:20px;height:20px;accent-color:var(--g)" onchange="toggleChatDark(this.checked)">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem">Auto Scroll</div>
+              <div style="font-size:0.75rem;color:var(--tx3)">Keep chat at bottom when new messages arrive</div>
+            </div>
+            <input type="checkbox" id="SET-CHAT-SCROLL" style="width:20px;height:20px;accent-color:var(--g)" checked>
+          </div>
+        </div>
+        <button class="btn" style="width:100%;margin-top:24px" onclick="closeM('M-CHAT-SET')">Close</button>
       </div>
     </div>
 
@@ -5969,15 +6026,54 @@
     }
 
     let CHAT_POLL = null, PING_POLL = null, CUR_CHAN = null;
+    let HEARTBEAT_TIMER = null;
+    let HEART_ACTIVE = false;
+    let UNREAD_MENTIONS = {};
+
+    function startHeartbeat() {
+      if (HEART_ACTIVE) return;
+      HEART_ACTIVE = true;
+      HEARTBEAT_TIMER = setInterval(async () => {
+        if (!TOK) return;
+        try { await fetch('/api/auth/heartbeat', { method: 'POST', headers: { 'X-Auth-Token': TOK } }); } catch (e) { }
+      }, 60000); // 1 minute heartbeat
+    }
+
+    async function loadOnlineStaff() {
+      const el = I('ADM-ONLINE-TEAM'); if (!el) return;
+      try {
+        const staff = await API('/api/staff/online');
+        if (!staff.length) {
+          el.innerHTML = '<div style="color:var(--tx3);font-size:0.8rem">No staff members active in the last 5 minutes.</div>';
+          return;
+        }
+        el.innerHTML = staff.map(u => `
+          <div class="sbar" style="display:flex;align-items:center;gap:10px;margin-bottom:0">
+            <img src="/api/skin/head/${enc(u.username)}/24" style="width:24px;height:24px;border-radius:4px" alt="">
+            <div style="flex:1;min-width:0">
+              <div class="sbar-n" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.username)}</div>
+              <span class="rb rb-${u.role}" style="font-size:0.5rem;padding:0 4px">${u.role.toUpperCase()}</span>
+            </div>
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px var(--grn)"></div>
+          </div>
+        `).join('');
+      } catch (e) { }
+    }
+
     async function loadNexusChat() {
       if (ME?.role === 'founder') I('CHAT-CREATE-BTN').style.display = 'block';
       try {
         const chans = await API('/api/staff/channels');
         const el = I('CHAT-CHANNELS');
-        el.innerHTML = chans.map(c => `<div class="p bxs CH-ITM" id="CH-${c.id}" style="cursor:pointer;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;background:${CUR_CHAN === c.id ? 'var(--p2)' : 'transparent'}" onclick="setStaffChan(${c.id},'${esc(c.name)}')">
-          <span>${esc(c.name)}</span>
-          ${ME?.role === 'founder' && c.name !== '#staff-hub' ? `<span style="color:var(--r2);font-size:12px;cursor:pointer" onclick="event.stopPropagation();admDelChatChan(${c.id})">×</span>` : ''}
-        </div>`).join('');
+        el.innerHTML = chans.map(c => `
+          <div class="p bxs CH-ITM" id="CH-${c.id}" style="cursor:pointer;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:${CUR_CHAN === c.id ? 'var(--p2)' : 'transparent'}" onclick="setStaffChan(${c.id},'${esc(c.name)}')">
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg class="ic" style="margin:0;opacity:0.6;width:1rem;height:1rem"><use href="#ic-chat" /></svg>
+              <span>${esc(c.name)}</span>
+              <span class="cbadge" id="BADGE-${c.id}" style="display:${UNREAD_MENTIONS[c.id] ? 'flex' : 'none'};position:static;min-width:18px;height:18px;font-size:0.6rem;background:var(--r2)">${UNREAD_MENTIONS[c.id] || ''}</span>
+            </div>
+            ${ME?.role === 'founder' && c.name !== '#staff-hub' ? `<span style="color:var(--r2);font-size:12px;cursor:pointer" onclick="event.stopPropagation();admDelChatChan(${c.id})">×</span>` : ''}
+          </div>`).join('');
         if (!CUR_CHAN && chans.length) setStaffChan(chans[0].id, chans[0].name);
         else if (CUR_CHAN) updateChatHighlights();
         startChatPoll();
@@ -5986,6 +6082,11 @@
 
     function setStaffChan(id, name) {
       if (CUR_CHAN === id && I('CHAT-MESSAGES').innerHTML !== "") return;
+      
+      // Clear mentions for this channel
+      UNREAD_MENTIONS[id] = 0;
+      const b = I('BADGE-' + id); if (b) b.style.display = 'none';
+
       CUR_CHAN = id; I('CHAT-HEAD').textContent = name;
       loadChatMsgs();
       updateChatHighlights();
@@ -6002,19 +6103,62 @@
       try {
         const msgs = await API(`/api/staff/channels/${CUR_CHAN}/messages`);
         const el = I('CHAT-MESSAGES'), wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
-        el.innerHTML = msgs.map(m => `
-          <div style="display:flex;flex-direction:column;align-items:${m.author_id === ME.id ? 'flex-end' : 'flex-start'}">
-            <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px">
-              <b>${esc(m.username)}</b> <span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
-              · ${fmtD(m.created_at)}
+        
+        const myName = ME?.username || "";
+        const settings = {
+            sound: I('SET-CHAT-SOUND')?.checked ?? true,
+            scroll: I('SET-CHAT-SCROLL')?.checked ?? true
+        };
+
+        let newMention = false;
+
+        el.innerHTML = msgs.map(m => {
+          const isMe = m.author_id === ME?.id;
+          const hasMention = m.content.includes(`@${myName}`);
+          if (hasMention && !isMe) newMention = true;
+          
+          const bubbleStyle = isMe 
+            ? `background:var(--g);color:#000;border-bottom-right-radius:2px` 
+            : (hasMention ? `background:rgba(251,191,36,0.2);color:#fff;border-bottom-left-radius:2px;border:1px solid #fbbf24` : `background:var(--p1);color:#fff;border-bottom-left-radius:2px`);
+
+          return `
+            <div style="display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'}">
+              <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px">
+                <b>${esc(m.username)}</b> <span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
+                · ${fmtD(m.created_at)}
+              </div>
+              <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;${bubbleStyle};border-radius:12px">
+                ${esc(m.content)}
+              </div>
             </div>
-            <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;background:${m.author_id === ME.id ? 'var(--g)' : 'var(--p1)'};color:${m.author_id === ME.id ? '#000' : '#fff'};border-radius:12px;${m.author_id === ME.id ? 'border-bottom-right-radius:2px' : 'border-bottom-left-radius:2px'}">
-              ${esc(m.content)}
-            </div>
-          </div>
-        `).join('') || '<div class="empty">No messages. Pull the trigger on some chat!</div>';
-        if (wasAtBottom) el.scrollTop = el.scrollHeight;
+          `;
+        }).join('') || '<div class="empty">No messages. Pull the trigger on some chat!</div>';
+        
+        if (newMention && settings.sound) playMentionSound();
+        if (settings.scroll && wasAtBottom) el.scrollTop = el.scrollHeight;
       } catch (e) { }
+    }
+
+    function playMentionSound() {
+        // Simple notification sound via AudioContext if no file provided
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.2);
+        } catch(e) {}
+    }
+
+    function toggleChatDark(on) {
+        I('CHAT-MESSAGES').style.background = on ? 'rgba(0,0,0,0.4)' : '';
     }
 
     async function staffPing() {
@@ -6054,9 +6198,21 @@
         P_CHAN = PUSHER_INST.subscribe('staff-chat');
         P_CHAN.bind('new-message', function (data) {
           console.log('Chat Event:', data);
-          // Use Number() to ensure we match correctly regardless of string/int types
-          if (Number(data.channel_id) === Number(CUR_CHAN)) {
+          const chanId = Number(data.channel_id);
+          if (chanId === Number(CUR_CHAN)) {
             loadChatMsgs();
+          } else {
+             // If not active channel, check for mentions
+             if (data.content.includes(`@${ME?.username}`)) {
+                 UNREAD_MENTIONS[chanId] = (UNREAD_MENTIONS[chanId] || 0) + 1;
+                 const badge = I('BADGE-' + chanId);
+                 if (badge) {
+                     badge.style.display = 'flex';
+                     badge.textContent = UNREAD_MENTIONS[chanId];
+                 }
+                 if (I('SET-CHAT-SOUND')?.checked !== false) playMentionSound();
+                 toast('ok', `Mention in ${data.channel_name || 'another channel'}`);
+             }
           }
         });
       } catch (e) { console.error('Pusher error:', e); }
@@ -6105,6 +6261,9 @@
 
         const log = I('ADM-LOGS-MINI');
         if (log) log.innerHTML = d.logs.map(l => `<div style="padding:4px;border-bottom:1px solid var(--bd);opacity:0.8"><small style="color:var(--g)">[${fmtD(l.created_at)}]</small> <b>${l.admin_name}</b>: ${l.action} ${l.details ? `(${l.details})` : ''}</div>`).join('') || 'No actions recorded yet.';
+
+        loadOnlineStaff(); // Refresh online staff list
+        startHeartbeat(); // Ensure heartbeat is running
       } catch (e) { }
     }
 
