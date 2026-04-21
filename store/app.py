@@ -51,6 +51,14 @@ AIVEN_USER     = os.environ.get("AIVEN_USER", "")
 AIVEN_PASSWORD = os.environ.get("AIVEN_PASSWORD", "")
 AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
 
+# ── RAILWAY MYSQL (cloud) ─────────────────────────────
+USE_MYSQL_RAILWAY = os.environ.get("USE_MYSQL_RAILWAY", "True").lower() == "true"
+RAILWAY_HOST     = os.environ.get("MYSQL_HOST", "")
+RAILWAY_PORT     = int(os.environ.get("MYSQL_PORT", 3306))
+RAILWAY_USER     = os.environ.get("MYSQL_USER", "root")
+RAILWAY_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+RAILWAY_DATABASE = os.environ.get("MYSQL_DATABASE", "railway")
+
 SQLITE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'hellcore.db')
 _DB_MODE = "sqlite"
 
@@ -76,7 +84,26 @@ def try_connect():
         except Exception as e:
             print(f"[STORE] ERROR: Aiven MySQL connection failed: {e}")
             if is_prod:
-                print("[STORE] WARNING: Running in production but MySQL failed. Fallback to SQLite may result in missing data.")
+                print("[STORE] WARNING: Running in production but Aiven MySQL failed. Fallback to SQLite may result in missing data.")
+    
+    if USE_MYSQL_RAILWAY and RAILWAY_HOST:
+        try:
+            import mysql.connector
+            print(f"[STORE] Attempting Railway MySQL connection: {RAILWAY_HOST}...")
+            c = mysql.connector.connect(
+                host=RAILWAY_HOST, port=RAILWAY_PORT,
+                user=RAILWAY_USER, password=RAILWAY_PASSWORD,
+                database=RAILWAY_DATABASE,
+                connection_timeout=10
+            )
+            c.close()
+            _DB_MODE = "mysql_railway"
+            print(f"[STORE] SUCCESS: Railway MySQL connected.")
+            return
+        except Exception as e:
+            print(f"[STORE] ERROR: Railway MySQL connection failed: {e}")
+            if is_prod:
+                print("[STORE] WARNING: Running in production but Railway MySQL failed. Fallback to SQLite may result in missing data.")
     
     # Check if local SQLite exists before fallback
     if os.path.exists(SQLITE_FILE):
@@ -99,6 +126,14 @@ def get_db():
             database=AIVEN_DATABASE, ssl_disabled=False,
             autocommit=True
         )
+    elif _DB_MODE == "mysql_railway":
+        import mysql.connector
+        return mysql.connector.connect(
+            host=RAILWAY_HOST, port=RAILWAY_PORT,
+            user=RAILWAY_USER, password=RAILWAY_PASSWORD,
+            database=RAILWAY_DATABASE,
+            autocommit=True
+        )
     else:
         conn = sqlite3.connect(SQLITE_FILE)
         conn.row_factory = sqlite3.Row
@@ -107,7 +142,7 @@ def get_db():
         return conn
 
 def db_cursor(conn):
-    if _DB_MODE == "mysql_aiven":
+    if _DB_MODE in ("mysql_aiven", "mysql_railway"):
         return conn.cursor(dictionary=True)
     return conn.cursor()
 
@@ -137,6 +172,40 @@ def init_store_db():
     DT  = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
 
     tables = [
+f"""CREATE TABLE IF NOT EXISTS hc_users(
+  id INTEGER PRIMARY KEY {AI},
+  email VARCHAR(200) UNIQUE NOT NULL,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  mc_username VARCHAR(50) DEFAULT '',
+  password_hash VARCHAR(100) NOT NULL,
+  session_token VARCHAR(120),
+  role VARCHAR(30) DEFAULT 'player',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_cart(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  item_id VARCHAR(60) NOT NULL,
+  item_name VARCHAR(80) NOT NULL,
+  item_price REAL NOT NULL,
+  gamemode VARCHAR(30) DEFAULT '')""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_tickets(
+  id INTEGER PRIMARY KEY {AI},
+  title VARCHAR(200) NOT NULL,
+  category VARCHAR(40) DEFAULT 'general',
+  description TEXT NOT NULL,
+  author_id INTEGER NOT NULL,
+  status VARCHAR(20) DEFAULT 'open',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
+  id INTEGER PRIMARY KEY {AI},
+  ticket_id INTEGER NOT NULL,
+  author_id INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  created_at {DT})""",
+
 f"""CREATE TABLE IF NOT EXISTS hc_store_products(
   id INTEGER PRIMARY KEY {AI},
   name VARCHAR(100) NOT NULL,
@@ -178,8 +247,13 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     ]
 
     for sql in tables:
-        try: c.execute(sql)
-        except Exception as e: print(f"  Store table warn: {e}")
+        try: 
+            c.execute(sql)
+        except Exception as e: 
+            print(f"  [STORE] Table warn: {e}")
+    
+    db.commit() # <── Commit core tables
+    print(f"  [STORE] Core tables committed.")
 
     # MIGRATION: Add ticket_id to orders
     try: c.execute("ALTER TABLE hc_store_orders ADD COLUMN ticket_id INTEGER DEFAULT 0")
