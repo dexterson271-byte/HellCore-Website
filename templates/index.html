@@ -4857,6 +4857,28 @@
       genCap('LG'); genCap('RG');
       checkAnn();
 
+      // Push Notifications Setup for Staff
+      const STAFF_ROLES = ['helper', 'mod', 'admin', 'dev', 'owner', 'founder'];
+      if (ME && STAFF_ROLES.includes(ME.role) && 'serviceWorker' in navigator && 'PushManager' in window) {
+         navigator.serviceWorker.register('/static/sw.js').then(reg => {
+            navigator.serviceWorker.ready.then(activeReg => {
+                activeReg.pushManager.getSubscription().then(sub => {
+                    if (!sub) {
+                        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+                        activeReg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(vapidKey)
+                        }).then(newSub => {
+                            API('/api/push/subscribe', { method: 'POST', body: { subscription: newSub } });
+                        }).catch(e => console.log('Push sub failed:', e));
+                    } else {
+                        API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
+                    }
+                });
+            });
+         }).catch(e => console.log('SW reg failed:', e));
+      }
+
       // Deep Linking
       const params = new URLSearchParams(window.location.search);
       const page = params.get('page');
@@ -7174,6 +7196,15 @@
     const rbcls = r => r.replace('+', 'plus').toLowerCase();
     const fmtD = s => { try { return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return s || ''; } };
     const copyIP = () => navigator.clipboard?.writeText('mc.hellcore.net').then(() => toast('ok', '✓ IP copied!'));
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+      return outputArray;
+    }
   </script>
 </body>
 

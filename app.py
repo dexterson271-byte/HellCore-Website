@@ -418,6 +418,13 @@ f"""CREATE TABLE IF NOT EXISTS hc_staff_messages(
   author_id INTEGER NOT NULL,
   content TEXT NOT NULL,
   created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at {DT})""",
     ]
 
     for sql in tables:
@@ -972,7 +979,70 @@ def ticket_create():
         except Exception as e:
             print("Webhook failed:", e)
 
+        # Web Push to staff
+        try:
+            import json, os
+            from pywebpush import webpush, WebPushException
+            
+            db2 = get_db(); c2 = db_cursor(db2)
+            c2.execute("SELECT s.endpoint, s.p256dh, s.auth FROM hc_push_subs s JOIN hc_users u ON s.user_id = u.id WHERE u.role IN ('helper','mod','dev','admin','owner','founder')")
+            subs = to_list(c2.fetchall())
+            c2.close(); db2.close()
+
+            vapid_priv = os.environ.get("VAPID_PRIVATE_KEY")
+            if not vapid_priv and os.path.exists(".env"):
+                 with open(".env", "r") as f:
+                     for x in f:
+                         if "VAPID_PRIVATE_KEY" in x: vapid_priv = x.split("=")[1].strip()
+
+            if vapid_priv and subs:
+                payload = json.dumps({"title": "New Payment Ticket", "body": f"Created by {request.cu['username']}"})
+                for s in subs:
+                    sub_info = {
+                        "endpoint": s["endpoint"],
+                        "keys": {"p256dh": s["p256dh"], "auth": s["auth"]}
+                    }
+                    try:
+                        webpush(
+                            subscription_info=sub_info,
+                            data=payload,
+                            vapid_private_key=vapid_priv,
+                            vapid_claims={"sub": "mailto:admin@hellcore.net"}
+                        )
+                    except WebPushException as ex:
+                        if ex.response and ex.response.status_code in [404, 410]:
+                            db3 = get_db(); c3 = db_cursor(db3)
+                            c3.execute(f"DELETE FROM hc_push_subs WHERE endpoint={ph()}", (s["endpoint"],))
+                            db3.commit(); c3.close(); db3.close()
+        except Exception as e:
+            print("Web push failed:", e)
+
     return jsonify({"id":tid,"ok":True})
+
+@app.route("/api/push/subscribe", methods=["POST"])
+@auth_required
+def push_subscribe():
+    d = request.get_json(force=True) or {}
+    sub = d.get("subscription")
+    if not sub: return jsonify({"error": "Missing subscription"}), 400
+    
+    endpoint = sub.get("endpoint")
+    keys = sub.get("keys", {})
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+    
+    if not endpoint or not p256dh or not auth:
+        return jsonify({"error": "Invalid subscription object"}), 400
+        
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT id FROM hc_push_subs WHERE endpoint={ph()}", (endpoint,))
+    if c.fetchone():
+        c.execute(f"UPDATE hc_push_subs SET user_id={ph()} WHERE endpoint={ph()}", (request.cu["id"], endpoint))
+    else:
+        c.execute(f"INSERT INTO hc_push_subs(user_id, endpoint, p256dh, auth) VALUES({phs(4)})",
+                  (request.cu["id"], endpoint, p256dh, auth))
+    db.commit(); c.close(); db.close()
+    return jsonify({"ok": True})
 
 @app.route("/api/tickets/<int:tid>")
 @auth_required
