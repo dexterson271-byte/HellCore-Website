@@ -4817,69 +4817,7 @@
     let SV3D = null, LAST_UUID = null, LAST_UNAME = null;
     const CAPS = { LG: '', RG: '' };
     let CUR_FORUM = null;
-    const WRITE_QUEUE_KEY = 'hc_write_queue_v1';
-    const FLUSH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-    let WRITE_QUEUE = [];
-    let FLUSH_TIMER = null;
-    let FLUSH_IN_PROGRESS = false;
 
-    function loadWriteQueue() {
-      try {
-        const raw = localStorage.getItem(WRITE_QUEUE_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        WRITE_QUEUE = Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        WRITE_QUEUE = [];
-      }
-    }
-
-    function persistWriteQueue() {
-      try { localStorage.setItem(WRITE_QUEUE_KEY, JSON.stringify(WRITE_QUEUE)); } catch (e) { }
-    }
-
-    function queueWrite(url, opts = {}) {
-      if (!TOK || !ME) throw new Error('Please login first.');
-      const entry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        url,
-        method: opts.method || 'POST',
-        body: opts.body || null,
-        queuedAt: Date.now()
-      };
-      WRITE_QUEUE.push(entry);
-      persistWriteQueue();
-      return entry;
-    }
-
-    async function flushWriteQueue({ silent = true } = {}) {
-      if (FLUSH_IN_PROGRESS || !WRITE_QUEUE.length || !TOK) return;
-      FLUSH_IN_PROGRESS = true;
-      try {
-        const remaining = [];
-        for (const item of WRITE_QUEUE) {
-          try {
-            await API(item.url, { method: item.method, body: item.body, skipQueue: true });
-          } catch (e) {
-            // Keep failed writes for next sync attempt.
-            remaining.push(item);
-          }
-        }
-        WRITE_QUEUE = remaining;
-        persistWriteQueue();
-        if (!silent && !WRITE_QUEUE.length) toast('ok', 'Local changes synced to cloud.');
-      } finally {
-        FLUSH_IN_PROGRESS = false;
-      }
-    }
-
-    function startQueueSync() {
-      if (FLUSH_TIMER) clearInterval(FLUSH_TIMER);
-      FLUSH_TIMER = setInterval(() => { flushWriteQueue({ silent: true }); }, FLUSH_INTERVAL_MS);
-      window.addEventListener('online', () => flushWriteQueue({ silent: true }));
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') flushWriteQueue({ silent: true });
-      });
-    }
 
     function toggleMobileMenu(open = null) {
       const nav = I('MOBILE-NAV');
@@ -4894,11 +4832,9 @@
     // BOOT
     // ════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', () => {
-      loadWriteQueue();
-      startQueueSync();
       // Restore session — check localStorage (Remember Me) or sessionStorage (This tab only)
-      const t = localStorage.getItem('hc_t') || sessionStorage.getItem('hc_t');
-      const u = localStorage.getItem('hc_u') || sessionStorage.getItem('hc_u');
+      const t = localStorage.getItem('hc_token') || sessionStorage.getItem('hc_token');
+      const u = localStorage.getItem('hc_user') || sessionStorage.getItem('hc_user');
       if (t && u) {
         TOK = t;
         try { ME = JSON.parse(u); } catch (e) { }
@@ -4906,12 +4842,13 @@
         // Re-sync from server to get latest roles
         API('/api/auth/me').then(r => {
           ME = r;
-          const storage = localStorage.getItem('hc_t') ? localStorage : sessionStorage;
-          storage.setItem('hc_u', JSON.stringify(ME));
+          const storage = localStorage.getItem('hc_token') ? localStorage : sessionStorage;
+          storage.setItem('hc_user', JSON.stringify(ME));
           refreshUI();
-        }).catch(() => { });
+        }).catch(() => {
+          doLogout();
+        });
       }
-      flushWriteQueue({ silent: true });
 
       genCap('LG'); genCap('RG');
       checkAnn();
@@ -5080,8 +5017,8 @@
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
         TOK = r.token; ME = r;
         // Persist login in localStorage so users stay logged in after closing the site.
-        localStorage.setItem('hc_t', TOK); localStorage.setItem('hc_u', JSON.stringify(ME));
-        sessionStorage.setItem('hc_t', TOK); sessionStorage.setItem('hc_u', JSON.stringify(ME));
+        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
+        sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('ML');
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
@@ -5099,8 +5036,8 @@
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
         TOK = r.token; ME = r;
         // Keep session persistent across browser restarts.
-        localStorage.setItem('hc_t', TOK); localStorage.setItem('hc_u', JSON.stringify(ME));
-        sessionStorage.setItem('hc_t', TOK); sessionStorage.setItem('hc_u', JSON.stringify(ME));
+        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
+        sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('MR');
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
         toast('ok', '✓ Account created! Welcome, ' + r.username + '!');
@@ -5110,8 +5047,8 @@
     async function doLogout() {
       try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
       ME = null; TOK = null;
-      localStorage.removeItem('hc_t'); localStorage.removeItem('hc_u');
-      sessionStorage.removeItem('hc_t'); sessionStorage.removeItem('hc_u');
+      localStorage.removeItem('hc_token'); localStorage.removeItem('hc_user');
+      sessionStorage.removeItem('hc_token'); sessionStorage.removeItem('hc_user');
       refreshUI(); GO('home'); toast('ok', 'Logged out.');
     }
 
@@ -6859,12 +6796,11 @@
     async function addCart(id, name, price, gm) {
       if (!ME) { openM('ML'); toast('err', 'Log in to add items.'); return; }
       try {
-        queueWrite('/api/cart', { method: 'POST', body: { item_id: id, item_name: name, item_price: price, gamemode: gm } });
+        await API('/api/cart', { method: 'POST', body: { item_id: id, item_name: name, item_price: price, gamemode: gm } });
         CART_N += 1;
         const b = I('CBG');
         if (b) { b.style.display = 'flex'; b.textContent = CART_N; }
-        toast('ok', `✓ ${name} saved locally. Cloud sync runs every 30 minutes.`);
-        flushWriteQueue({ silent: true });
+        toast('ok', `✓ ${name} added to cart!`);
       }
       catch (e) { toast('err', e.message); }
     }
@@ -6903,25 +6839,24 @@
     }
     async function remCart(id) {
       try {
-        queueWrite(`/api/cart/${id}`, { method: 'DELETE' });
+        await API(`/api/cart/${id}`, { method: 'DELETE' });
         CART_N = Math.max(0, CART_N - 1);
         const b = I('CBG');
         if (b) { b.style.display = CART_N ? 'flex' : 'none'; b.textContent = CART_N; }
-        toast('ok', 'Item removal saved locally. It will sync to cloud soon.');
-        flushWriteQueue({ silent: true });
+        toast('ok', 'Item removed from cart.');
+        renderCart();
       } catch (e) { toast('err', e.message); }
     }
     async function clearCart() {
       if (!confirm('Clear cart?')) return;
       try {
-        queueWrite('/api/cart/clear', { method: 'DELETE' });
+        await API('/api/cart/clear', { method: 'DELETE' });
         CART_N = 0;
         const b = I('CBG');
         if (b) b.style.display = 'none';
-        I('CART-L').innerHTML = '<div class="empty">Cart is empty locally. Cloud sync is pending.</div>';
+        I('CART-L').innerHTML = '<div class="empty">Cart is empty.<br><br><button class="btn" onclick="GO(\'store\')">Browse Store</button></div>';
         I('CART-TOT').innerHTML = '';
-        toast('ok', 'Cart clear saved locally. It will sync to cloud soon.');
-        flushWriteQueue({ silent: true });
+        toast('ok', 'Cart cleared.');
       } catch (e) { toast('err', e.message); }
     }
 
@@ -7196,9 +7131,9 @@
       if (TOK) h['X-Auth-Token'] = TOK;
       const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
 
-      // Do not auto-logout on the first 401. Keep the local session and ask user to retry.
       if (res.status === 401 && !url.includes('/api/auth/')) {
-        throw new Error('Authentication temporarily failed. Please retry.');
+        doLogout();
+        throw new Error('Authentication failed. Please login again.');
       }
 
       const d = await res.json().catch(() => ({}));
