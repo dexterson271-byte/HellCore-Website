@@ -11,7 +11,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0-rc.3/bundles/skinview3d.bundle.js"></script>
-  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.3.0/dist/web/pusher.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8470357358025733"
     crossorigin="anonymous"></script>
 
@@ -621,11 +622,31 @@
     .adm-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--bd); color: var(--tx3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
     .adm-table td { padding: 12px; border-bottom: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx2); }
     .adm-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .adm-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 10px; padding: 15px; }
+    .adm-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 10px; padding: 15px; transition: all 0.3s ease; }
+    .adm-card:hover { border-color: var(--g); }
     .adm-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
     .adm-stat-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 5px; }
     .adm-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--tx1); }
     .adm-stat-lbl { font-size: 0.7rem; color: var(--tx3); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
+    
+    /* User Management Enhancements */
+    .hl { background: rgba(255, 255, 0, 0.2); color: #fff; padding: 0 2px; border-radius: 2px; }
+    .adm-user-row { cursor: pointer; transition: background 0.2s; }
+    .adm-user-details { display: none; padding: 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--bd); animation: slideDown 0.3s ease; }
+    .adm-user-details.ON { display: block; }
+    .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+    .role-btn { padding: 6px; border: 1px solid var(--bd); border-radius: 6px; background: var(--bg1); color: var(--tx2); font-size: 0.7rem; cursor: pointer; transition: 0.2s; text-align: center; }
+    .role-btn:hover { background: var(--bd); }
+    .role-btn.ON { background: var(--g); color: #000; border-color: var(--g); font-weight: 700; }
+
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+    .cmd-hint-item { padding: 8px 12px; cursor: pointer; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; }
+    .cmd-hint-item:hover, .cmd-hint-item.ON { background: var(--bg3); }
+    .cmd-hint-name { font-weight: 700; font-family: monospace; font-size: 0.85rem; color: var(--g); }
+    .cmd-hint-desc { font-size: 0.7rem; color: var(--tx3); }
+    .cmd-hint-cat { font-size: 0.6rem; text-transform: uppercase; color: var(--tx3); opacity: 0.6; align-self: flex-end; }
 
     @media(max-width: 850px) {
       #ADM-CHAT-GRID { grid-template-columns: 1fr !important; height: auto !important; }
@@ -3888,7 +3909,10 @@
         <aside class="adm-sidebar" id="ADM-SIDEBAR">
           <div class="adm-sidebar-head">
             <svg class="ic" style="color:var(--g);width:20px;height:20px"><use href="#ic-wrench" /></svg>
-            <span>NEXUS</span>
+            <span style="flex:1">NEXUS</span>
+            <div id="SYS-STATUS-Pill" style="font-size:0.5rem;display:flex;align-items:center;gap:4px;background:rgba(34, 197, 94, 0.1);color:#4ade80;padding:3px 8px;border-radius:20px;border:1px solid rgba(34, 197, 94, 0.2)">
+              <span style="width:5px;height:5px;background:#4ade80;border-radius:50%;box-shadow:0 0 5px #4ade80"></span> ONLINE
+            </div>
           </div>
           <nav class="adm-nav">
             <button id="ADM-TAB-NODE" class="adm-nav-btn ON" onclick="admT('node')"><svg class="ic"><use href="#ic-chart" /></svg><span>Dashboard</span></button>
@@ -3931,6 +3955,11 @@
             </div>
           </div>
           
+          <div class="p" style="margin-bottom:20px">
+            <div class="stitle"><svg class="ic"><use href="#ic-chart" /></svg> Network Activity (Last 7 Days)</div>
+            <canvas id="admActivityChart" style="max-height:250px;width:100%"></canvas>
+          </div>
+          
           <div class="g2">
             <div class="p">
               <div class="stitle"><svg class="ic"><use href="#ic-history" /></svg> Recent System Activity</div>
@@ -3970,10 +3999,22 @@
 
         <div id="ADM-LOGS" style="display:none">
           <div class="p">
-            <div class="stitle">Audit Trail</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Detailed record of all administrative actions
-              for transparency.</p>
-            <div id="ADM-L-LIST" style="font-size:.78rem;font-family:monospace"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+              <div>
+                <div class="stitle" style="margin:0">Audit Trail</div>
+                <p style="color:var(--tx2);font-size:.8rem">Complete history of administrative actions.</p>
+              </div>
+              <div style="display:flex;gap:10px">
+                <select id="AUDIT-TYPE-FILTER" class="inp" style="width:140px;padding:5px" onchange="loadNexusLogs()">
+                  <option value="">All Actions</option>
+                  <option value="role_change">Role Changes</option>
+                  <option value="command_exec">Commands</option>
+                  <option value="ticket">Tickets</option>
+                </select>
+                <button class="bto bsm" onclick="exportAudit('csv')">Export CSV</button>
+              </div>
+            </div>
+            <div id="ADM-L-LIST"></div>
           </div>
         </div>
 
@@ -4086,8 +4127,12 @@
             <div class="stitle">Direct Command Engine</div>
             <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Queue a raw command to the Velocity proxy.
             </p>
-            <div class="fg" style="display:flex;gap:7px"><input id="ADM-RAW-CMD" class="inp"
-                placeholder="e.g. alert Web update complete!"><button class="btn" onclick="admRunCmd()">Queue</button>
+            <div class="fg" style="position:relative">
+              <div style="display:flex;gap:7px">
+                <input id="ADM-RAW-CMD" class="inp" placeholder="Type / for commands..." onkeydown="handleCmdKey(event)">
+                <button class="btn" onclick="admRunCmd()">Queue</button>
+              </div>
+              <div id="ADM-CMD-HINT" class="adm-card" style="display:none;position:absolute;bottom:calc(100% + 10px);left:0;right:0;z-index:100;padding:5px;max-height:300px;overflow-y:auto"></div>
             </div>
           </div>
         </div><!-- /ADM-MGMT -->
@@ -4998,7 +5043,19 @@
       renderRecentSearches();
       loadShowcase();
       initRouting();
+      initAdminListeners();
     });
+
+    let searchDebounce;
+    function initAdminListeners() {
+      const searchInp = I('ADM-P-SEARCH');
+      if (searchInp) {
+        searchInp.addEventListener('input', () => {
+          clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(admSearchP, 300);
+        });
+      }
+    }
 
     // ════════════════════════════════════════════════════
     // NAVIGATION
@@ -6312,6 +6369,7 @@
       try { await API(`/api/staff/channels/${id}`, { method: 'DELETE' }); CUR_CHAN = null; loadNexusChat(); } catch (e) { toast('err', e.message); }
     }
 
+    let activityChart;
     async function loadNexusNode() {
       try {
         const d = await API('/api/admin/overview');
@@ -6325,7 +6383,41 @@
 
         loadOnlineStaff(); 
         startHeartbeat(); 
+        renderActivityChart(d.stats);
       } catch (e) { }
+    }
+
+    function renderActivityChart(data) {
+      const ctx = I('admActivityChart')?.getContext('2d');
+      if (!ctx) return;
+      if (activityChart) activityChart.destroy();
+      
+      const labels = (data?.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+      const values = (data?.values || [0, 0, 0, 0, 0, 0, 0]);
+
+      activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Network Activity',
+            data: values,
+            borderColor: '#FF512F',
+            backgroundColor: 'rgba(255, 81, 47, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#71717a' } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#71717a' } }
+          }
+        }
+      });
     }
 
     async function loadNexusStaff() {
@@ -6362,29 +6454,58 @@
 
     async function loadNexusLogs() {
       const el = I('ADM-L-LIST'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      const filter = V('AUDIT-TYPE-FILTER') || '';
       try {
-        const d = await API('/api/admin/overview');
+        const logs = await API('/api/admin/audit');
+        const filtered = filter ? logs.filter(l => (l.action_type || l.action).toLowerCase().includes(filter)) : logs;
+        
         el.innerHTML = `
-          <table class="adm-table" style="font-family:inherit">
+          <table class="adm-table">
             <thead>
-              <tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Target</th></tr>
+              <tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Status</th><th>Time</th></tr>
             </thead>
             <tbody>
-              ${d.logs.map(l => `
-                <tr>
-                  <td style="color:var(--tx3);font-size:0.75rem">${fmtD(l.created_at)}</td>
-                  <td style="font-weight:700">${esc(l.admin_name)}</td>
-                  <td>
-                    <div style="font-weight:600">${esc(l.action)}</div>
-                    <div style="font-size:0.7rem;color:var(--tx3);max-width:300px;white-space:normal">${esc(l.details || '')}</div>
-                  </td>
-                  <td style="font-family:monospace">#${l.target_id || 'N/A'}</td>
-                </tr>
-              `).join('')}
+              ${filtered.map(l => {
+                const act = l.action_type || l.action;
+                const statusCls = l.status === 'success' ? 'open' : 'closed';
+                return `
+                  <tr>
+                    <td><div style="font-size:0.7rem;color:var(--tx3)">${fmtD(l.created_at)}</div></td>
+                    <td><strong>${esc(l.admin_name || 'System')}</strong></td>
+                    <td>
+                      <div style="font-weight:700;font-size:0.8rem">${esc(act.toUpperCase())}</div>
+                      <div style="font-size:0.7rem;color:var(--tx2);max-width:250px;white-space:normal">${esc(l.details || '')}</div>
+                    </td>
+                    <td><span class="adm-badge ${statusCls}">${esc(l.status || 'success')}</span></td>
+                    <td><div style="font-size:0.7rem;color:var(--tx3)">${l.execution_time ? l.execution_time+'ms' : '-'}</div></td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
-        ` || 'No audit logs found.';
-      } catch (e) { el.innerHTML = '<div class="empty">Error loading logs.</div>'; }
+        ` || '<div class="empty">No logs found matching your filter.</div>';
+      } catch (e) { el.innerHTML = '<div class="empty">Error loading audit logs.</div>'; }
+    }
+
+    function exportAudit(format) {
+      API('/api/admin/audit').then(logs => {
+        if (format === 'csv') {
+          let csv = 'Timestamp,Admin,Action,Details,Status,ExecutionTime\n';
+          logs.forEach(l => {
+            csv += `"${fmtD(l.created_at)}","${l.admin_name || 'System'}","${l.action_type || l.action}","${(l.details || '').replace(/"/g, '""')}","${l.status}","${l.execution_time}"\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.setAttribute('hidden', '');
+          a.setAttribute('href', url);
+          a.setAttribute('download', `audit_log_${new Date().toISOString().slice(0,10)}.csv`);
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          toast('ok', 'Audit log exported!');
+        }
+      }).catch(e => toast('err', 'Export failed: ' + e.message));
     }
 
     async function admSetAnn(clear = false) {
@@ -6411,19 +6532,102 @@
 
     async function admRunCmd() {
       const cmd = V('ADM-RAW-CMD').trim(); if (!cmd) return;
+      const start = performance.now();
       try {
         await API('/api/admin/commands/queue', { method: 'POST', body: { command: cmd } });
-        toast('ok', 'Command queued to Velocity Proxy!'); SV('ADM-RAW-CMD', ''); loadNexusNode();
+        const duration = (performance.now() - start).toFixed(2);
+        toast('ok', `Command queued to Velocity Proxy! (${duration}ms)`); 
+        SV('ADM-RAW-CMD', ''); I('ADM-CMD-HINT').style.display = 'none';
+        loadNexusNode();
       } catch (e) { toast('err', e.message); }
+    }
+
+    let allCmdSuggestions = [];
+    let activeCmdIdx = -1;
+    let filteredCmds = [];
+
+    async function handleCmdKey(e) {
+      const inp = e.target;
+      const hintEl = I('ADM-CMD-HINT');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeCmdIdx = Math.min(activeCmdIdx + 1, filteredCmds.length - 1);
+        renderCmdHints();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeCmdIdx = Math.max(activeCmdIdx - 1, 0);
+        renderCmdHints();
+      } else if (e.key === 'Enter' && activeCmdIdx >= 0 && hintEl.style.display !== 'none') {
+        e.preventDefault();
+        selectCmdHint(filteredCmds[activeCmdIdx].command);
+      } else if (e.key === 'Escape') {
+        hintEl.style.display = 'none';
+      } else if (e.key === 'Tab' && activeCmdIdx >= 0 && hintEl.style.display !== 'none') {
+        e.preventDefault();
+        selectCmdHint(filteredCmds[activeCmdIdx].command);
+      } else {
+        setTimeout(async () => {
+          const cur = inp.value;
+          if (cur.startsWith('/')) {
+            if (!allCmdSuggestions.length) {
+               allCmdSuggestions = await API('/api/admin/commands/suggestions');
+            }
+            const query = cur.substring(1).toLowerCase();
+            filteredCmds = allCmdSuggestions.filter(s => s.command.toLowerCase().includes(query));
+            if (filteredCmds.length > 0) {
+              if (activeCmdIdx >= filteredCmds.length) activeCmdIdx = 0;
+              renderCmdHints();
+            } else {
+              hintEl.style.display = 'none';
+            }
+          } else {
+            hintEl.style.display = 'none';
+          }
+        }, 50);
+      }
+    }
+
+    function renderCmdHints() {
+      const hintEl = I('ADM-CMD-HINT');
+      if (!filteredCmds.length) { hintEl.style.display = 'none'; return; }
+      
+      hintEl.style.display = 'block';
+      hintEl.innerHTML = filteredCmds.map((s, i) => `
+        <div class="cmd-hint-item ${i === activeCmdIdx ? 'ON' : ''}" onclick="selectCmdHint('${s.command}')">
+          <div style="display:flex;justify-content:space-between">
+            <span class="cmd-hint-name">${esc(s.command)}</span>
+            <span class="cmd-hint-cat">${esc(s.category)}</span>
+          </div>
+          <span class="cmd-hint-desc">${esc(s.description)}</span>
+        </div>
+      `).join('');
+      
+      const active = hintEl.querySelector('.cmd-hint-item.ON');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+
+    function selectCmdHint(cmd) {
+      const inp = I('ADM-RAW-CMD');
+      inp.value = cmd.split(' {')[0] + ' '; // Auto-fill until first parameter
+      I('ADM-CMD-HINT').style.display = 'none';
+      activeCmdIdx = -1;
+      inp.focus();
     }
 
     async function admSearchP() {
       const q = (V('ADM-P-SEARCH') || '').trim(), el = I('ADM-P-RES');
-      if (!q) return;
-      el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      if (!q) { el.innerHTML = ''; return; }
       try {
         const users = await API(`/api/admin/users?q=${enc(q)}`);
-        if (!users.length) { el.innerHTML = '<div class="empty">No users found.</div>'; return; }
+        if (!users.length) { el.innerHTML = '<div class="empty">No users found matching "' + esc(q) + '".</div>'; return; }
+        
+        const highlight = (text, query) => {
+          if (!query) return esc(text);
+          const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+          return esc(text).replace(regex, '<span class="hl">$1</span>');
+        };
+
         el.innerHTML = `
           <table class="adm-table">
             <thead>
@@ -6433,20 +6637,32 @@
               ${users.map(u => {
                 const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
                 return `
-                  <tr style="border-left:3px solid ${isStaff ? 'var(--g)' : 'transparent'}">
+                  <tr class="adm-user-row" onclick="admToggleUser(${u.id})">
                     <td>
-                      <div style="font-weight:700">${esc(u.username)}</div>
+                      <div style="font-weight:700">${highlight(u.username, q)}</div>
                       <div style="font-size:0.65rem;color:var(--tx3)">UID: #${u.id}</div>
                     </td>
                     <td>
-                      <div style="font-size:0.8rem">${esc(u.email)}</div>
+                      <div style="font-size:0.8rem">${highlight(u.email, q)}</div>
                       <div style="font-size:0.65rem;color:var(--tx3)">Joined ${fmtD(u.created_at)}</div>
                     </td>
                     <td><span class="rb rb-${rbcls(u.role)}">${esc(u.role)}</span></td>
                     <td>
-                      <div style="display:flex;gap:5px">
-                        <button class="bto bxs" onclick="admUpdateRole(${u.id},'${u.role}')">Role</button>
-                        <button class="btn bred bxs" onclick="admBurnUser(${u.id})"><svg class="ic" style="margin:0;width:12px;height:12px"><use href="#ic-trash"/></svg></button>
+                      <button class="btn bred bxs" onclick="event.stopPropagation();admBurnUser(${u.id})"><svg class="ic" style="margin:0;width:12px;height:12px"><use href="#ic-trash"/></svg></button>
+                    </td>
+                  </tr>
+                  <tr id="ADM-USER-EXTRA-${u.id}" class="adm-user-details">
+                    <td colspan="4">
+                      <div style="display:flex;gap:20px">
+                        <img src="/api/skin/head/${enc(u.mc_username || u.username)}/64" style="border-radius:8px;background:var(--bg3);padding:10px">
+                        <div style="flex:1">
+                          <div class="stitle" style="margin:0">Manage Permissions</div>
+                          <div class="role-grid">
+                            ${['player', 'helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].map(r => `
+                              <button class="role-btn ${u.role === r ? 'ON' : ''}" onclick="admUpdateRole(${u.id}, '${r}')">${r.toUpperCase()}</button>
+                            `).join('')}
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -6458,14 +6674,18 @@
       } catch (e) { el.innerHTML = '<div class="empty">Error fetching users.</div>'; }
     }
 
-    async function admUpdateRole(uid, current) {
-      const roles = ['player', 'helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'];
-      const next = prompt(`Update role for UID ${uid}?\nCurrent: ${current}\nAvailable: ${roles.join(', ')}`, current);
-      if (!next || next === current) return;
-      if (!roles.includes(next.toLowerCase())) return toast('err', 'Invalid role');
+    function admToggleUser(uid) {
+      const el = I(`ADM-USER-EXTRA-${uid}`);
+      const wasOn = el.classList.contains('ON');
+      document.querySelectorAll('.adm-user-details').forEach(d => d.classList.remove('ON'));
+      if (!wasOn) el.classList.add('ON');
+    }
+
+    async function admUpdateRole(uid, next) {
       try {
-        await API(`/api/admin/users/${uid}/role`, { method: 'POST', body: { role: next.toLowerCase() } });
-        toast('ok', 'Role updated!'); admSearchP();
+        await API(`/api/admin/users/${uid}/role`, { method: 'POST', body: { role: next } });
+        toast('ok', `User role updated to ${next.toUpperCase()}`);
+        admSearchP();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -7462,9 +7682,17 @@
       const c = I('TOASTS');
       const el = document.createElement('div');
       el.className = `toast ${type}`;
-      el.innerHTML = `<span>${type === 'ok' ? '✓' : '✗'}</span><span>${esc(msg)}</span>`;
+      el.style.animation = 'slideInRight 0.3s ease forwards';
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.1rem">${type === 'ok' ? '✓' : '✗'}</span>
+        <span style="font-weight:600">${esc(msg)}</span>
+      </div>`;
       c.appendChild(el);
-      setTimeout(() => { el.style.transition = 'opacity .28s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 280); }, 3500);
+      setTimeout(() => { 
+        el.style.opacity = '0'; 
+        el.style.transform = 'translateX(20px)';
+        setTimeout(() => el.remove(), 300); 
+      }, 4000);
     }
 
     // ════════════════════════════════════════════════════

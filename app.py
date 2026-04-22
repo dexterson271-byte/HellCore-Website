@@ -566,11 +566,17 @@ def admin_required(f):
         request.cu = u; return f(*a, **k)
     return w
 
-def log_audit(admin_id, action, target_id=None, details=""):
+def log_audit(admin_id, action, target_id=None, details="", status="success", execution_time=0.0):
     try:
         db = get_db(); c = db_cursor(db)
-        c.execute(f"INSERT INTO hc_audit_logs(admin_id, action, target_id, details) VALUES({phs(4)})",
-                  (admin_id, action, target_id, details))
+        # Check if columns exist (for status and execution_time)
+        try:
+            c.execute(f"INSERT INTO hc_audit_logs(admin_id, action, target_id, details, status, execution_time) VALUES({phs(6)})",
+                      (admin_id, action, target_id, details, status, execution_time))
+        except:
+            # Fallback to old schema if table wasn't fully migrated yet
+            c.execute(f"INSERT INTO hc_audit_logs(admin_id, action, target_id, details) VALUES({phs(4)})",
+                      (admin_id, action, target_id, details))
         db.commit(); c.close(); db.close()
     except: traceback.print_exc()
 
@@ -1687,11 +1693,58 @@ def staff_list():
 @app.route("/api/admin/users")
 @admin_required
 def admin_users():
+    q = request.args.get("q", "").strip()
     db = get_db(); c = db_cursor(db)
-    c.execute("SELECT id,email,username,mc_username,role,created_at FROM hc_users ORDER BY created_at DESC")
+    if q:
+        c.execute(f"SELECT id,email,username,mc_username,role,created_at FROM hc_users WHERE username LIKE {ph()} OR email LIKE {ph()}", (f"%{q}%", f"%{q}%"))
+    else:
+        c.execute("SELECT id,email,username,mc_username,role,created_at FROM hc_users ORDER BY created_at DESC LIMIT 50")
+    
+    rows = to_list(c.fetchall()); c.close(); db.close()
+    
+    scored = []
+    for r in rows:
+        r["created_at"] = ts(r["created_at"])
+        if q:
+            uname = r["username"].lower()
+            ql = q.lower()
+            if uname == ql: score = 100
+            elif uname.startswith(ql): score = 50
+            elif ql in uname: score = 10
+            else: score = 0
+            r["search_score"] = score
+        else:
+            r["search_score"] = 0
+        scored.append(r)
+    
+    if q:
+        scored.sort(key=lambda x: x["search_score"], reverse=True)
+    
+    return jsonify(scored)
+
+@app.route("/api/admin/audit")
+@admin_required
+def admin_audit():
+    db = get_db(); c = db_cursor(db)
+    # Join with users to get admin name
+    c.execute("SELECT a.*, u.username as admin_name FROM hc_audit_logs a LEFT JOIN hc_users u ON a.admin_id = u.id ORDER BY a.created_at DESC LIMIT 200")
     rows = to_list(c.fetchall()); c.close(); db.close()
     for r in rows: r["created_at"] = ts(r["created_at"])
     return jsonify(rows)
+
+@app.route("/api/admin/commands/suggestions")
+@admin_required
+def admin_cmd_suggestions():
+    return jsonify([
+        {"command": "lpv user {user} parent set {rank}", "description": "Update player rank across the network", "category": "Permissions"},
+        {"command": "alert {message}", "description": "Global announcement to all online players", "category": "Admin"},
+        {"command": "broadcast {message}", "description": "Send a formatted broadcast to the chat", "category": "Admin"},
+        {"command": "kick {user} {reason}", "description": "Kick a player from the network", "category": "Moderation"},
+        {"command": "ban {user} {reason}", "description": "Ban a player from the network", "category": "Moderation"},
+        {"command": "mute {user} {time} {reason}", "description": "Mute a player's chat", "category": "Moderation"},
+        {"command": "maintenance on|off", "description": "Toggle network maintenance mode", "category": "System"},
+        {"command": "sync", "description": "Force sync all user permissions", "category": "System"}
+    ])
 
 @app.route("/api/admin/users/<int:uid>/role", methods=["POST"])
 @admin_required
@@ -1853,10 +1906,20 @@ def admin_command_queue():
     d = request.get_json(force=True) or {}
     cmd = d.get("command")
     if not cmd: return jsonify({"error":"No command"}), 400
+    
+    start_time = time.time()
     db = get_db(); c = db_cursor(db)
-    c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
-    db.commit(); c.close(); db.close()
-    return jsonify({"ok":True})
+    try:
+        c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+        db.commit()
+        duration = round((time.time() - start_time) * 1000, 2)
+        log_audit(request.cu["id"], "command_exec", None, f"Queued: {cmd}", "success", duration)
+        return jsonify({"ok":True})
+    except Exception as e:
+        log_audit(request.cu["id"], "command_exec", None, f"Failed: {cmd} ({str(e)})", "fail")
+        return jsonify({"error":str(e)}), 500
+    finally:
+        c.close(); db.close()
 
 @app.route("/api/tebex/webhook", methods=["POST"])
 def tebex():
