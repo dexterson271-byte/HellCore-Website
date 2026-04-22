@@ -5052,7 +5052,27 @@
       loadEvents();
     }
     const isStaff = () => ME && ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(ME.role);
-    const isAdmin = () => ME && ['admin', 'owner', 'founder'].includes(ME.role);
+    const isAdmin = () => ME && ['helper', 'mod', 'dev', 'admin', 'owner', 'founder'].includes(ME.role);
+
+    // Reinitialize all permission-dependent systems after login/register
+    // This fixes the bug where staff chat and admin features don't work until relog
+    function reInitPermissions() {
+      if (!ME) return;
+      // Re-sync user data from server to get latest role
+      API('/api/auth/me').then(r => {
+        ME = r;
+        const storage = localStorage.getItem('hc_token') ? localStorage : sessionStorage;
+        storage.setItem('hc_user', JSON.stringify(ME));
+        refreshUI();
+      }).catch(() => {});
+      // Re-init staff systems
+      if (isStaff()) {
+        startHeartbeat();
+        // If user is currently viewing admin, reload it
+        const admNode = I('ADM-NODE');
+        if (admNode && admNode.style.display !== 'none') loadNexusNode();
+      }
+    }
 
     // ════════════════════════════════════════════════════
     // CAPTCHA — new code every open, every error
@@ -5103,6 +5123,8 @@
         localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
         sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('ML');
+        // Reinitialize all permission-dependent systems immediately
+        reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
       } catch (e) { I('LG-ERR').textContent = e.message; genCap('LG'); }
@@ -5122,6 +5144,8 @@
         localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
         sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('MR');
+        // Reinitialize all permission-dependent systems immediately
+        reInitPermissions();
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
         toast('ok', '✓ Account created! Welcome, ' + r.username + '!');
       } catch (e) { I('RG-ERR').textContent = e.message; genCap('RG'); }
@@ -6418,13 +6442,8 @@
       catch (e) { }
     }
 
-    async function admRunCmd() {
-      const cmd = V('ADM-TERM-IN').trim(); if (!cmd) return;
-      try {
-        await API('/api/admin/commands/queue', { method: 'POST', body: { command: cmd } });
-        SV('ADM-TERM-IN', ''); toast('ok', 'Command queued!');
-      } catch (e) { toast('err', e.message); }
-    }
+    // NOTE: admRunCmd is defined earlier at line ~6315 using the correct input ID 'ADM-RAW-CMD'
+    // The duplicate that was here used the wrong ID 'ADM-TERM-IN' and was removed.
 
     async function loadEvents() {
       const el = I('EVENT-BOX'); if (!el) return;
@@ -6543,7 +6562,7 @@
     const tixGetSeen = id => { try { return parseInt(localStorage.getItem(tixSeenKey(id)) || '0', 10) || 0; } catch (e) { return 0; } };
 
     async function loadTix() {
-      if (!ME) return;
+      if (!ME) { const el = I('TIX-L'); if (el) el.innerHTML = '<div class="empty">Please log in to view your tickets.</div>'; return; }
       const el = I('TIX-L'); if (!el) return;
       el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
@@ -6555,7 +6574,7 @@
         TIX.canned = canned || [];
         renderTixList(TIX.list, el);
         renderCannedReplies();
-      } catch (e) { el.innerHTML = '<div class="empty">Log in to view tickets.</div>'; }
+      } catch (e) { el.innerHTML = `<div class="empty">${esc(e.message || 'Failed to load tickets.')}</div>`; }
     }
     async function loadProfTix() {
       if (!ME) return;

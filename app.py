@@ -1330,10 +1330,10 @@ def ticket_rank_grant(tid):
     if mode == "temp_add":
         if not re.match(r"^[0-9]{1,3}[smhdw]$", duration):
             return jsonify({"error":"Invalid duration, example: 30d"}), 400
-        cmd = f"lp user {username} parent addtemp {rank} {duration}"
+        cmd = f"lpv user {username} parent addtemp {rank} {duration}"
     else:
         mode = "perm_set"
-        cmd = f"lp user {username} parent set {rank}"
+        cmd = f"lpv user {username} parent set {rank}"
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
