@@ -5265,6 +5265,7 @@
         document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
         
         localStorage.setItem('hc_user', JSON.stringify(ME));
+        refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
