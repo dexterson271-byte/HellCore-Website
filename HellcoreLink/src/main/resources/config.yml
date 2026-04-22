@@ -1,0 +1,10 @@
+# HellcoreLink Configuration
+# The base URL of your website (with /api/verify/confirm at the end)
+api-url: "https://your-domain.com/api/verify/confirm"
+
+messages:
+  prefix: "&6&lHELLCORE &8» "
+  usage: "&cUsage: /verify <HC-CODE>"
+  verifying: "&eVerifying your account... please wait."
+  success: "&aSuccessfully linked! You can now access the Store and Admin features."
+  error: "&cVerification failed. Please ensure the code is correct."

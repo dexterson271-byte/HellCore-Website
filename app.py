@@ -885,6 +885,20 @@ def verify_confirm():
     db.commit(); c.close(); db.close()
     return f"Successfully verified {username} on website!", 200
 
+@app.route("/api/metrics/update")
+def metrics_update():
+    """Receives heartbeats from the Minecraft plugin to show live status."""
+    online = request.args.get("online", 0, type=int)
+    max_p = request.args.get("max", 0, type=int)
+    server = request.args.get("server", "Unknown")
+    
+    db = get_db(); c = db_cursor(db)
+    upsert(c, "hc_server_metrics", 
+           {"server_name": server, "online_players": online, "max_players": max_p, "last_updated": datetime.now()},
+           {"server_name"})
+    db.commit(); c.close(); db.close()
+    return "OK", 200
+
 # ═══════════════════════════════════════════════════════
 # FORUMS
 # ═══════════════════════════════════════════════════════

@@ -1,0 +1,8 @@
+name: HellcoreLink
+version: 1.0
+main: net.hellcore.link.HellcoreLink
+api-version: 1.20
+commands:
+  verify:
+    description: Link your Minecraft account to the website.
+    usage: /verify <code>
