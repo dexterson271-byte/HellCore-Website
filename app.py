@@ -891,10 +891,13 @@ def metrics_update():
     online = request.args.get("online", 0, type=int)
     max_p = request.args.get("max", 0, type=int)
     server = request.args.get("server", "Unknown")
+    arenas = request.args.get("arenas", 0, type=int)
+    ingame = request.args.get("ingame", 0, type=int)
     
     db = get_db(); c = db_cursor(db)
     upsert(c, "hc_server_metrics", 
-           {"server_name": server, "online_players": online, "max_players": max_p, "last_updated": datetime.now()},
+           {"server_name": server, "online_players": online, "max_players": max_p, 
+            "arenas": arenas, "ingame_players": ingame, "last_updated": datetime.now()},
            {"server_name"})
     db.commit(); c.close(); db.close()
     return "OK", 200
@@ -1548,6 +1551,23 @@ def player_get(username):
         "ranks":   {r["gamemode"]:r["rank_name"] for r in ranks},
         "economy": eco or {"server_gold":0,"server_iron":0}
     })
+
+@app.route("/api/serverstatus/overview")
+def serverstatus_overview():
+    try:
+        db = get_db(); c = db_cursor(db)
+        # We assume the Bedwars server is the primary one for these stats, 
+        # or we aggregate them if multiple servers report it.
+        c.execute("SELECT SUM(online_players) as players, SUM(arenas) as arenas, SUM(ingame_players) as ingame FROM hc_server_metrics")
+        res = to_dict(c.fetchone())
+        c.close(); db.close()
+        return jsonify({
+            "players": res.get("players") or 0,
+            "arenas": res.get("arenas") or 0,
+            "ingame": res.get("ingame") or 0
+        })
+    except:
+        return jsonify({"players":0, "arenas":0, "ingame":0})
 
 @app.route("/api/serverstatus")
 def server_status():

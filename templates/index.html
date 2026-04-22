@@ -5343,6 +5343,15 @@
         renderStatus(d);
         loadEvents();
 
+        // --- Update BW Arenas / Players from Nexus API ---
+        try {
+          const ovRes = await fetch('/api/serverstatus/overview');
+          const ov = await ovRes.json();
+          const arEl = I('BW-ARENAS'), plEl = I('BW-PLAYERS');
+          if (arEl) arEl.textContent = `${ov.arenas || 0} Arenas`;
+          if (plEl) plEl.textContent = `${ov.ingame || 0} In Game`;
+        } catch (e) { }
+
         // --- Append data point to rolling history ---
         const now = new Date();
         const label = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');

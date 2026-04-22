@@ -39,9 +39,33 @@ public class HellcoreLink extends JavaPlugin implements CommandExecutor {
             int max = Bukkit.getMaxPlayers();
             String serverName = Bukkit.getServer().getName();
             
-            // Using a simple GET request for now to keep it easy to handle on Flask
+            int arenas = 0;
+            int inGame = 0;
+
+            // Hook into BedWars1058 if present
+            if (Bukkit.getPluginManager().isPluginEnabled("BedWars1058")) {
+                try {
+                    com.andrei1058.bedwars.api.BedWars bwApi = Bukkit.getServicesManager().load(com.andrei1058.bedwars.api.BedWars.class);
+                    if (bwApi != null) {
+                        arenas = bwApi.getArenaUtil().getArenas().size();
+                        // Count players in "STARTING" or "PLAYING" states
+                        for (com.andrei1058.bedwars.api.arena.IArena arena : bwApi.getArenaUtil().getArenas()) {
+                             if (arena.getStatus() == com.andrei1058.bedwars.api.arena.GameState.starting || 
+                                 arena.getStatus() == com.andrei1058.bedwars.api.arena.GameState.playing) {
+                                 inGame += arena.getPlayers().size();
+                             }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+            
+            // Build metrics URL with new arena/ingame data
             String metricsUrl = apiUrl.replace("/verify/confirm", "/metrics/update") 
-                    + "?online=" + online + "&max=" + max + "&server=" + serverName;
+                    + "?online=" + online 
+                    + "&max=" + max 
+                    + "&server=" + serverName
+                    + "&arenas=" + arenas
+                    + "&ingame=" + inGame;
             
             URL url = new URL(metricsUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
