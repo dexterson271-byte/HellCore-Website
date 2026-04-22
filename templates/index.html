@@ -5264,7 +5264,7 @@
         const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
         document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
         
-        localStorage.setItem('hc_user', JSON.stringify(ME));
+        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
@@ -5284,8 +5284,7 @@
         TOK = r.token; ME = r;
         const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
         document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
-        localStorage.setItem('hc_user', JSON.stringify(ME));
-        sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
+        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('MR');
         // Reinitialize all permission-dependent systems immediately
         reInitPermissions();
@@ -5298,8 +5297,8 @@
       try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
       ME = null; TOK = null;
       const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
-      document.cookie = `hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;${domain}`;
-      localStorage.removeItem('hc_user');
+      document.cookie = `hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC${domain}`;
+      localStorage.removeItem('hc_token'); localStorage.removeItem('hc_user');
       refreshUI(); GO('home'); toast('ok', 'Logged out.');
     }
 
