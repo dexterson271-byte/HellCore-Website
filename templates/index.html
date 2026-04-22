@@ -588,27 +588,49 @@
       .g2, .g3, .g4 { grid-template-columns: 1fr; }
     }
 
-    /* ═══════ ADMIN RESPONSIVENESS ═══════ */
+    /* ═══════ ADMIN SIDEBAR LAYOUT ═══════ */
+    .adm-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 85vh; background: var(--bg2); border-radius: 12px; overflow: hidden; border: 1px solid var(--bd); margin: 20px auto; max-width: 1400px; }
+    .adm-sidebar { background: var(--bg1); border-right: 1px solid var(--bd); display: flex; flex-direction: column; }
+    .adm-sidebar-head { padding: 20px; display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--bd); }
+    .adm-nav { padding: 15px 10px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .adm-nav-btn { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-radius: 8px; color: var(--tx2); font-weight: 500; transition: all .2s; border: none; background: transparent; text-align: left; cursor: pointer; }
+    .adm-nav-btn .ic { width: 18px; height: 18px; opacity: 0.7; }
+    .adm-nav-btn:hover { background: var(--bg2); color: var(--tx1); }
+    .adm-nav-btn.ON { background: var(--g); color: #000; font-weight: 700; }
+    .adm-nav-btn.ON .ic { opacity: 1; }
+    .adm-nav-divider { height: 1px; background: var(--bd); margin: 10px 5px; }
+    .adm-main { padding: 25px; overflow-y: auto; max-height: 85vh; background: var(--bg2); }
+    .adm-sidebar-foot { padding: 15px; border-top: 1px solid var(--bd); }
+
+    @media(max-width: 1000px) {
+      .adm-shell { grid-template-columns: 1fr; }
+      .adm-sidebar { border-right: none; border-bottom: 1px solid var(--bd); }
+      .adm-nav { flex-direction: row; overflow-x: auto; padding: 10px; white-space: nowrap; }
+      .adm-nav-btn span { display: none; }
+      .adm-nav-btn { padding: 10px; }
+      .adm-sidebar-head { justify-content: center; }
+      .adm-sidebar-foot { display: none; }
+    }
+
+    /* ═══════ ADMIN UI COMPONENTS ═══════ */
+    .adm-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .adm-badge.open { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .adm-badge.closed { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .adm-badge.priority { background: rgba(234, 179, 8, 0.2); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .adm-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .adm-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--bd); color: var(--tx3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+    .adm-table td { padding: 12px; border-bottom: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx2); }
+    .adm-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .adm-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 10px; padding: 15px; }
+    .adm-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .adm-stat-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 5px; }
+    .adm-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--tx1); }
+    .adm-stat-lbl { font-size: 0.7rem; color: var(--tx3); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
+
     @media(max-width: 850px) {
-      #ADM-CHAT-GRID {
-        grid-template-columns: 1fr !important;
-        height: auto !important;
-      }
-      #ADM-CHAT-GRID > div:first-child {
-        max-height: 200px;
-      }
-      .tabs {
-        width: 100% !important;
-        overflow-x: auto;
-        justify-content: flex-start !important;
-        padding: 6px;
-        white-space: nowrap;
-        scrollbar-width: none;
-      }
-      .tabs::-webkit-scrollbar { display: none; }
-      
+      #ADM-CHAT-GRID { grid-template-columns: 1fr !important; height: auto !important; }
+      #ADM-CHAT-GRID > div:first-child { max-height: 200px; }
       #pg-admin .g4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
-      .ptitle { font-size: 1.8rem; }
     }
 
     /* ═══════ FORMS ═══════ */
@@ -3861,52 +3883,66 @@
 
     <!-- ════════════ ADMIN NEXUS ════════════ -->
     <div class="pg" id="pg-admin">
-      <div class="W">
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-wrench" />
-          </svg> Hellcore Nexus</div>
-        <div class="tabs" style="justify-content:flex-start">
-          <button id="ADM-TAB-NODE" class="tab ON" onclick="admT('node')">Analytics</button>
-          <button id="ADM-TAB-PLAYERS" class="tab" onclick="admT('players')">Players</button>
-          <button id="ADM-TAB-STAFF" class="tab" onclick="admT('staff')">Staff</button>
-          <button id="ADM-TAB-LOGS" class="tab" onclick="admT('logs')">Audit Logs</button>
-          <button id="ADM-TAB-FORUMS" class="tab" onclick="admT('forums')">Forums</button>
-          <button id="ADM-TAB-TICKETS" class="tab" onclick="admT('tickets')">Tickets</button>
-          <button id="ADM-TAB-CHAT" class="tab" onclick="admT('chat')">Staff Chat</button>
-          <button id="ADM-TAB-EVENTS" class="tab" onclick="admT('events')">Events</button>
-          <button id="ADM-TAB-MGMT" class="tab" onclick="admT('mgmt')">Controls</button>
-        </div>
+      <div class="adm-shell">
+        <!-- SIDEBAR -->
+        <aside class="adm-sidebar" id="ADM-SIDEBAR">
+          <div class="adm-sidebar-head">
+            <svg class="ic" style="color:var(--g);width:20px;height:20px"><use href="#ic-wrench" /></svg>
+            <span>NEXUS</span>
+          </div>
+          <nav class="adm-nav">
+            <button id="ADM-TAB-NODE" class="adm-nav-btn ON" onclick="admT('node')"><svg class="ic"><use href="#ic-chart" /></svg><span>Dashboard</span></button>
+            <button id="ADM-TAB-PLAYERS" class="adm-nav-btn" onclick="admT('players')"><svg class="ic"><use href="#ic-users" /></svg><span>Users</span></button>
+            <button id="ADM-TAB-STAFF" class="adm-nav-btn" onclick="admT('staff')"><svg class="ic"><use href="#ic-shield" /></svg><span>Staff</span></button>
+            <button id="ADM-TAB-TICKETS" class="adm-nav-btn" onclick="admT('tickets')"><svg class="ic"><use href="#ic-mail" /></svg><span>Tickets</span></button>
+            <div class="adm-nav-divider"></div>
+            <button id="ADM-TAB-CHAT" class="adm-nav-btn" onclick="admT('chat')"><svg class="ic"><use href="#ic-chat" /></svg><span>Staff Chat</span></button>
+            <button id="ADM-TAB-LOGS" class="adm-nav-btn" onclick="admT('logs')"><svg class="ic"><use href="#ic-history" /></svg><span>Audit Logs</span></button>
+            <button id="ADM-TAB-FORUMS" class="adm-nav-btn" onclick="admT('forums')"><svg class="ic"><use href="#ic-layers" /></svg><span>Forums</span></button>
+            <button id="ADM-TAB-EVENTS" class="adm-nav-btn" onclick="admT('events')"><svg class="ic"><use href="#ic-bolt" /></svg><span>Events</span></button>
+            <div class="adm-nav-divider"></div>
+            <button id="ADM-TAB-MGMT" class="adm-nav-btn" onclick="admT('mgmt')"><svg class="ic"><use href="#ic-wrench" /></svg><span>Controls</span></button>
+          </nav>
+          <div class="adm-sidebar-foot">
+            <div style="font-size:0.6rem;color:var(--tx3);text-align:center">Hellcore Nexus v7.3</div>
+          </div>
+        </aside>
+        <!-- MAIN CONTENT -->
+        <div class="adm-main">
 
         <!-- Node Overview -->
         <div id="ADM-NODE">
-          <div class="g4" style="gap:12px;margin-bottom:14px">
-            <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Sync Status
-              </div>
-              <div id="ADM-SYNC-STATUS" style="font-weight:800;color:var(--g)">ONLINE</div>
+          <div class="adm-stat-grid">
+            <div class="adm-stat-card">
+              <div class="adm-stat-lbl">Sync Status</div>
+              <div id="ADM-SYNC-STATUS" class="adm-stat-val" style="color:var(--g)">ONLINE</div>
             </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Users</div>
-              <div id="ADM-TOTAL-USERS" style="font-weight:800;color:#fff">0</div>
+            <div class="adm-stat-card">
+              <div class="adm-stat-lbl">Total Users</div>
+              <div id="ADM-TOTAL-USERS" class="adm-stat-val">0</div>
             </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Pending CMDs
-              </div>
-              <div id="ADM-PENDING-CMD" style="font-weight:800;color:var(--r2)">0</div>
+            <div class="adm-stat-card">
+              <div class="adm-stat-lbl">Pending CMDs</div>
+              <div id="ADM-PENDING-CMD" class="adm-stat-val" style="color:var(--r2)">0</div>
             </div>
-            <div class="p" style="text-align:center">
-              <div style="font-size:.75rem;color:var(--tx3);text-transform:uppercase;margin-bottom:5px">Staff</div>
-              <div id="ADM-STAFF-COUNT" style="font-weight:800;color:var(--g)">0</div>
+            <div class="adm-stat-card">
+              <div class="adm-stat-lbl">Active Staff</div>
+              <div id="ADM-STAFF-COUNT" class="adm-stat-val" style="color:var(--g)">0</div>
             </div>
           </div>
-          <div class="p">
-            <div class="stitle">Recent Network Activity</div>
-            <div id="ADM-LOGS-MINI" style="max-height:300px;overflow-y:auto;font-size:0.8rem"></div>
-          </div>
-          <div class="p" style="margin-top:14px">
-            <div class="stitle"><svg class="ic"><use href="#ic-user" /></svg> Active Staff Now</div>
-            <div id="ADM-ONLINE-TEAM" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:10px">
-               <div style="color:var(--tx3);font-size:0.8rem">No staff members active in the last 5 minutes.</div>
+          
+          <div class="g2">
+            <div class="p">
+              <div class="stitle"><svg class="ic"><use href="#ic-history" /></svg> Recent System Activity</div>
+              <div id="ADM-LOGS-MINI" style="max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:10px">
+                <div class="ld"><div class="sp"></div></div>
+              </div>
+            </div>
+            <div class="p">
+              <div class="stitle"><svg class="ic"><use href="#ic-user" /></svg> Staff Online Now</div>
+              <div id="ADM-ONLINE-TEAM" style="display:grid;grid-template-columns:1fr;gap:10px">
+                 <div style="color:var(--tx3);font-size:0.8rem">Refreshing...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -4054,8 +4090,8 @@
                 placeholder="e.g. alert Web update complete!"><button class="btn" onclick="admRunCmd()">Queue</button>
             </div>
           </div>
-        </div>
-      </div>
+        </div><!-- /adm-main -->
+      </div><!-- /adm-shell -->
     </div>
 
     <!-- ════════════ STORE HUB ════════════ -->
@@ -6035,9 +6071,9 @@
     // HELLCORE NEXUS (ADMIN SETTINGS)
     // ════════════════════════════════════════════════════
     function admT(t) {
-      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'TERM', 'MGMT'].forEach(k => {
+      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'MGMT'].forEach(k => {
         const el = I('ADM-' + k); if (el) el.style.display = k === t.toUpperCase() ? 'block' : 'none';
-        const tab = I('ADM-TAB-' + k); if (tab) tab.className = 'tab' + (k === t.toUpperCase() ? ' ON' : '');
+        const tab = I('ADM-TAB-' + k); if (tab) tab.className = 'adm-nav-btn' + (k === t.toUpperCase() ? ' ON' : '');
       });
       if (t === 'node') loadNexusNode();
       if (t === 'staff') loadNexusStaff();
@@ -6284,10 +6320,10 @@
         I('ADM-STAFF-COUNT').textContent = d.staff_count || 0;
 
         const log = I('ADM-LOGS-MINI');
-        if (log) log.innerHTML = d.logs.map(l => `<div style="padding:4px;border-bottom:1px solid var(--bd);opacity:0.8"><small style="color:var(--g)">[${fmtD(l.created_at)}]</small> <b>${l.admin_name}</b>: ${l.action} ${l.details ? `(${l.details})` : ''}</div>`).join('') || 'No actions recorded yet.';
+        if (log) log.innerHTML = d.logs.map(l => `<div style="padding:4px;border-bottom:1px solid var(--bd);opacity:0.8;font-size:0.75rem"><small style="color:var(--g)">[${fmtD(l.created_at)}]</small> <b>${esc(l.admin_name)}</b>: ${esc(l.action)} ${l.details ? `<span style="color:var(--tx3)">(${esc(l.details)})</span>` : ''}</div>`).join('') || 'No actions recorded yet.';
 
-        loadOnlineStaff(); // Refresh online staff list
-        startHeartbeat(); // Ensure heartbeat is running
+        loadOnlineStaff(); 
+        startHeartbeat(); 
       } catch (e) { }
     }
 
@@ -6295,11 +6331,31 @@
       const el = I('ADM-S-LIST'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
         const d = await API('/api/admin/staff');
-        el.innerHTML = d.map(u => `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-          <div><strong>${esc(u.username)}</strong> <span class="rb rb-${u.role}">${u.role}</span><br>
-          <small style="color:var(--tx2)">${u.email} · Staff since ${fmtD(u.created_at)}</small></div>
-          <button class="bto bxs" onclick="GO('admin');admT('players');SV('ADM-P-SEARCH','${u.username}');admSearchP()">Manage</button>
-        </div>`).join('') || '<div class="empty">No staff found. Check roles!</div>';
+        el.innerHTML = `
+          <table class="adm-table">
+            <thead>
+              <tr><th>User</th><th>Role</th><th>Member Since</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${d.map(u => `
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <img src="/api/skin/head/${enc(u.mc_username || u.username)}/24" style="border-radius:3px">
+                      <div>
+                        <div style="font-weight:700">${esc(u.username)}</div>
+                        <div style="font-size:0.7rem;color:var(--tx3)">${esc(u.email)}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="rb rb-${rbcls(u.role)}">${esc(u.role)}</span></td>
+                  <td>${fmtD(u.created_at)}</td>
+                  <td><button class="bto bxs" onclick="GO('admin');admT('players');SV('ADM-P-SEARCH','${u.username}');admSearchP()">Manage</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` || '<div class="empty">No staff found. Check roles!</div>';
       } catch (e) { el.innerHTML = '<div class="empty">Error loading staff.</div>'; }
     }
 
@@ -6307,10 +6363,26 @@
       const el = I('ADM-L-LIST'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
         const d = await API('/api/admin/overview');
-        el.innerHTML = d.logs.map(l => `<div style="padding:6px;border-bottom:1px solid var(--bd)">
-          <span style="color:var(--g)">${fmtD(l.created_at)}</span> | <b>${l.admin_name}</b> executed <b>${l.action}</b> on #${l.target_id || 'N/A'}
-          <div style="color:var(--tx3);margin-left:14px;font-size:0.7rem">${l.details || ''}</div>
-        </div>`).join('') || 'No audit logs found.';
+        el.innerHTML = `
+          <table class="adm-table" style="font-family:inherit">
+            <thead>
+              <tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Target</th></tr>
+            </thead>
+            <tbody>
+              ${d.logs.map(l => `
+                <tr>
+                  <td style="color:var(--tx3);font-size:0.75rem">${fmtD(l.created_at)}</td>
+                  <td style="font-weight:700">${esc(l.admin_name)}</td>
+                  <td>
+                    <div style="font-weight:600">${esc(l.action)}</div>
+                    <div style="font-size:0.7rem;color:var(--tx3);max-width:300px;white-space:normal">${esc(l.details || '')}</div>
+                  </td>
+                  <td style="font-family:monospace">#${l.target_id || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` || 'No audit logs found.';
       } catch (e) { el.innerHTML = '<div class="empty">Error loading logs.</div>'; }
     }
 
@@ -6351,19 +6423,37 @@
       try {
         const users = await API(`/api/admin/users?q=${enc(q)}`);
         if (!users.length) { el.innerHTML = '<div class="empty">No users found.</div>'; return; }
-        el.innerHTML = users.map(u => {
-          const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
-          return `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid ${isStaff ? 'var(--g)' : 'transparent'}">
-            <div>
-              <strong>${esc(u.username)}</strong> <span class="rb rb-${u.role}" style="font-size:.6rem;padding:1px 4px">${u.role}</span>
-              <div style="font-size:.7rem;color:var(--tx2)">${esc(u.email)} · Member ${fmtD(u.created_at)}</div>
-            </div>
-            <div style="display:flex;gap:5px">
-               <button class="bto bxs" onclick="admUpdateRole(${u.id},'${u.role}')" style="font-size:.65rem">Level</button>
-               <button class="btn bred bxs" onclick="admBurnUser(${u.id})" style="padding:4px"><svg class="ic" style="margin:0;width:12px;height:12px"><use href="#ic-trash"/></svg></button>
-            </div>
-          </div>`;
-        }).join('');
+        el.innerHTML = `
+          <table class="adm-table">
+            <thead>
+              <tr><th>User</th><th>Contact</th><th>Role</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${users.map(u => {
+                const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
+                return `
+                  <tr style="border-left:3px solid ${isStaff ? 'var(--g)' : 'transparent'}">
+                    <td>
+                      <div style="font-weight:700">${esc(u.username)}</div>
+                      <div style="font-size:0.65rem;color:var(--tx3)">UID: #${u.id}</div>
+                    </td>
+                    <td>
+                      <div style="font-size:0.8rem">${esc(u.email)}</div>
+                      <div style="font-size:0.65rem;color:var(--tx3)">Joined ${fmtD(u.created_at)}</div>
+                    </td>
+                    <td><span class="rb rb-${rbcls(u.role)}">${esc(u.role)}</span></td>
+                    <td>
+                      <div style="display:flex;gap:5px">
+                        <button class="bto bxs" onclick="admUpdateRole(${u.id},'${u.role}')">Role</button>
+                        <button class="btn bred bxs" onclick="admBurnUser(${u.id})"><svg class="ic" style="margin:0;width:12px;height:12px"><use href="#ic-trash"/></svg></button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
       } catch (e) { el.innerHTML = '<div class="empty">Error fetching users.</div>'; }
     }
 
@@ -6383,11 +6473,26 @@
       try {
         const d = await API('/api/tickets');
         const open = d.filter(t => t.status === 'open');
-        el.innerHTML = open.map(t => `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-weight:600">${esc(t.title)} <small style="color:var(--tx3)">#${t.id}</small></div>
-               <div style="font-size:.7rem;color:var(--tx2)">By ${esc(t.author_name)} · ${t.category}</div></div>
-          <button class="btn bsm" onclick="GO('tickets');setTimeout(()=>openTix(${t.id}),100)">View</button>
-        </div>`).join('') || '<div class="empty">The queue is empty! Great job.</div>';
+        el.innerHTML = `
+          <table class="adm-table">
+            <thead>
+              <tr><th>Ticket</th><th>Author</th><th>Priority</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${open.map(t => `
+                <tr>
+                  <td>
+                    <div style="font-weight:700">#${t.id} ${esc(t.title)}</div>
+                    <div style="font-size:0.7rem;color:var(--tx3)">${esc(t.category)}</div>
+                  </td>
+                  <td>${esc(t.author_name)}</td>
+                  <td><span class="adm-badge priority">${esc(t.priority || 'normal')}</span></td>
+                  <td><button class="btn bsm" onclick="GO('tickets');setTimeout(()=>openTix(${t.id}),100)">Open</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` || '<div class="empty">The queue is empty! Great job.</div>';
       } catch (e) { el.innerHTML = '<div class="empty">Error loading tickets.</div>'; }
     }
 
