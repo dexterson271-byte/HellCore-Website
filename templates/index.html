@@ -5260,12 +5260,11 @@
       try {
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
         TOK = r.token; ME = r;
-        
         // Use subdomain-shared cookie for the token (allows store.hellcore.net to share session)
-        document.cookie = `hc_token=${TOK}; path=/; domain=.hellcore.net; max-age=${60*60*24*30}; SameSite=Lax`;
+        const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
+        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
         
         localStorage.setItem('hc_user', JSON.stringify(ME));
-        refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
         toast('ok', '✓ Welcome back, ' + r.username + '!');
@@ -5282,7 +5281,8 @@
       try {
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
         TOK = r.token; ME = r;
-        document.cookie = `hc_token=${TOK}; path=/; domain=.hellcore.net; max-age=${60*60*24*30}; SameSite=Lax`;
+        const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
+        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
         localStorage.setItem('hc_user', JSON.stringify(ME));
         sessionStorage.setItem('hc_token', TOK); sessionStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI(); closeM('MR');
@@ -5296,7 +5296,8 @@
     async function doLogout() {
       try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
       ME = null; TOK = null;
-      document.cookie = "hc_token=; path=/; domain=.hellcore.net; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
+      document.cookie = `hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;${domain}`;
       localStorage.removeItem('hc_user');
       refreshUI(); GO('home'); toast('ok', 'Logged out.');
     }
