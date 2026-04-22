@@ -2014,7 +2014,7 @@ def ads_watch():
          c.execute(f"INSERT IGNORE INTO hc_stats(user_id, gamemode, coins) VALUES({phs(3)})", (u["id"], "global", reward["coins"]))
 
     if reward["vip_hours"] > 0 and u["mc_username"]:
-        cmd = f"lp user {u['mc_username']} parent addtemp vip {reward['vip_hours']}h"
+        cmd = f"lpv user {u['mc_username']} parent addtemp vip {reward['vip_hours']}h"
         c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
 
     db.commit()
