@@ -7715,10 +7715,10 @@
     // API — all calls to Flask backend
     // ════════════════════════════════════════════════════
     async function API(url, opts = {}) {
-      if (!TOK) {
-        const match = document.cookie.match(new RegExp('(^| )hc_token=([^;]+)'));
-        if (match) TOK = match[2];
-      }
+      // Always try to pick up the most recent token from the shared cookie
+      const match = document.cookie.match(new RegExp('(^| )hc_token=([^;]+)'));
+      if (match) TOK = match[2];
+      else if (!TOK) TOK = localStorage.getItem('hc_token'); // Fallback to legacy
       const h = { 'Content-Type': 'application/json' };
       if (TOK) h['X-Auth-Token'] = TOK;
       const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
