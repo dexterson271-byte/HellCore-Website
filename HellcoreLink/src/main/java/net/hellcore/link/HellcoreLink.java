@@ -42,28 +42,32 @@ public class HellcoreLink extends JavaPlugin implements CommandExecutor {
             int arenas = 0;
             int inGame = 0;
 
-            // Hook into BedWars1058 if present
+            // Hook into BedWars1058 via Reflection (safest way without compile-time dependency)
             if (Bukkit.getPluginManager().isPluginEnabled("BedWars1058")) {
                 try {
-                    com.andrei1058.bedwars.api.BedWars bwApi = Bukkit.getServicesManager().load(com.andrei1058.bedwars.api.BedWars.class);
+                    Object bwApi = Bukkit.getServicesManager().load(Class.forName("com.andrei1058.bedwars.api.BedWars"));
                     if (bwApi != null) {
-                        arenas = bwApi.getArenaUtil().getArenas().size();
-                        // Count players in "STARTING" or "PLAYING" states
-                        for (com.andrei1058.bedwars.api.arena.IArena arena : bwApi.getArenaUtil().getArenas()) {
-                             if (arena.getStatus() == com.andrei1058.bedwars.api.arena.GameState.starting || 
-                                 arena.getStatus() == com.andrei1058.bedwars.api.arena.GameState.playing) {
-                                 inGame += arena.getPlayers().size();
-                             }
+                        Object arenaUtil = bwApi.getClass().getMethod("getArenaUtil").invoke(bwApi);
+                        java.util.List<?> arenaList = (java.util.List<?>) arenaUtil.getClass().getMethod("getArenas").invoke(arenaUtil);
+                        
+                        arenas = arenaList.size();
+                        for (Object arena : arenaList) {
+                            Object status = arena.getClass().getMethod("getStatus").invoke(arena);
+                            String statusName = status.toString().toLowerCase();
+                            if (statusName.equals("starting") || statusName.equals("playing")) {
+                                java.util.List<?> players = (java.util.List<?>) arena.getClass().getMethod("getPlayers").invoke(arena);
+                                inGame += players.size();
+                            }
                         }
                     }
                 } catch (Exception ignored) {}
             }
             
-            // Build metrics URL with new arena/ingame data
+            // Build metrics URL
             String metricsUrl = apiUrl.replace("/verify/confirm", "/metrics/update") 
                     + "?online=" + online 
                     + "&max=" + max 
-                    + "&server=" + serverName
+                    + "&server=" + java.net.URLEncoder.encode(serverName, "UTF-8")
                     + "&arenas=" + arenas
                     + "&ingame=" + inGame;
             
