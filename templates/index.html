@@ -648,6 +648,13 @@
     .cmd-hint-desc { font-size: 0.7rem; color: var(--tx3); }
     .cmd-hint-cat { font-size: 0.6rem; text-transform: uppercase; color: var(--tx3); opacity: 0.6; align-self: flex-end; }
 
+    /* Verification Overlay */
+    .lock-overlay { position: absolute; inset: 0; background: rgba(9,9,11,0.92); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 12px; border: 1px solid var(--bd); }
+    .lock-card { max-width: 400px; padding: 40px 20px; animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .verify-code-box { background: var(--bg2); border: 2px dashed var(--g); border-radius: 12px; padding: 15px; font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: 5px; color: var(--g); margin: 20px 0; }
+    .verify-step { display: flex; align-items: center; gap: 15px; text-align: left; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem; }
+    .verify-num { width: 24px; height: 24px; background: var(--g); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+
     @media(max-width: 850px) {
       #ADM-CHAT-GRID { grid-template-columns: 1fr !important; height: auto !important; }
       #ADM-CHAT-GRID > div:first-child { max-height: 200px; }
@@ -4944,7 +4951,28 @@
       </div>
     </div>
 
-    <div id="TOASTS"></div>
+    <!-- ════════════ VERIFICATION OVERLAY ════════════ -->
+    <div id="VERIFY-OVERLAY" class="ov" style="z-index:99999">
+      <div class="lock-card p">
+        <div class="mi" style="font-size:3rem;margin-bottom:15px;color:var(--g)">🔒</div>
+        <h2 style="font-size:1.8rem;margin-bottom:10px">Account Link Required</h2>
+        <p style="color:var(--tx2);margin-bottom:25px">To access the <strong>Store</strong> and <strong>Nexus Features</strong>, you must link your Minecraft account.</p>
+        
+        <div class="verify-step">
+          <div class="verify-num">1</div>
+          <div>Log in to <strong>mc.hellcore.net</strong> (Minecraft Java)</div>
+        </div>
+        <div class="verify-step">
+          <div class="verify-num">2</div>
+          <div>Type this command in the server chat:</div>
+        </div>
+        
+        <div id="VERIFY-CODE-DISPLAY" class="verify-code-box">HC-......</div>
+        
+        <p style="font-size:0.75rem;color:var(--tx3);margin-bottom:20px">The page will unlock automatically once linked.</p>
+        <button class="btn" style="width:100%" onclick="I('VERIFY-OVERLAY').classList.remove('OPEN');GO('home')">Go Back Home</button>
+      </div>
+    </div>
   </div><!-- #APP -->
 
   <script>
@@ -5061,7 +5089,19 @@
     // NAVIGATION
     // ════════════════════════════════════════════════════
     // ════════════════════════════════════════════════════
-    function GO(id, push = true) {
+    async function GO(id, push = true) {
+      // Verification Check for Store and Admin
+      const restricted = ['store', 'store-gl', 'store-bw', 'store-sw', 'store-ls', 'store-sv', 'store-pr', 'store-free', 'chat', 'admin', 'logs', 'staff', 'mgmt'];
+      if (restricted.includes(id) && ME && !ME.is_verified && ME.role !== 'owner' && ME.role !== 'dev') {
+        const res = await API('/api/verify/status');
+        if (!res.is_verified) {
+           startVerificationFlow();
+           return;
+        } else {
+           ME.is_verified = true;
+        }
+      }
+
       if (id === 'admin' && !isAdmin()) { GO('home'); return; }
       if (id === 'staff' && !isStaff()) { GO('home'); return; }
 
@@ -7701,6 +7741,27 @@
     const I = id => document.getElementById(id);
     const V = id => I(id)?.value || '';
     const SV = (id, v) => { const e = I(id); if (e) e.value = v; };
+    let verifyPoller = null;
+    async function startVerificationFlow() {
+      try {
+        const { code } = await API('/api/verify/start', { method: 'POST' });
+        I('VERIFY-CODE-DISPLAY').textContent = code;
+        I('VERIFY-OVERLAY').classList.add('OPEN');
+        
+        if (verifyPoller) clearInterval(verifyPoller);
+        verifyPoller = setInterval(async () => {
+          const res = await API('/api/verify/status');
+          if (res.is_verified) {
+            clearInterval(verifyPoller);
+            ME.is_verified = true;
+            I('VERIFY-OVERLAY').classList.remove('OPEN');
+            toast('ok', 'Account linked successfully! Features unlocked.');
+            GO(window.location.pathname.substring(1).replace(/\//g,'-') || 'home');
+          }
+        }, 3000);
+      } catch (e) { toast('err', 'Verification failed to start'); }
+    }
+
     const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     const enc = s => encodeURIComponent(s || '');
     const cap = s => s.charAt(0).toUpperCase() + s.slice(1);

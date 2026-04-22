@@ -836,9 +836,54 @@ def logout():
 @app.route("/api/auth/me")
 @auth_required
 def auth_me():
-    u = request.cu
     return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
-                    "mc_username":u["mc_username"] or "","role":u["role"]})
+                    "mc_username":u.get("mc_username") or "","role":u["role"], "is_verified": bool(u.get("is_verified", 0))})
+
+# -------------------------------------------------------
+# MINECRAFT VERIFICATION
+# -------------------------------------------------------
+@app.route("/api/verify/start", methods=["POST"])
+@auth_required
+def verify_start():
+    import random
+    # Generate unique 6-digit code
+    code = f"HC-{random.randint(100000, 999999)}"
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_users SET verification_code={ph()} WHERE id={ph()}", (code, request.cu["id"]))
+    db.commit(); c.close(); db.close()
+    return jsonify({"code": code})
+
+@app.route("/api/verify/status")
+@auth_required
+def verify_status():
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT is_verified, mc_username, mc_uuid FROM hc_users WHERE id={ph()}", (request.cu["id"],))
+    u = to_dict(c.fetchone())
+    c.close(); db.close()
+    return jsonify(u)
+
+@app.route("/api/verify/confirm")
+def verify_confirm():
+    """Endpoint for Minecraft server to call when user types /verify <code>"""
+    code = request.args.get("code")
+    uuid = request.args.get("uuid")
+    username = request.args.get("username")
+    if not code or not uuid: return "Missing params", 400
+    
+    db = get_db(); c = db_cursor(db)
+    # MySQL dictionary cursor needs to be handled if used
+    c.execute(f"SELECT id FROM hc_users WHERE verification_code={ph()}", (code,))
+    res = c.fetchone()
+    u = to_dict(res)
+    if not u: 
+        db.close()
+        return "Invalid or expired code", 404
+    
+    # Link UUID and mark as verified
+    c.execute(f"UPDATE hc_users SET mc_uuid={ph()}, mc_username={ph()}, is_verified=1, verification_code=NULL WHERE id={ph()}", 
+              (uuid, username, u["id"]))
+    db.commit(); c.close(); db.close()
+    return f"Successfully verified {username} on website!", 200
 
 # ═══════════════════════════════════════════════════════
 # FORUMS
