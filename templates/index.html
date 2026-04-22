@@ -5013,11 +5013,7 @@
           storage.setItem('hc_user', JSON.stringify(ME));
           refreshUI();
         }).catch((err) => {
-          if (ME && ['admin', 'owner', 'founder', 'dev'].includes(ME.role)) {
-             console.log('Skipping logout for admin session. Token stays alive locally.');
-          } else {
-             doLogout();
-          }
+          console.log('Session re-sync failed, keeping local session:', err.message);
         });
       }
 
@@ -7715,22 +7711,13 @@
     // API — all calls to Flask backend
     // ════════════════════════════════════════════════════
     async function API(url, opts = {}) {
-      // Always try to pick up the most recent token from the shared cookie
+      // Always try to pick up the most recent token
       const match = document.cookie.match(new RegExp('(^| )hc_token=([^;]+)'));
       if (match) TOK = match[2];
-      else if (!TOK) TOK = localStorage.getItem('hc_token'); // Fallback to legacy
+      if (!TOK) TOK = localStorage.getItem('hc_token');
       const h = { 'Content-Type': 'application/json' };
       if (TOK) h['X-Auth-Token'] = TOK;
       const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
-
-      if (res.status === 401 && !url.includes('/api/auth/')) {
-        if (ME && ['admin', 'owner', 'founder', 'dev'].includes(ME.role)) {
-          console.log('Admin received 401, skipping forced logout to preserve session locally.');
-        } else {
-          doLogout();
-          throw new Error('Authentication failed. Please login again.');
-        }
-      }
 
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
