@@ -836,7 +836,6 @@ def logout():
 @app.route("/api/auth/me")
 @auth_required
 def auth_me():
-    u = request.cu
     return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
                     "mc_username":u.get("mc_username") or "","role":u["role"], "is_verified": bool(u.get("is_verified", 0))})
 
@@ -881,17 +880,9 @@ def verify_confirm():
         return "Invalid or expired code", 404
     
     # Link UUID and mark as verified
-    try:
-        c.execute(f"UPDATE hc_users SET mc_uuid={ph()}, mc_username={ph()}, is_verified=1, verification_code=NULL WHERE id={ph()}", 
-                  (uuid, username, u["id"]))
-        db.commit()
-        print(f"[VERIFY] User {u['id']} verified as {username} ({uuid})")
-    except Exception as e:
-        print(f"[VERIFY ERROR] {e}")
-        db.close()
-        return f"Database error: {e}", 500
-
-    c.close(); db.close()
+    c.execute(f"UPDATE hc_users SET mc_uuid={ph()}, mc_username={ph()}, is_verified=1, verification_code=NULL WHERE id={ph()}", 
+              (uuid, username, u["id"]))
+    db.commit(); c.close(); db.close()
     return f"Successfully verified {username} on website!", 200
 
 @app.route("/api/metrics/update")
