@@ -2020,10 +2020,12 @@ def admin_staff():
     return jsonify(rows)
 
 @app.route("/api/admin/announcement", methods=["GET", "POST"])
-@admin_required
+@optional_auth
 def admin_announcement():
     db = get_db(); c = db_cursor(db)
     if request.method == "POST":
+        if not request.cu or request.cu["role"] not in ADMIN_ROLES:
+            return jsonify({"error":"Admin required"}), 403
         d = request.get_json(force=True) or {}
         msg = d.get("message", "")
         # Store in server_metrics as a global key
@@ -2035,7 +2037,6 @@ def admin_announcement():
         c.execute("SELECT server_ip FROM hc_server_metrics WHERE server_name='GLOBAL_BANNER'")
         row = to_dict(c.fetchone())
         msg = row.get("server_ip", "") if row else ""
-        
         return jsonify({"message":msg})
 
 @app.route("/api/admin/commands/queue", methods=["POST"])
