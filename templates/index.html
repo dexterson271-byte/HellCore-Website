@@ -5257,10 +5257,16 @@
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
         TOK = r.token; ME = r;
         // Use subdomain-shared cookie for the token (allows store.hellcore.net to share session)
-        const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
-        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
+        // Aggressively clear old tokens/cookies to prevent conflicts
+        const rootDomain = window.location.hostname.endsWith('hellcore.net') ? '.hellcore.net' : '';
+        document.cookie = "hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        if (rootDomain) document.cookie = "hc_token=; path=/; domain=" + rootDomain + "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem('hc_token');
         
-        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
+        TOK = r.token; ME = r;
+        const domainAttr = rootDomain ? `; domain=${rootDomain}` : '';
+        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domainAttr}`;
+        localStorage.setItem('hc_token', TOK);
         refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
@@ -5277,10 +5283,16 @@
       if (ci !== CAPS.RG) { I('RG-ERR').textContent = 'Wrong CAPTCHA code.'; genCap('RG'); return; }
       try {
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
+        // Aggressively clear old tokens/cookies to prevent conflicts
+        const rootDomain = window.location.hostname.endsWith('hellcore.net') ? '.hellcore.net' : '';
+        document.cookie = "hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        if (rootDomain) document.cookie = "hc_token=; path=/; domain=" + rootDomain + "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        localStorage.removeItem('hc_token');
+        
         TOK = r.token; ME = r;
-        const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
-        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domain}`;
-        localStorage.setItem('hc_token', TOK); localStorage.setItem('hc_user', JSON.stringify(ME));
+        const domainAttr = rootDomain ? `; domain=${rootDomain}` : '';
+        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domainAttr}`;
+        localStorage.setItem('hc_token', TOK);
         refreshUI(); closeM('MR');
         // Reinitialize all permission-dependent systems immediately
         reInitPermissions();
