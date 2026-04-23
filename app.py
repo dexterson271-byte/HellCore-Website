@@ -563,6 +563,9 @@ def get_user_by_token(token):
     if not token: return None
     try:
         db = get_db(); c = db_cursor(db)
+        # Force refresh of the transaction snapshot
+        db.rollback()
+        
         # Check if we can find ANY token first
         c.execute("SELECT COUNT(*) as cnt FROM hc_users WHERE session_token IS NOT NULL")
         count = c.fetchone()["cnt"]
