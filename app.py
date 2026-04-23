@@ -563,8 +563,6 @@ def get_user_by_token(token):
     if not token: return None
     try:
         db = get_db(); c = db_cursor(db)
-        # Clear transaction snapshot
-        db.rollback()
         c.execute(f"SELECT * FROM hc_users WHERE session_token={ph()}", (token,))
         row = c.fetchone()
         return to_dict(row)
@@ -860,6 +858,7 @@ def login():
         print(f"[LOGIN DEBUG] Saving token for user {row['id']}: {tok[:10]}...")
         c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, row["id"]))
         db.commit()
+        # Final Correct Cookie Configuration for Cross-Subdomain Stability
         resp = jsonify({"token":tok,"id":row["id"],"username":row["username"],
                         "email":row["email"],"mc_username":row["mc_username"] or "","role":row["role"],
                         "is_verified":bool(row.get("is_verified",0))})
@@ -869,8 +868,8 @@ def login():
             max_age=60*60*24*30, 
             path="/", 
             domain=".hellcore.net" if "hellcore.net" in request.host else None,
-            samesite="Lax",
-            secure=True if "hellcore.net" in request.host else False
+            samesite="None",
+            secure=True
         )
         return resp
     except Exception as e:
@@ -883,7 +882,9 @@ def logout():
     db = get_db(); c = db_cursor(db)
     c.execute(f"UPDATE hc_users SET session_token=NULL WHERE id={ph()}", (request.cu["id"],))
     db.commit()
-    return jsonify({"ok":True})
+    resp = jsonify({"ok":True})
+    resp.set_cookie("hc_token", "", expires=0, path="/", domain=".hellcore.net" if "hellcore.net" in request.host else None, samesite="None", secure=True)
+    return resp
 
 @app.route("/api/auth/me")
 @auth_required

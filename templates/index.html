@@ -7728,8 +7728,8 @@
 
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-          // If we get a 401 on a non-auth route, the session is likely dead
-          if (res.status === 401 && !url.includes('/api/auth/')) {
+          // Only logout if a CRITICAL identity endpoint fails with 401
+          if (res.status === 401 && url.includes('/api/auth/me')) {
               doLogout();
           }
           throw new Error(d.error || `Error ${res.status}`);
