@@ -1018,7 +1018,7 @@ def forum_get(fid):
     c.execute(f"SELECT f.*, u.username author_name, u.role author_role "
               f"FROM hc_forums f JOIN hc_users u ON f.author_id=u.id WHERE f.id={ph()}", (fid,))
     forum = to_dict(c.fetchone())
-    if not forum: ; return jsonify({"error":"Not found"}), 404
+    if not forum: return jsonify({"error":"Not found"}), 404
     forum["created_at"] = ts(forum["created_at"])
     c.execute(f"SELECT r.*, u.username author_name, u.role author_role "
               f"FROM hc_replies r JOIN hc_users u ON r.author_id=u.id "
@@ -1046,7 +1046,7 @@ def forum_del(fid):
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_forums WHERE id={ph()}", (fid,))
     f = to_dict(c.fetchone())
-    if not f: ; return jsonify({"error":"Not found"}), 404
+    if not f: return jsonify({"error":"Not found"}), 404
     u = request.cu
     if f["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
     return jsonify({"error":"Forbidden"}), 403
@@ -1078,7 +1078,7 @@ def reply_del(rid):
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_replies WHERE id={ph()}", (rid,))
     r = to_dict(c.fetchone())
-    if not r: ; return jsonify({"error":"Not found"}), 404
+    if not r: return jsonify({"error":"Not found"}), 404
     u = request.cu
     if r["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
     return jsonify({"error":"Forbidden"}), 403
@@ -1223,7 +1223,7 @@ def ticket_get(tid):
     c.execute(f"SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
               f"JOIN hc_users u ON t.author_id=u.id LEFT JOIN hc_users a ON t.assigned_to=a.id WHERE t.id={ph()}", (tid,))
     t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
     return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
@@ -1270,7 +1270,7 @@ def ticket_msg(tid):
         
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
     return jsonify({"error":"Forbidden"}), 403
     if is_internal and u["role"] not in STAFF_ROLES:
@@ -1319,7 +1319,7 @@ def ticket_updates(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
     return jsonify({"error":"Forbidden"}), 403
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
@@ -1342,7 +1342,7 @@ def ticket_action(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
     return jsonify({"error":"Forbidden"}), 403
 
@@ -1389,7 +1389,7 @@ def ticket_close(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
     return jsonify({"error":"Forbidden"}), 403
     c.execute(f"UPDATE hc_tickets SET status='closed', last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
@@ -1424,7 +1424,7 @@ def ticket_rank_grant(tid):
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Ticket not found"}), 404
+    if not t: return jsonify({"error":"Ticket not found"}), 404
     c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
     add_ticket_activity(c, tid, u["id"], "rank_grant", f"{mode}:{username}:{rank}:{duration}")
     c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,is_internal,message_type) VALUES({phs(5)})",
@@ -1452,7 +1452,7 @@ def ticket_canned():
 def ticket_del(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
-    if not t: ; return jsonify({"error":"Not found"}), 404
+    if not t: return jsonify({"error":"Not found"}), 404
     if t["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
     return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_ticket_msgs WHERE ticket_id={ph()}", (tid,))
@@ -1517,7 +1517,7 @@ def gift_send():
     to_nm = str(d.get("to_username","")).strip()
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (to_nm,))
-    if not c.fetchone(): ; return jsonify({"error":"Player not found"}), 404
+    if not c.fetchone(): return jsonify({"error":"Player not found"}), 404
     c.execute(f"INSERT INTO hc_gifts(from_user_id,to_username,item_type,item_name,gamemode) VALUES({phs(5)})",
               (request.cu["id"], to_nm, d.get("item_type","rank"), d["item_name"], d.get("gamemode","")))
     db.commit()
@@ -1541,7 +1541,7 @@ def gift_claim(gid):
     c.execute(f"SELECT * FROM hc_gifts WHERE id={ph()} AND to_username={ph()} AND status='pending'",
               (gid, u["username"]))
     g = to_dict(c.fetchone())
-    if not g: ; return jsonify({"error":"Gift not found"}), 404
+    if not g: return jsonify({"error":"Gift not found"}), 404
     c.execute(f"INSERT INTO hc_inventory(user_id,item_type,item_name,gamemode,gifted_by) VALUES({phs(5)})",
               (u["id"], g["item_type"], g["item_name"], g["gamemode"], g["from_user_id"]))
     c.execute(f"UPDATE hc_gifts SET status='claimed' WHERE id={ph()}", (gid,))
@@ -1557,7 +1557,7 @@ def player_get(username):
     # Find user by username or MC username
     c.execute(f"SELECT * FROM hc_users WHERE username={ph()} OR mc_username={ph()}", (username, username))
     u = to_dict(c.fetchone())
-    if not u: ; return jsonify({"error":"Player not found"}), 404
+    if not u: return jsonify({"error":"Player not found"}), 404
 
     # Fetch all stats, ranks, economy
     c.execute(f"SELECT * FROM hc_stats    WHERE user_id={ph()}", (u["id"],)); stats = to_list(c.fetchall())
@@ -1666,7 +1666,7 @@ def stats_get(username):
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_users WHERE username={ph()}", (username,))
     u = to_dict(c.fetchone())
-    if not u: ; return jsonify({"error":"Player not found"}), 404
+    if not u: return jsonify({"error":"Player not found"}), 404
     c.execute(f"SELECT * FROM hc_stats    WHERE user_id={ph()}", (u["id"],)); stats = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_ranks    WHERE user_id={ph()}", (u["id"],)); ranks = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_economy  WHERE user_id={ph()}", (u["id"],)); eco = to_dict(c.fetchone())
@@ -1868,7 +1868,7 @@ def admin_setstats():
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (d["username"],))
     u = to_dict(c.fetchone())
-    if not u: ; return jsonify({"error":"User not found"}), 404
+    if not u: return jsonify({"error":"User not found"}), 404
     upsert(c, "hc_stats",
         {"user_id":u["id"],"gamemode":d["gamemode"],"kills":d.get("kills",0),
          "deaths":d.get("deaths",0),"wins":d.get("wins",0),"losses":d.get("losses",0),"coins":d.get("coins",0)},
@@ -1883,7 +1883,7 @@ def admin_setrank():
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (d["username"],))
     u = to_dict(c.fetchone())
-    if not u: ; return jsonify({"error":"User not found"}), 404
+    if not u: return jsonify({"error":"User not found"}), 404
     upsert(c, "hc_ranks", {"user_id":u["id"],"gamemode":d["gamemode"],"rank_name":d["rank"]}, {"user_id","gamemode"})
     db.commit()
     return jsonify({"ok":True})
@@ -1895,7 +1895,7 @@ def admin_seteco():
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (d["username"],))
     u = to_dict(c.fetchone())
-    if not u: ; return jsonify({"error":"User not found"}), 404
+    if not u: return jsonify({"error":"User not found"}), 404
     upsert(c, "hc_economy", {"user_id":u["id"],"server_gold":d.get("gold",0),"server_iron":d.get("iron",0)}, {"user_id"})
     db.commit()
 @app.route("/api/admin/users/<int:uid>", methods=["DELETE"])
@@ -2295,7 +2295,7 @@ def staff_channels_list():
         c.execute("SELECT * FROM hc_staff_channels ORDER BY name ASC")
     else:
         c.execute("SELECT * FROM hc_staff_channels ORDER BY name ASC")
-    rows = c.fetchall(); 
+    rows = c.fetchall()
     return jsonify([to_dict(r) for r in rows])
 
 @app.route("/api/staff/channels", methods=["POST"])
@@ -2307,7 +2307,7 @@ def staff_channels_create():
     if not name.startswith("#"): name = "#" + name
     db = get_db(); c = db_cursor(db)
     c.execute(f"INSERT INTO hc_staff_channels (name, created_by, created_at) VALUES ({ph()},{ph()},{ph()})", (name, request.cu["id"], datetime.now()))
-    db.commit(); 
+    db.commit()
     log_audit(request.cu["id"], "create_staff_channel", details=name)
     return jsonify({"success":True})
 
@@ -2323,7 +2323,7 @@ def staff_channels_delete(cid):
     
     c.execute(f"DELETE FROM hc_staff_channels WHERE id={ph()}", (cid,))
     c.execute(f"DELETE FROM hc_staff_messages WHERE channel_id={ph()}", (cid,))
-    db.commit(); 
+    db.commit()
     log_audit(request.cu["id"], "delete_staff_channel", cid)
     return jsonify({"success":True})
 
@@ -2334,7 +2334,7 @@ def staff_messages_list(cid):
     c.execute(f"SELECT m.*, u.username, u.role FROM hc_staff_messages m "
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.channel_id={ph()} "
               f"ORDER BY m.created_at DESC LIMIT 50", (cid,))
-    rows = c.fetchall(); 
+    rows = c.fetchall()
     return jsonify([to_dict(r) for r in reversed(rows)])
 
 @app.route("/api/staff/channels/<int:cid>/messages", methods=["POST"])
@@ -2350,7 +2350,7 @@ def staff_messages_post(cid):
     # Get channel name for discord
     c.execute(f"SELECT name FROM hc_staff_channels WHERE id={ph()}", (cid,))
     ch = c.fetchone()
-    db.commit(); 
+    db.commit()
 
     # Background Tasks (Pusher + Discord)
     def background_broadcast(ch_name):
