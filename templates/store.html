@@ -428,11 +428,20 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 // API HELPER
 // ════════════════════════════════════════════════════════
 async function API(url, opts = {}) {
+  const isProd = window.location.hostname.includes('hellcore.net');
+  const base = isProd ? 'https://hellcore.net' : '';
+  const fullUrl = url.startsWith('http') ? url : (base + url);
+
   const token = localStorage.getItem('hc_token') || '';
   const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
-  const cfg = { method: opts.method || 'GET', headers };
+  const cfg = { 
+    method: opts.method || 'GET', 
+    headers,
+    credentials: 'include' // <── IMPORTANT: Send cookies cross-domain
+  };
   if (opts.body) cfg.body = JSON.stringify(opts.body);
-  const r = await fetch(url, cfg);
+  
+  const r = await fetch(fullUrl, cfg);
   const d = await r.json();
   if (!r.ok) throw new Error(d.error || 'Request failed');
   return d;
