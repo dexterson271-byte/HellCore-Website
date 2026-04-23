@@ -1354,7 +1354,7 @@ def ticket_action(tid):
         add_ticket_activity(c, tid, u["id"], "status", "open")
     elif action == "assign":
         if u["role"] not in STAFF_ROLES:
-        return jsonify({"error":"Staff only"}), 403
+            return jsonify({"error":"Staff only"}), 403
         assigned_to = d.get("assigned_to")
         if assigned_to in (None, "", 0):
             c.execute(f"UPDATE hc_tickets SET assigned_to=NULL WHERE id={ph()}", (tid,))
@@ -1363,21 +1363,21 @@ def ticket_action(tid):
             c.execute(f"SELECT id, username FROM hc_users WHERE id={ph()}", (int(assigned_to),))
             au = to_dict(c.fetchone())
             if not au:
-        return jsonify({"error":"Assignee not found"}), 404
+                return jsonify({"error":"Assignee not found"}), 404
             c.execute(f"UPDATE hc_tickets SET assigned_to={ph()} WHERE id={ph()}", (au["id"], tid))
             add_ticket_activity(c, tid, u["id"], "assignment", f"assigned_to:{au['username']}")
     elif action == "priority":
         if u["role"] not in STAFF_ROLES:
-        return jsonify({"error":"Staff only"}), 403
+            return jsonify({"error":"Staff only"}), 403
         p = normalize_ticket_priority(d.get("priority"))
         c.execute(f"UPDATE hc_tickets SET priority={ph()} WHERE id={ph()}", (p, tid))
         add_ticket_activity(c, tid, u["id"], "priority", p)
     elif action in ("payment_received", "payment_pending", "need_details"):
         if u["role"] not in STAFF_ROLES:
-        return jsonify({"error":"Staff only"}), 403
+            return jsonify({"error":"Staff only"}), 403
         add_ticket_activity(c, tid, u["id"], "payment", action)
     else:
-    return jsonify({"error":"Unknown action"}), 400
+        return jsonify({"error":"Unknown action"}), 400
 
     c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     db.commit()
