@@ -575,8 +575,14 @@ def get_user_by_token(token):
         
         if not row:
             print(f"[AUTH DEBUG] No user found for token (len {len(token)}). Total users with tokens: {count}")
-            
-        return to_dict(row)
+            # Check schema
+            try:
+                c.execute("DESCRIBE hc_users")
+                schema = c.fetchall()
+                for col in schema:
+                    if col["Field"] == "session_token":
+                        print(f"[AUTH DEBUG] session_token type: {col['Type']}")
+            except: pass
     except Exception as e:
         print(f"[DB ERROR] Token lookup failed: {e}")
         traceback.print_exc()
