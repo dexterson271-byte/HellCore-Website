@@ -838,6 +838,7 @@ def login():
             return jsonify({"error":"Wrong email/username or password"}), 401
 
         tok = secrets.token_hex(32)
+        print(f"[LOGIN DEBUG] Saving token for user {row['id']}: {tok[:10]}...")
         c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, row["id"]))
         db.commit()
         resp = jsonify({"token":tok,"id":row["id"],"username":row["username"],
