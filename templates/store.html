@@ -200,19 +200,24 @@
     .sp { width:32px; height:32px; border:3px solid var(--bd); border-top-color:var(--g); border-radius:50%; animation:spin 0.7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
-    /* ═══ MOBILE NAV ═══ */
-    .nburger { display:none; background:rgba(255,255,255,0.05); border:1px solid var(--bd2); color:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
-    @media(max-width:768px) {
-      .nav-links { display:none; }
-      .nburger { display:block; }
-      .hero h1 { font-size:2rem; }
-      .hero p { font-size:0.95rem; }
-      #NAV { padding:0 16px; }
-      .pg { padding:80px 16px 40px; }
-    }
+    .chat-input { padding:16px; background:rgba(0,0,0,0.2); border-top:1px solid var(--bd); display:flex; gap:10px; }
 
-    /* ═══ SVG ICONS ═══ */
-    .ic { width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+    /* ═══ TICKETS UI ═══ */
+    .tix-row { background:var(--p1); border:1px solid var(--bd); border-radius:12px; padding:16px; margin-bottom:12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:0.2s; }
+    .tix-row:hover { border-color:var(--bd2); background:var(--p2); }
+    .tix-info h4 { font-weight:700; margin-bottom:4px; }
+    .tix-info small { color:var(--tx2); font-size:0.75rem; }
+    .tix-status { font-size:0.7rem; font-weight:800; text-transform:uppercase; padding:4px 8px; border-radius:4px; }
+    .status-open { background:rgba(16,185,129,0.1); color:#34d399; }
+    .status-closed { background:rgba(161,161,170,0.1); color:#a1a1aa; }
+
+    .chat-box { background:var(--p1); border:1px solid var(--bd); border-radius:16px; display:flex; flex-direction:column; height:500px; overflow:hidden; }
+    .chat-msgs { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+    .msg { max-width:85%; padding:12px 16px; border-radius:12px; position:relative; font-size:0.92rem; line-height:1.5; }
+    .msg-user { align-self:flex-end; background:var(--g); color:#fff; border-bottom-right-radius:2px; }
+    .msg-admin { align-self:flex-start; background:var(--p2); border:1px solid var(--bd2); border-bottom-left-radius:2px; }
+    .msg-system { align-self:center; background:rgba(255,255,255,0.05); font-size:0.75rem; color:var(--tx2); text-align:center; padding:6px 16px; border-radius:100px; max-width:90%; }
+    .msg-meta { font-size:0.65rem; opacity:0.7; margin-top:6px; display:block; }
   </style>
 </head>
 <body>
@@ -260,6 +265,7 @@
         <button class="nb" onclick="GO('ranks')"><svg class="ic"><use href="#ic-star"/></svg> Ranks</button>
 
         <button class="nb" onclick="GO('cart')"><svg class="ic"><use href="#ic-cart"/></svg> Cart</button>
+        <button class="nb" onclick="GO('tickets')"><svg class="ic"><use href="#ic-bolt"/></svg> Support</button>
         <button class="nb" id="NB-ADMIN" style="display:none" onclick="GO('admin')"><svg class="ic"><use href="#ic-chart"/></svg> Admin</button>
       </div>
 
@@ -316,6 +322,31 @@
         <p class="ssub">Review your items and proceed to checkout</p>
         <div id="CART-LIST"><div class="ld"><div class="sp"></div></div></div>
         <div id="CART-SUMMARY"></div>
+      </div>
+    </div>
+    <!-- ═══ TICKETS PAGE ═══ -->
+    <div class="pg" id="pg-tickets">
+      <div class="W" style="max-width:800px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+          <div><div class="stitle" style="text-align:left">💬 Support Tickets</div><p class="ssub" style="text-align:left">Need help? Create a ticket and our staff will reply shortly.</p></div>
+          <button class="btn" onclick="openModal('M-TICKET')"><svg class="ic"><use href="#ic-plus"/></svg> New Ticket</button>
+        </div>
+        <div id="TIX-LIST"><div class="ld"><div class="sp"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ TICKET VIEW PAGE ═══ -->
+    <div class="pg" id="pg-ticket-view">
+      <div class="W" style="max-width:800px">
+        <button class="nb" onclick="GO('tickets')" style="margin-bottom:16px"><svg class="ic"><use href="#ic-arrow-left"/></svg> Back to Tickets</button>
+        <div id="TIX-CHAT-HEADER" style="margin-bottom:16px"></div>
+        <div class="chat-box">
+          <div class="chat-msgs" id="TIX-MSGS"></div>
+          <div class="chat-input">
+            <input class="inp" id="TIX-INP" placeholder="Type your message..." onkeydown="if(event.key==='Enter') sendTixMsg()">
+            <button class="btn" onclick="sendTixMsg()">Send</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -407,6 +438,111 @@ function toast(type, msg) {
 // ════════════════════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+// TICKETS
+// ════════════════════════════════════════════════════════
+let CUR_TIX_ID = null;
+
+async function loadTickets() {
+  const email = localStorage.getItem('guest_email') || '';
+  I('TIX-GUEST-ONLY').style.display = ME ? 'none' : 'block';
+  
+  if (!ME && !email) {
+    I('TIX-LIST').innerHTML = `<div class="empty">
+      <div class="empty-icon">📩</div>
+      Please login or provide your email to view tickets.<br><br>
+      <button class="btn" onclick="openModal('M-LOGIN')">Login</button>
+      <button class="bto" style="margin-left:8px" onclick="setGuestEmail()">Provide Email</button>
+    </div>`;
+    return;
+  }
+
+  try {
+    const tix = await API(`/api/tickets?email=${encodeURIComponent(email)}`);
+    if (!tix.length) {
+      I('TIX-LIST').innerHTML = `<div class="empty">No tickets found.</div>`;
+      return;
+    }
+    I('TIX-LIST').innerHTML = tix.map(t => `
+      <div class="tix-row" onclick="viewTicket(${t.id})">
+        <div class="tix-info">
+          <h4>${esc(t.title)}</h4>
+          <small>Created: ${t.created_at} · Source: ${t.source || 'web'}</small>
+        </div>
+        <span class="tix-status status-${t.status}">${t.status}</span>
+      </div>
+    `).join('');
+  } catch (e) { toast('err', e.message); }
+}
+
+function setGuestEmail() {
+  const e = prompt("Enter your email used for tickets:");
+  if (e) { localStorage.setItem('guest_email', e); loadTickets(); }
+}
+
+async function doCreateTicket() {
+  const sub = I('T-SUB').value.trim(), msg = I('T-MSG').value.trim();
+  const email = ME ? ME.email : I('T-EMAIL').value.trim();
+  
+  if (!sub || !msg || !email) { I('T-ERR').textContent = 'All fields required'; return; }
+  
+  try {
+    const d = await API('/api/tickets', {
+      method: 'POST',
+      body: { subject: sub, message: msg, email, source: 'store' }
+    });
+    if (!ME) localStorage.setItem('guest_email', email);
+    closeModal('M-TICKET');
+    toast('ok', 'Ticket created!');
+    viewTicket(d.ticket_id);
+  } catch (e) { I('T-ERR').textContent = e.message; }
+}
+
+async function viewTicket(id) {
+  CUR_TIX_ID = id;
+  GO('ticket-view');
+  const email = localStorage.getItem('guest_email') || '';
+  try {
+    const d = await API(`/api/tickets/${id}?email=${encodeURIComponent(email)}`);
+    const t = d.ticket;
+    I('TIX-CHAT-HEADER').innerHTML = `
+      <h2 style="font-family:'Outfit';font-weight:800">${esc(t.title)}</h2>
+      <p style="color:var(--tx2);font-size:0.85rem">Status: <span class="tix-status status-${t.status}">${t.status}</span> · ID: #${t.id}</p>
+    `;
+    renderMessages(d.messages);
+  } catch (e) { toast('err', e.message); }
+}
+
+function renderMessages(msgs) {
+  const el = I('TIX-MSGS');
+  el.innerHTML = msgs.map(m => {
+    let cls = 'msg-system';
+    if (m.message_type === 'user') cls = 'msg-user';
+    else if (m.message_type === 'admin') cls = 'msg-admin';
+    
+    return `<div class="msg ${cls}">
+      ${m.content}
+      <span class="msg-meta">${m.author_name || 'System'} · ${m.created_at}</span>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendTixMsg() {
+  const inp = I('TIX-INP');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  const email = localStorage.getItem('guest_email') || '';
+  try {
+    await API(`/api/tickets/${CUR_TIX_ID}/msg`, {
+      method: 'POST',
+      body: { content: txt, email }
+    });
+    inp.value = '';
+    viewTicket(CUR_TIX_ID); // Refresh
+  } catch (e) { toast('err', e.message); }
+}
+
 function GO(id) {
   document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
   document.querySelectorAll('.nav-links .nb').forEach(b => b.classList.remove('on'));
@@ -421,8 +557,8 @@ function GO(id) {
   ({
     home: loadHome,
     ranks: loadRanks,
-
     cart: renderCart,
+    tickets: loadTickets,
     admin: () => loadAdmin('overview'),
   })[id]?.();
   history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
