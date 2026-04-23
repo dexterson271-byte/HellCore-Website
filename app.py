@@ -563,39 +563,26 @@ def get_user_by_token(token):
     if not token: return None
     try:
         db = get_db(); c = db_cursor(db)
-        # Force refresh of the transaction snapshot
+        # Clear transaction snapshot
         db.rollback()
-        
-        # Check if we can find ANY token first
-        c.execute("SELECT COUNT(*) as cnt FROM hc_users WHERE session_token IS NOT NULL")
-        count = c.fetchone()["cnt"]
-        
         c.execute(f"SELECT * FROM hc_users WHERE session_token={ph()}", (token,))
         row = c.fetchone()
-        
-        if not row:
-            print(f"[AUTH DEBUG] No user found for token (len {len(token)}). Total users with tokens: {count}")
-            # Check schema
-            try:
-                c.execute("DESCRIBE hc_users")
-                schema = c.fetchall()
-                for col in schema:
-                    if col["Field"] == "session_token":
-                        print(f"[AUTH DEBUG] session_token type: {col['Type']}")
-            except: pass
+        return to_dict(row)
     except Exception as e:
         print(f"[DB ERROR] Token lookup failed: {e}")
-        traceback.print_exc()
         return None
 
 def auth_required(f):
     @wraps(f)
     def w(*a, **k):
-        token = request.headers.get("X-Auth-Token", "") or request.cookies.get("hc_token", "")
+        # SINGLE SOURCE OF TRUTH: HTTP-Only Cookie
+        token = request.cookies.get("hc_token", "")
         u = get_user_by_token(token)
+        
         if not u:
-            print(f"[AUTH DEBUG] Auth failed for token: {token[:10]}... (Source: {'Header' if request.headers.get('X-Auth-Token') else 'Cookie'})")
+            print(f"[AUTH] Using cookie token: {token[:10] if token else None}")
             return jsonify({"error":"Authentication failed. Please login again."}), 401
+            
         request.cu = u; return f(*a, **k)
     return w
 

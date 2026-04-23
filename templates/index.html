@@ -5198,8 +5198,7 @@
       // Re-sync user data from server to get latest role
       API('/api/auth/me').then(r => {
         ME = r;
-        const storage = localStorage.getItem('hc_token') ? localStorage : sessionStorage;
-        storage.setItem('hc_user', JSON.stringify(ME));
+        localStorage.setItem('hc_user', JSON.stringify(ME));
         refreshUI();
       }).catch(() => {});
       // Re-init staff systems
@@ -5255,18 +5254,12 @@
       if (ci !== CAPS.LG) { I('LG-ERR').textContent = 'Wrong CAPTCHA code.'; genCap('LG'); return; }
       try {
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
-        TOK = r.token; ME = r;
-        // Use subdomain-shared cookie for the token (allows store.hellcore.net to share session)
-        // Aggressively clear old tokens/cookies to prevent conflicts
-        const rootDomain = window.location.hostname.endsWith('hellcore.net') ? '.hellcore.net' : '';
-        document.cookie = "hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        if (rootDomain) document.cookie = "hc_token=; path=/; domain=" + rootDomain + "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        localStorage.removeItem('hc_token');
         
-        TOK = r.token; ME = r;
-        const domainAttr = rootDomain ? `; domain=${rootDomain}` : '';
-        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domainAttr}`;
-        localStorage.setItem('hc_token', TOK);
+        // 1. RELY ON SERVER COOKIE: No more document.cookie = ...
+        // 2. STORE USER INFO FOR UI ONLY
+        ME = r;
+        localStorage.setItem('hc_user', JSON.stringify(ME));
+        
         refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
@@ -5283,18 +5276,13 @@
       if (ci !== CAPS.RG) { I('RG-ERR').textContent = 'Wrong CAPTCHA code.'; genCap('RG'); return; }
       try {
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
-        // Aggressively clear old tokens/cookies to prevent conflicts
-        const rootDomain = window.location.hostname.endsWith('hellcore.net') ? '.hellcore.net' : '';
-        document.cookie = "hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        if (rootDomain) document.cookie = "hc_token=; path=/; domain=" + rootDomain + "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        localStorage.removeItem('hc_token');
         
-        TOK = r.token; ME = r;
-        const domainAttr = rootDomain ? `; domain=${rootDomain}` : '';
-        document.cookie = `hc_token=${TOK}; path=/; max-age=${60*60*24*30}; SameSite=Lax${domainAttr}`;
-        localStorage.setItem('hc_token', TOK);
+        // 1. RELY ON SERVER COOKIE
+        // 2. STORE USER INFO FOR UI ONLY
+        ME = r;
+        localStorage.setItem('hc_user', JSON.stringify(ME));
+        
         refreshUI(); closeM('MR');
-        // Reinitialize all permission-dependent systems immediately
         reInitPermissions();
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
         toast('ok', '✓ Account created! Welcome, ' + r.username + '!');
@@ -7723,16 +7711,29 @@
     // API — all calls to Flask backend
     // ════════════════════════════════════════════════════
     async function API(url, opts = {}) {
-      // Always try to pick up the most recent token
-      const match = document.cookie.match(new RegExp('(^| )hc_token=([^;]+)'));
-      if (match) TOK = match[2];
-      if (!TOK) TOK = localStorage.getItem('hc_token');
-      const h = { 'Content-Type': 'application/json' };
-      if (TOK) h['X-Auth-Token'] = TOK;
-      const res = await fetch(url, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined });
+      // 1. SOURCE OF TRUTH: The browser now handles the cookie automatically.
+      // We no longer manually send X-Auth-Token headers.
+      
+      const h = {};
+      if (opts.body && !(opts.body instanceof FormData)) {
+          h['Content-Type'] = 'application/json';
+      }
+
+      const res = await fetch(url, {
+        method: opts.method || 'GET',
+        credentials: 'include', // CRITICAL: Browser will send cookies
+        headers: h,
+        body: (opts.body && !(opts.body instanceof FormData)) ? JSON.stringify(opts.body) : opts.body
+      });
 
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+      if (!res.ok) {
+          // If we get a 401 on a non-auth route, the session is likely dead
+          if (res.status === 401 && !url.includes('/api/auth/')) {
+              doLogout();
+          }
+          throw new Error(d.error || `Error ${res.status}`);
+      }
       return d;
     }
 
