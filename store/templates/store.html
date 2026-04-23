@@ -218,6 +218,20 @@
     .msg-admin { align-self:flex-start; background:var(--p2); border:1px solid var(--bd2); border-bottom-left-radius:2px; }
     .msg-system { align-self:center; background:rgba(255,255,255,0.05); font-size:0.75rem; color:var(--tx2); text-align:center; padding:6px 16px; border-radius:100px; max-width:90%; }
     .msg-meta { font-size:0.65rem; opacity:0.7; margin-top:6px; display:block; }
+
+    /* ═══ MOBILE NAV ═══ */
+    .nburger { display:none; background:rgba(255,255,255,0.05); border:1px solid var(--bd2); color:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    @media(max-width:768px) {
+      .nav-links { display:none; }
+      .nburger { display:block; }
+      .hero h1 { font-size:2rem; }
+      .hero p { font-size:0.95rem; }
+      #NAV { padding:0 16px; }
+      .pg { padding:80px 16px 40px; }
+    }
+
+    /* ═══ SVG ICONS ═══ */
+    .ic { width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
   </style>
 </head>
 <body>
@@ -754,10 +768,10 @@ async function checkout() {
   try {
     const d = await API('/api/checkout', { method: 'POST' });
     if (d.ticket_id) {
-       toast('ok', 'Ticket created! Redirecting to payment instructions...');
+       toast('ok', 'Order ticket created!');
        setTimeout(() => {
-         window.location.href = `${MAIN_DOMAIN}/?page=tickets&id=${d.ticket_id}`;
-       }, 1500);
+         viewTicket(d.ticket_id);
+       }, 1000);
     } else {
       toast('err', d.error || 'Could not create payment ticket');
     }
