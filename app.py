@@ -2016,7 +2016,7 @@ def admin_command_queue():
     except Exception as e:
         log_audit(request.cu["id"], "command_exec", None, f"Failed: {cmd} ({str(e)})", "fail")
         return jsonify({"error":str(e)}), 500
-    finally:
+        pass
         
 
 @app.route("/api/tebex/webhook", methods=["POST"])
