@@ -1049,7 +1049,7 @@ def forum_del(fid):
     if not f: return jsonify({"error":"Not found"}), 404
     u = request.cu
     if f["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_replies WHERE forum_id={ph()}", (fid,))
     c.execute(f"DELETE FROM hc_forums  WHERE id={ph()}", (fid,))
     db.commit()
@@ -1066,7 +1066,7 @@ def reply_add(fid):
     c.execute(f"SELECT is_locked FROM hc_forums WHERE id={ph()}", (fid,))
     f = c.fetchone()
     if f and f[0] and request.cu["role"] not in STAFF_ROLES:
-    return jsonify({"error":"This thread is locked (Private)."}), 403
+        return jsonify({"error":"This thread is locked (Private)."}), 403
     c.execute(f"INSERT INTO hc_replies(forum_id,author_id,content) VALUES({phs(3)})",
               (fid, request.cu["id"], d["content"]))
     db.commit()
@@ -1081,7 +1081,7 @@ def reply_del(rid):
     if not r: return jsonify({"error":"Not found"}), 404
     u = request.cu
     if r["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_replies WHERE id={ph()}", (rid,))
     db.commit()
     return jsonify({"ok":True})
@@ -1225,7 +1225,7 @@ def ticket_get(tid):
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
     t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
     t["priority"] = normalize_ticket_priority(t.get("priority"))
@@ -1272,9 +1272,9 @@ def ticket_msg(tid):
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     if is_internal and u["role"] not in STAFF_ROLES:
-    return jsonify({"error":"Staff only note"}), 403
+        return jsonify({"error":"Staff only note"}), 403
         
     img_url = ""
     if img_data:
@@ -1321,7 +1321,7 @@ def ticket_updates(tid):
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
     msgs = to_list(c.fetchall())
@@ -1344,7 +1344,7 @@ def ticket_action(tid):
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
 
     if action == "close":
         c.execute(f"UPDATE hc_tickets SET status='closed' WHERE id={ph()}", (tid,))
@@ -1354,7 +1354,7 @@ def ticket_action(tid):
         add_ticket_activity(c, tid, u["id"], "status", "open")
     elif action == "assign":
         if u["role"] not in STAFF_ROLES:
-    return jsonify({"error":"Staff only"}), 403
+        return jsonify({"error":"Staff only"}), 403
         assigned_to = d.get("assigned_to")
         if assigned_to in (None, "", 0):
             c.execute(f"UPDATE hc_tickets SET assigned_to=NULL WHERE id={ph()}", (tid,))
@@ -1363,18 +1363,18 @@ def ticket_action(tid):
             c.execute(f"SELECT id, username FROM hc_users WHERE id={ph()}", (int(assigned_to),))
             au = to_dict(c.fetchone())
             if not au:
-    return jsonify({"error":"Assignee not found"}), 404
+        return jsonify({"error":"Assignee not found"}), 404
             c.execute(f"UPDATE hc_tickets SET assigned_to={ph()} WHERE id={ph()}", (au["id"], tid))
             add_ticket_activity(c, tid, u["id"], "assignment", f"assigned_to:{au['username']}")
     elif action == "priority":
         if u["role"] not in STAFF_ROLES:
-    return jsonify({"error":"Staff only"}), 403
+        return jsonify({"error":"Staff only"}), 403
         p = normalize_ticket_priority(d.get("priority"))
         c.execute(f"UPDATE hc_tickets SET priority={ph()} WHERE id={ph()}", (p, tid))
         add_ticket_activity(c, tid, u["id"], "priority", p)
     elif action in ("payment_received", "payment_pending", "need_details"):
         if u["role"] not in STAFF_ROLES:
-    return jsonify({"error":"Staff only"}), 403
+        return jsonify({"error":"Staff only"}), 403
         add_ticket_activity(c, tid, u["id"], "payment", action)
     else:
     return jsonify({"error":"Unknown action"}), 400
@@ -1391,7 +1391,7 @@ def ticket_close(tid):
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     c.execute(f"UPDATE hc_tickets SET status='closed', last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     add_ticket_activity(c, tid, u["id"], "status", "closed")
     db.commit()
@@ -1454,7 +1454,7 @@ def ticket_del(tid):
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
     if t["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-    return jsonify({"error":"Forbidden"}), 403
+        return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_ticket_msgs WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_ticket_activity WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_tickets WHERE id={ph()}", (tid,))
