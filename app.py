@@ -482,6 +482,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
   endpoint TEXT NOT NULL,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
+  created_at {DT})""",
 f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
   token VARCHAR(64) PRIMARY KEY,
   user_id INTEGER NOT NULL,
