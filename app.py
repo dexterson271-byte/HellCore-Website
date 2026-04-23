@@ -2460,10 +2460,20 @@ def status_worker():
 # -------------------------------------------------------
 # RUN
 # -------------------------------------------------------
-try:
-    init_db()
-except Exception as e:
-    print(f"[ERROR] DB init error: {e}")
+if __name__ == "__main__":
+    with app.app_context():
+        try:
+            init_db()
+        except Exception as e:
+            print(f"[ERROR] DB init error: {e}")
+    app.run(host="0.0.0.0", port=8080)
+else:
+    # Gunicorn path
+    with app.app_context():
+        try:
+            init_db()
+        except Exception as e:
+            print(f"[ERROR] DB init error: {e}")
 
 if __name__ == "__main__":
     print("=" * 56)
