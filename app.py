@@ -558,7 +558,9 @@ def auth_required(f):
     def w(*a, **k):
         token = request.headers.get("X-Auth-Token", "") or request.cookies.get("hc_token", "")
         u = get_user_by_token(token)
-        if not u: return jsonify({"error":"Authentication failed. Please login again."}), 401
+        if not u:
+            print(f"[AUTH DEBUG] Auth failed for token: {token[:10]}... (Source: {'Header' if request.headers.get('X-Auth-Token') else 'Cookie'})")
+            return jsonify({"error":"Authentication failed. Please login again."}), 401
         request.cu = u; return f(*a, **k)
     return w
 
@@ -838,7 +840,15 @@ def login():
         resp = jsonify({"token":tok,"id":row["id"],"username":row["username"],
                         "email":row["email"],"mc_username":row["mc_username"] or "","role":row["role"],
                         "is_verified":bool(row.get("is_verified",0))})
-        resp.set_cookie("hc_token", tok, max_age=60*60*24*30, path="/", samesite="Lax")
+        resp.set_cookie(
+            "hc_token", 
+            tok, 
+            max_age=60*60*24*30, 
+            path="/", 
+            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            samesite="Lax",
+            secure=True if "hellcore.net" in request.host else False
+        )
         return resp
     except Exception as e:
         traceback.print_exc()
