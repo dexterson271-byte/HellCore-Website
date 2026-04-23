@@ -7766,9 +7766,23 @@
 
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-          // Only logout if a CRITICAL identity endpoint fails with 401
-          if (res.status === 401 && url.includes('/api/auth/me')) {
-              doLogout();
+          // If we get a 401, don't panic immediately. 
+          // Verify if the session is ACTUALLY dead.
+          if (res.status === 401 && !isCheckingSession) {
+              isCheckingSession = true;
+              console.warn(`[Auth] 401 detected from ${url}. Verifying session...`);
+              
+              window.fetch('/api/auth/me', { credentials: 'include' })
+                .then(check => {
+                    if (check.status === 401) {
+                        console.error("[Auth] Session confirmed DEAD. Logging out.");
+                        doLogout();
+                    } else {
+                        console.log("[Auth] Session is still ALIVE. Ignoring 401 from " + url);
+                    }
+                })
+                .catch(err => console.error("[Auth] Session check failed:", err))
+                .finally(() => { isCheckingSession = false; });
           }
           throw new Error(d.error || `Error ${res.status}`);
       }
