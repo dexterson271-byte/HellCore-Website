@@ -534,7 +534,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
 
     bootstrap_events(c)
     db.commit() # Final commit for bootstrap
-    c.close(); db.close()
+    db.close()
     print(f"[OK] Database fully initialized ({_DB_MODE})")
 
 # ═══════════════════════════════════════════════════════
@@ -713,7 +713,7 @@ def srv_history():
         # Fetch last 60 points
         c.execute("SELECT timestamp, total_players FROM hc_player_history ORDER BY timestamp DESC LIMIT 60")
         rows = to_list(c.fetchall())
-        c.close(); 
+        
         rows.reverse()
         
         labels = []
@@ -762,7 +762,7 @@ def register():
         db = get_db(); c = db_cursor(db)
         c.execute(f"SELECT id FROM hc_users WHERE email={ph()} OR username={ph()}", (em, us))
         if c.fetchone():
-            ; return jsonify({"error":"Email or username already taken"}), 409
+            return jsonify({"error":"Email or username already taken"}), 409
 
         tok = secrets.token_hex(32)
         c.execute(
@@ -830,7 +830,7 @@ def login():
         )
         row = to_dict(c.fetchone())
         if not row:
-            ; return jsonify({"error":"Wrong email/username or password"}), 401
+            return jsonify({"error":"Wrong email/username or password"}), 401
 
         tok = secrets.token_hex(32)
         c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, row["id"]))
@@ -878,7 +878,7 @@ def verify_status():
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT is_verified, mc_username, mc_uuid FROM hc_users WHERE id={ph()}", (request.cu["id"],))
     u = to_dict(c.fetchone())
-    c.close(); 
+    
     return jsonify(u)
 
 @app.route("/api/verify/confirm")
@@ -1049,7 +1049,7 @@ def forum_del(fid):
     if not f: ; return jsonify({"error":"Not found"}), 404
     u = request.cu
     if f["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_replies WHERE forum_id={ph()}", (fid,))
     c.execute(f"DELETE FROM hc_forums  WHERE id={ph()}", (fid,))
     db.commit()
@@ -1066,7 +1066,7 @@ def reply_add(fid):
     c.execute(f"SELECT is_locked FROM hc_forums WHERE id={ph()}", (fid,))
     f = c.fetchone()
     if f and f[0] and request.cu["role"] not in STAFF_ROLES:
-        ; return jsonify({"error":"This thread is locked (Private)."}), 403
+    return jsonify({"error":"This thread is locked (Private)."}), 403
     c.execute(f"INSERT INTO hc_replies(forum_id,author_id,content) VALUES({phs(3)})",
               (fid, request.cu["id"], d["content"]))
     db.commit()
@@ -1081,7 +1081,7 @@ def reply_del(rid):
     if not r: ; return jsonify({"error":"Not found"}), 404
     u = request.cu
     if r["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_replies WHERE id={ph()}", (rid,))
     db.commit()
     return jsonify({"ok":True})
@@ -1115,7 +1115,7 @@ def tickets_list():
         r["message_count"] = int(mc["cnt"]) if mc else 0
         r["last_message_id"] = int(lm["id"]) if lm else 0
         r["priority"] = normalize_ticket_priority(r.get("priority"))
-    c.close(); 
+    
     return jsonify(rows)
 
 @app.route("/api/tickets", methods=["POST"])
@@ -1225,7 +1225,7 @@ def ticket_get(tid):
     t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
     t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
     t["priority"] = normalize_ticket_priority(t.get("priority"))
@@ -1254,7 +1254,7 @@ def ticket_get(tid):
     if u["role"] in STAFF_ROLES:
         c.execute("SELECT id, username, role FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder') ORDER BY username ASC")
         staff = to_list(c.fetchall())
-    c.close(); 
+    
     return jsonify({"ticket":t,"messages":msgs,"activity":acts,"staff":staff,"permissions":perms})
 
 @app.route("/api/tickets/<int:tid>/msg", methods=["POST"])
@@ -1272,9 +1272,9 @@ def ticket_msg(tid):
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     if is_internal and u["role"] not in STAFF_ROLES:
-        ; return jsonify({"error":"Staff only note"}), 403
+    return jsonify({"error":"Staff only note"}), 403
         
     img_url = ""
     if img_data:
@@ -1309,7 +1309,7 @@ def ticket_msg(tid):
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.id={ph()}", (mid,))
     msg = to_dict(c.fetchone())
     msg["created_at"] = ts(msg["created_at"])
-    c.close(); 
+    
     return jsonify({"ok":True,"message":msg})
 
 @app.route("/api/tickets/<int:tid>/updates")
@@ -1321,7 +1321,7 @@ def ticket_updates(tid):
     t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if not can_view_ticket(t, u):
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
     msgs = to_list(c.fetchall())
@@ -1331,7 +1331,7 @@ def ticket_updates(tid):
     c.execute(f"SELECT status,priority,assigned_to,last_message_at FROM hc_tickets WHERE id={ph()}", (tid,))
     meta = to_dict(c.fetchone()) or {}
     meta["last_message_at"] = ts(meta.get("last_message_at"))
-    c.close(); 
+    
     return jsonify({"messages":msgs, "ticket_meta":meta})
 
 @app.route("/api/tickets/<int:tid>/action", methods=["POST"])
@@ -1344,7 +1344,7 @@ def ticket_action(tid):
     t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
 
     if action == "close":
         c.execute(f"UPDATE hc_tickets SET status='closed' WHERE id={ph()}", (tid,))
@@ -1354,7 +1354,7 @@ def ticket_action(tid):
         add_ticket_activity(c, tid, u["id"], "status", "open")
     elif action == "assign":
         if u["role"] not in STAFF_ROLES:
-            ; return jsonify({"error":"Staff only"}), 403
+    return jsonify({"error":"Staff only"}), 403
         assigned_to = d.get("assigned_to")
         if assigned_to in (None, "", 0):
             c.execute(f"UPDATE hc_tickets SET assigned_to=NULL WHERE id={ph()}", (tid,))
@@ -1363,21 +1363,21 @@ def ticket_action(tid):
             c.execute(f"SELECT id, username FROM hc_users WHERE id={ph()}", (int(assigned_to),))
             au = to_dict(c.fetchone())
             if not au:
-                ; return jsonify({"error":"Assignee not found"}), 404
+    return jsonify({"error":"Assignee not found"}), 404
             c.execute(f"UPDATE hc_tickets SET assigned_to={ph()} WHERE id={ph()}", (au["id"], tid))
             add_ticket_activity(c, tid, u["id"], "assignment", f"assigned_to:{au['username']}")
     elif action == "priority":
         if u["role"] not in STAFF_ROLES:
-            ; return jsonify({"error":"Staff only"}), 403
+    return jsonify({"error":"Staff only"}), 403
         p = normalize_ticket_priority(d.get("priority"))
         c.execute(f"UPDATE hc_tickets SET priority={ph()} WHERE id={ph()}", (p, tid))
         add_ticket_activity(c, tid, u["id"], "priority", p)
     elif action in ("payment_received", "payment_pending", "need_details"):
         if u["role"] not in STAFF_ROLES:
-            ; return jsonify({"error":"Staff only"}), 403
+    return jsonify({"error":"Staff only"}), 403
         add_ticket_activity(c, tid, u["id"], "payment", action)
     else:
-        ; return jsonify({"error":"Unknown action"}), 400
+    return jsonify({"error":"Unknown action"}), 400
 
     c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     db.commit()
@@ -1391,7 +1391,7 @@ def ticket_close(tid):
     t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if not can_manage_ticket(t, u):
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     c.execute(f"UPDATE hc_tickets SET status='closed', last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     add_ticket_activity(c, tid, u["id"], "status", "closed")
     db.commit()
@@ -1454,7 +1454,7 @@ def ticket_del(tid):
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: ; return jsonify({"error":"Not found"}), 404
     if t["author_id"] != u["id"] and u["role"] not in ADMIN_ROLES:
-        ; return jsonify({"error":"Forbidden"}), 403
+    return jsonify({"error":"Forbidden"}), 403
     c.execute(f"DELETE FROM hc_ticket_msgs WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_ticket_activity WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_tickets WHERE id={ph()}", (tid,))
@@ -1563,7 +1563,7 @@ def player_get(username):
     c.execute(f"SELECT * FROM hc_stats    WHERE user_id={ph()}", (u["id"],)); stats = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_ranks    WHERE user_id={ph()}", (u["id"],)); ranks = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_economy  WHERE user_id={ph()}", (u["id"],)); eco = to_dict(c.fetchone())
-    c.close(); 
+    
     return jsonify({
         "user":    {"username":u["username"],"role":u["role"],"mc_username":u["mc_username"] or ""},
         "stats":   {s["gamemode"]:s for s in stats},
@@ -1579,7 +1579,7 @@ def serverstatus_overview():
         # or we aggregate them if multiple servers report it.
         c.execute("SELECT SUM(online_players) as players, SUM(arenas) as arenas, SUM(ingame_players) as ingame FROM hc_server_metrics")
         res = to_dict(c.fetchone())
-        c.close(); 
+        
         return jsonify({
             "players": res.get("players") or 0,
             "arenas": res.get("arenas") or 0,
@@ -1670,7 +1670,7 @@ def stats_get(username):
     c.execute(f"SELECT * FROM hc_stats    WHERE user_id={ph()}", (u["id"],)); stats = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_ranks    WHERE user_id={ph()}", (u["id"],)); ranks = to_list(c.fetchall())
     c.execute(f"SELECT * FROM hc_economy  WHERE user_id={ph()}", (u["id"],)); eco = to_dict(c.fetchone())
-    c.close(); 
+    
     return jsonify({
         "user":    {"username":u["username"],"role":u["role"],"mc_username":u["mc_username"] or ""},
         "stats":   {s["gamemode"]:s for s in stats},
@@ -1961,7 +1961,7 @@ def admin_overview():
     logs = to_list(c.fetchall())
     for l in logs:
         l["created_at"] = ts(l["created_at"])
-    c.close(); 
+    
     return jsonify({
         "status":"ONLINE",
         "pending":pending,
@@ -1995,7 +1995,7 @@ def admin_announcement():
         c.execute("SELECT server_ip FROM hc_server_metrics WHERE server_name='GLOBAL_BANNER'")
         row = to_dict(c.fetchone())
         msg = row.get("server_ip", "") if row else ""
-        c.close(); 
+        
         return jsonify({"message":msg})
 
 @app.route("/api/admin/commands/queue", methods=["POST"])
@@ -2017,7 +2017,7 @@ def admin_command_queue():
         log_audit(request.cu["id"], "command_exec", None, f"Failed: {cmd} ({str(e)})", "fail")
         return jsonify({"error":str(e)}), 500
     finally:
-        c.close(); 
+        
 
 @app.route("/api/tebex/webhook", methods=["POST"])
 def tebex():
@@ -2054,7 +2054,7 @@ def ads_status():
         db.commit()
         c.execute(f"SELECT * FROM hc_ads WHERE user_id={ph()}", (u["id"],))
         ad = to_dict(c.fetchone())
-    c.close(); 
+    
     today = dt.date.today()
     last = ad["last_ad_date"]
     if last:
@@ -2189,7 +2189,7 @@ def ads_recent():
                   "JOIN hc_users u ON i.user_id = u.id "
                   "WHERE i.item_type='reward' ORDER BY i.created_at DESC LIMIT 5")
         rows = to_list(c.fetchall())
-        c.close(); 
+        
         for r in rows: r["created_at"] = ts(r["created_at"])
         return jsonify(rows)
     except Exception as e:
@@ -2202,7 +2202,7 @@ def ads_streak_rewards():
     c.execute(f"SELECT ad_streak FROM hc_ads WHERE user_id={ph()}", (u["id"],))
     row = c.fetchone()
     streak = row["ad_streak"] if row else 0
-    c.close(); 
+    
     rewards = []
     if streak >= 7:
         rewards.append({"days": 1, "vip": True, "coins": 0})
