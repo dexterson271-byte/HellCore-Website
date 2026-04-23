@@ -1479,6 +1479,11 @@
               <use href="#ic-plus" />
             </svg> New Ticket</button>
         </div>
+        <div id="TIX-GUEST-ONLY" style="display:none;margin-bottom:16px">
+          <div class="p" style="text-align:center;color:var(--tx2);font-size:0.85rem">
+            Not logged in? <button class="bto bsm" onclick="setGuestEmail()">Enter your email</button> to view your tickets.
+          </div>
+        </div>
         <div id="TIX-LIST">
           <div class="ld">
             <div class="sp"></div>
@@ -1565,6 +1570,20 @@
     </div>
   </div>
 
+  <!-- ═══ NEW TICKET MODAL ═══ -->
+  <div class="modal-bg" id="M-TICKET">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('M-TICKET')">✕</button>
+      <h2>📩 New Support Ticket</h2>
+      <p style="color:var(--tx2);text-align:center;margin-bottom:20px;font-size:0.9rem">Describe your issue and our staff will respond shortly.</p>
+      <div class="fg"><label>Subject</label><input class="inp" id="T-SUB" placeholder="Brief summary of your issue"></div>
+      <div class="fg" id="T-EMAIL-WRAP"><label>Email</label><input class="inp" id="T-EMAIL" placeholder="your@email.com"></div>
+      <div class="fg"><label>Message</label><textarea class="inp" id="T-MSG" rows="5" placeholder="Describe your issue in detail..."></textarea></div>
+      <div class="ferr" id="T-ERR"></div>
+      <button class="btn" style="width:100%;margin-top:8px" onclick="doCreateTicket()">Submit Ticket</button>
+    </div>
+  </div>
+
   <script>
     const MAIN_DOMAIN = "https://hellcore.net";
     let ME = null;
@@ -1632,7 +1651,11 @@
 
     async function loadTickets() {
       const email = localStorage.getItem('guest_email') || '';
-      I('TIX-GUEST-ONLY').style.display = ME ? 'none' : 'block';
+      const guestEl = I('TIX-GUEST-ONLY');
+      if (guestEl) guestEl.style.display = ME ? 'none' : 'block';
+      // Hide email field for logged-in users in ticket modal
+      const emailWrap = I('T-EMAIL-WRAP');
+      if (emailWrap) emailWrap.style.display = ME ? 'none' : 'block';
 
       if (!ME && !email) {
         I('TIX-LIST').innerHTML = `<div class="empty">
@@ -1681,7 +1704,7 @@
         if (!ME) localStorage.setItem('guest_email', email);
         closeModal('M-TICKET');
         toast('ok', 'Ticket created!');
-        viewTicket(d.ticket_id);
+        viewTicket(d.id || d.ticket_id);
       } catch (e) { I('T-ERR').textContent = e.message; }
     }
 

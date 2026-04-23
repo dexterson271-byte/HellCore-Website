@@ -644,11 +644,22 @@ def normalize_ticket_priority(v):
     p = str(v or "normal").strip().lower()
     return p if p in ("low", "normal", "high", "urgent") else "normal"
 
-def can_view_ticket(ticket, user):
-    return bool(user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES))
+def can_view_ticket(ticket, user, email=""):
+    if user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES):
+        return True
+    # Guest access: match by email when no author_id or author_id is 0
+    if email and ticket.get("email") and email.lower() == ticket["email"].lower():
+        if not ticket["author_id"] or ticket["author_id"] == 0:
+            return True
+    return False
 
-def can_manage_ticket(ticket, user):
-    return bool(user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES))
+def can_manage_ticket(ticket, user, email=""):
+    if user and (ticket["author_id"] == user["id"] or user["role"] in STAFF_ROLES):
+        return True
+    if email and ticket.get("email") and email.lower() == ticket["email"].lower():
+        if not ticket["author_id"] or ticket["author_id"] == 0:
+            return True
+    return False
 
 def add_ticket_activity(c, ticket_id, actor_id, action, details=""):
     c.execute(
@@ -1371,7 +1382,7 @@ def ticket_get(tid):
     t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
     t["priority"] = normalize_ticket_priority(t.get("priority"))
     perms = {
-        "can_manage": can_manage_ticket(t, u),
+        "can_manage": can_manage_ticket(t, u, email),
         "can_delete": bool(u and (t["author_id"] == u["id"] or u["role"] in ADMIN_ROLES)),
         "can_assign": bool(u and u["role"] in STAFF_ROLES),
         "can_internal_note": bool(u and u["role"] in STAFF_ROLES),
