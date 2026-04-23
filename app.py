@@ -551,7 +551,10 @@ def get_user_by_token(token):
         c.execute(f"SELECT * FROM hc_users WHERE session_token={ph()}", (token,))
         row = c.fetchone()
         return to_dict(row)
-    except: return None
+    except Exception as e:
+        print(f"[DB ERROR] Token lookup failed: {e}")
+        traceback.print_exc()
+        return None
 
 def auth_required(f):
     @wraps(f)
