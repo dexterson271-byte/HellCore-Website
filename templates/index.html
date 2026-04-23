@@ -4999,6 +4999,25 @@
     // BOOT
     // ════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', () => {
+      // 1. SESSION WARMUP (Checkout Token Check)
+      const urlParams = new URLSearchParams(window.location.search);
+      const tempToken = urlParams.get('temp_token');
+      
+      if (tempToken) {
+          // Warm up session from a temporary checkout token
+          window.fetch('/api/auth/warmup', {
+              method: 'POST',
+              body: JSON.stringify({ token: tempToken })
+          }).then(res => res.json()).then(r => {
+              if (r.ok) {
+                  ME = r.user;
+                  localStorage.setItem('hc_user', JSON.stringify(ME));
+                  // Refresh page to clean up URL and settle session
+                  window.location.href = window.location.origin + window.location.pathname;
+              }
+          }).catch(err => console.log("Warmup failed:", err));
+      }
+
       // Restore session — check Cookies (Subdomain shared), then localStorage (Legacy)
       let t = (document.cookie.match(new RegExp('(^| )hc_token=([^;]+)')) || [])[2] || localStorage.getItem('hc_token');
       const u = localStorage.getItem('hc_user');
@@ -5009,8 +5028,7 @@
         // Re-sync from server to get latest roles
         API('/api/auth/me').then(r => {
           ME = r;
-          const storage = localStorage.getItem('hc_token') ? localStorage : sessionStorage;
-          storage.setItem('hc_user', JSON.stringify(ME));
+          localStorage.setItem('hc_user', JSON.stringify(ME));
           refreshUI();
         }).catch((err) => {
           console.log('Session re-sync failed, keeping local session:', err.message);
@@ -7416,7 +7434,7 @@
         <span style="font-size:1.3rem;font-weight:800;font-family:'Oxanium',sans-serif;color:var(--g)">$${total.toFixed(2)}</span></span>
       <div style="display:flex;gap:7px">
         <button class="bto bsm" onclick="clearCart()">🗑 Clear</button>
-        <button class="btn" onclick="window.open('https://hellcore.tebex.io','_blank')">💳 Checkout via Tebex</button>
+        <button class="btn" onclick="doCheckout()">💳 Checkout via Tebex</button>
       </div>
     </div>`;
       } catch (e) { el.innerHTML = '<div class="empty" style="color:var(--r2)">Could not load cart.</div>'; }
@@ -7442,6 +7460,19 @@
         I('CART-TOT').innerHTML = '';
         toast('ok', 'Cart cleared.');
       } catch (e) { toast('err', e.message); }
+    }
+
+    async function doCheckout() {
+        try {
+            // Generate a secure temporary token before leaving
+            const r = await API('/api/auth/temp-token', { method: 'POST' });
+            const url = new URL('https://hellcore.tebex.io');
+            url.searchParams.set('temp_token', r.temp_token);
+            window.open(url.toString(), '_blank');
+        } catch (e) {
+            // Fallback if token fails
+            window.open('https://hellcore.tebex.io', '_blank');
+        }
     }
 
     // ════════════════════════════════════════════════════

@@ -482,7 +482,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
   endpoint TEXT NOT NULL,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
-  created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
+  token VARCHAR(64) PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  expires_at DATETIME NOT NULL)""",
     ]
 
     for sql in tables:
@@ -904,6 +907,57 @@ def auth_me():
     u = request.cu
     return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
                     "mc_username":u.get("mc_username") or "","role":u["role"], "is_verified": bool(u.get("is_verified", 0))})
+
+@app.route("/api/auth/temp-token", methods=["POST"])
+@auth_required
+def get_temp_token():
+    # Generate a 10-minute temporary token for checkout redirects
+    db = get_db(); c = db_cursor(db)
+    token = secrets.token_hex(32)
+    expires = datetime.now() + timedelta(minutes=10)
+    c.execute(f"INSERT INTO hc_temp_tokens (token, user_id, expires_at) VALUES ({ph()}, {ph()}, {ph()})", (token, request.cu["id"], expires))
+    db.commit()
+    return jsonify({"temp_token": token})
+
+@app.route("/api/auth/warmup", methods=["POST"])
+def session_warmup():
+    # Restore session cookie using a temporary token
+    d = request.get_json(force=True) or {}
+    temp = d.get("token")
+    if not temp: return jsonify({"error":"No token"}), 400
+    
+    db = get_db(); c = db_cursor(db)
+    # Clear old tokens
+    c.execute(f"DELETE FROM hc_temp_tokens WHERE expires_at < {ph()}", (datetime.now(),))
+    
+    c.execute(f"SELECT user_id FROM hc_temp_tokens WHERE token={ph()} AND expires_at > {ph()}", (temp, datetime.now()))
+    row = to_dict(c.fetchone())
+    if not row: return jsonify({"error":"Invalid or expired token"}), 401
+    
+    # Found user, get their real session token or generate a new one
+    uid = row["user_id"]
+    c.execute(f"SELECT * FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    
+    tok = user.get("session_token")
+    if not tok:
+        tok = secrets.token_hex(32)
+        c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, uid))
+        
+    c.execute(f"DELETE FROM hc_temp_tokens WHERE token={ph()}", (temp,))
+    db.commit()
+    
+    resp = jsonify({"ok":True, "user": {"id":user["id"], "username":user["username"], "role":user["role"]}})
+    resp.set_cookie(
+        "hc_token", 
+        tok, 
+        max_age=60*60*24*30, 
+        path="/", 
+        domain=".hellcore.net" if "hellcore.net" in request.host else None,
+        samesite="None",
+        secure=True
+    )
+    return resp
 
 # -------------------------------------------------------
 # MINECRAFT VERIFICATION
