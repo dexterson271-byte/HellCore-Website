@@ -578,7 +578,8 @@ def auth_required(f):
         u = get_user_by_token(token)
         
         if not u:
-            print(f"[AUTH] Using cookie token: {token[:10] if token else None}")
+            # DIAGNOSTIC: Log the EXACT path that failed
+            print(f"[AUTH] {request.path} Token: {token[:10] if token else 'NONE'}")
             return jsonify({"error":"Authentication failed. Please login again."}), 401
             
         request.cu = u; return f(*a, **k)
@@ -587,9 +588,11 @@ def auth_required(f):
 def staff_required(f):
     @wraps(f)
     def w(*a, **k):
-        token = request.headers.get("X-Auth-Token", "") or request.cookies.get("hc_token", "")
+        token = request.cookies.get("hc_token", "")
         u = get_user_by_token(token)
-        if not u: return jsonify({"error":"Staff access required"}), 401
+        if not u:
+            print(f"[AUTH] STAFF {request.path} Token: {token[:10] if token else 'NONE'}")
+            return jsonify({"error":"Staff access required"}), 401
         if u["role"] not in STAFF_ROLES: return jsonify({"error":"Staff required"}), 403
         request.cu = u; return f(*a, **k)
     return w
@@ -597,9 +600,11 @@ def staff_required(f):
 def admin_required(f):
     @wraps(f)
     def w(*a, **k):
-        token = request.headers.get("X-Auth-Token", "") or request.cookies.get("hc_token", "")
+        token = request.cookies.get("hc_token", "")
         u = get_user_by_token(token)
-        if not u: return jsonify({"error":"Admin access required"}), 401
+        if not u:
+            print(f"[AUTH] ADMIN {request.path} Token: {token[:10] if token else 'NONE'}")
+            return jsonify({"error":"Admin access required"}), 401
         if u["role"] not in ADMIN_ROLES: return jsonify({"error":"Admin required"}), 403
         request.cu = u; return f(*a, **k)
     return w
