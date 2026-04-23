@@ -5003,37 +5003,44 @@
       const urlParams = new URLSearchParams(window.location.search);
       const tempToken = urlParams.get('temp_token');
       
-      if (tempToken) {
-          // Warm up session from a temporary checkout token
-          window.fetch('/api/auth/warmup', {
-              method: 'POST',
-              body: JSON.stringify({ token: tempToken })
-          }).then(res => res.json()).then(r => {
-              if (r.ok) {
-                  ME = r.user;
-                  localStorage.setItem('hc_user', JSON.stringify(ME));
-                  // Refresh page to clean up URL and settle session
-                  window.location.href = window.location.origin + window.location.pathname;
-              }
-          }).catch(err => console.log("Warmup failed:", err));
+      async function initSession() {
+          if (tempToken) {
+              console.log("[Auth] Warmup token detected, restoring session...");
+              try {
+                  const res = await window.fetch('/api/auth/warmup', {
+                      method: 'POST',
+                      body: JSON.stringify({ token: tempToken })
+                  });
+                  const r = await res.json();
+                  if (r.ok) {
+                      ME = r.user;
+                      localStorage.setItem('hc_user', JSON.stringify(ME));
+                      // Token settled, refresh to clean URL
+                      window.location.href = window.location.origin + window.location.pathname;
+                      return; // Stop here, page will reload
+                  }
+              } catch (err) { console.log("Warmup failed:", err); }
+          }
+
+          // 2. Restore session — check Cookies, then localStorage
+          let t = (document.cookie.match(new RegExp('(^| )hc_token=([^;]+)')) || [])[2] || localStorage.getItem('hc_token');
+          const u = localStorage.getItem('hc_user');
+          if (t && u) {
+            TOK = t;
+            try { ME = JSON.parse(u); } catch (e) { }
+            refreshUI();
+            // Re-sync from server to get latest roles
+            API('/api/auth/me').then(r => {
+              ME = r;
+              localStorage.setItem('hc_user', JSON.stringify(ME));
+              refreshUI();
+            }).catch((err) => {
+              console.log('Session re-sync failed, keeping local session:', err.message);
+            });
+          }
       }
 
-      // Restore session — check Cookies (Subdomain shared), then localStorage (Legacy)
-      let t = (document.cookie.match(new RegExp('(^| )hc_token=([^;]+)')) || [])[2] || localStorage.getItem('hc_token');
-      const u = localStorage.getItem('hc_user');
-      if (t && u) {
-        TOK = t;
-        try { ME = JSON.parse(u); } catch (e) { }
-        refreshUI();
-        // Re-sync from server to get latest roles
-        API('/api/auth/me').then(r => {
-          ME = r;
-          localStorage.setItem('hc_user', JSON.stringify(ME));
-          refreshUI();
-        }).catch((err) => {
-          console.log('Session re-sync failed, keeping local session:', err.message);
-        });
-      }
+      initSession();
 
       genCap('LG'); genCap('RG');
       checkAnn();
