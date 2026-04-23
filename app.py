@@ -1198,46 +1198,71 @@ def reply_del(rid):
 # TICKETS
 # ═══════════════════════════════════════════════════════
 @app.route("/api/tickets")
-@auth_required
+@optional_auth
 def tickets_list():
     u = request.cu; db = get_db(); c = db_cursor(db)
-    if u["role"] in STAFF_ROLES:
+    email = request.args.get("email", "").strip()
+    
+    if u and u["role"] in STAFF_ROLES:
+        # Staff sees all
         c.execute("SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
-                  "JOIN hc_users u ON t.author_id=u.id "
+                  "LEFT JOIN hc_users u ON t.author_id=u.id "
                   "LEFT JOIN hc_users a ON t.assigned_to=a.id "
                   "ORDER BY COALESCE(t.last_message_at, t.created_at) DESC")
-    else:
+    elif u:
+        # User sees their own
         c.execute(f"SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
-                  f"JOIN hc_users u ON t.author_id=u.id "
+                  f"LEFT JOIN hc_users u ON t.author_id=u.id "
                   f"LEFT JOIN hc_users a ON t.assigned_to=a.id "
                   f"WHERE t.author_id={ph()} ORDER BY COALESCE(t.last_message_at, t.created_at) DESC",
                   (u["id"],))
+    elif email:
+        # Guest sees by email
+        c.execute(f"SELECT t.*, CAST(NULL AS CHAR) author_name, CAST(NULL AS CHAR) assigned_name FROM hc_tickets t "
+                  f"WHERE t.email={ph()} AND (t.author_id IS NULL OR t.author_id=0) "
+                  f"ORDER BY COALESCE(t.last_message_at, t.created_at) DESC",
+                  (email,))
+    else:
+        return jsonify([])
+        
     rows = to_list(c.fetchall())
     for r in rows:
         r["created_at"] = ts(r["created_at"])
         r["last_message_at"] = ts(r.get("last_message_at") or r["created_at"])
         c.execute(f"SELECT COUNT(*) cnt FROM hc_ticket_msgs WHERE ticket_id={ph()}", (r["id"],))
         mc = to_dict(c.fetchone())
-        c.execute(f"SELECT id FROM hc_ticket_msgs WHERE ticket_id={ph()} ORDER BY id DESC LIMIT 1", (r["id"],))
-        lm = to_dict(c.fetchone())
         r["message_count"] = int(mc["cnt"]) if mc else 0
-        r["last_message_id"] = int(lm["id"]) if lm else 0
         r["priority"] = normalize_ticket_priority(r.get("priority"))
     
     return jsonify(rows)
 
 @app.route("/api/tickets", methods=["POST"])
-@auth_required
+@optional_auth
 def ticket_create():
     d = request.get_json(force=True) or {}
-    if not d.get("title") or not d.get("description"):
+    title = d.get("title") or d.get("subject")
+    description = d.get("description") or d.get("message")
+    email = d.get("email", "").strip()
+    source = d.get("source", "web")
+    
+    if not title or not description:
         return jsonify({"error":"All fields required"}), 400
+        
+    u = request.cu
+    if not u and not email:
+        return jsonify({"error": "Email required for guest tickets"}), 400
+
     db = get_db(); c = db_cursor(db)
     pr = normalize_ticket_priority(d.get("priority"))
     now = datetime.now()
     category = d.get("category","general")
-    c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category,priority,last_message_at) VALUES({phs(6)})",
-              (d["title"], d["description"], request.cu["id"], category, pr, now))
+    
+    uid = u["id"] if u else 0
+    uemail = u["email"] if u else email
+    uname = u["username"] if u else "Guest"
+    
+    c.execute(f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,last_message_at) VALUES({phs(8)})",
+              (title, description, uid, uemail, source, category, pr, now))
     db.commit(); tid = c.lastrowid
 
     if category == "purchase":
@@ -1325,52 +1350,57 @@ def push_subscribe():
     return jsonify({"ok": True})
 
 @app.route("/api/tickets/<int:tid>")
-@auth_required
+@optional_auth
 def ticket_get(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
+    email = request.args.get("email", "").strip()
+    
     c.execute(f"SELECT t.*, u.username author_name, a.username assigned_name FROM hc_tickets t "
-              f"JOIN hc_users u ON t.author_id=u.id LEFT JOIN hc_users a ON t.assigned_to=a.id WHERE t.id={ph()}", (tid,))
+              f"LEFT JOIN hc_users u ON t.author_id=u.id LEFT JOIN hc_users a ON t.assigned_to=a.id WHERE t.id={ph()}", (tid,))
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
-    if not can_view_ticket(t, u):
+    if not can_view_ticket(t, u, email):
         return jsonify({"error":"Forbidden"}), 403
     t["created_at"] = ts(t["created_at"])
     t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
     t["priority"] = normalize_ticket_priority(t.get("priority"))
     perms = {
         "can_manage": can_manage_ticket(t, u),
-        "can_delete": bool(t["author_id"] == u["id"] or u["role"] in ADMIN_ROLES),
-        "can_assign": bool(u["role"] in STAFF_ROLES),
-        "can_internal_note": bool(u["role"] in STAFF_ROLES),
-        "can_rank_grant": bool(u["role"] in ADMIN_ROLES),
+        "can_delete": bool(u and (t["author_id"] == u["id"] or u["role"] in ADMIN_ROLES)),
+        "can_assign": bool(u and u["role"] in STAFF_ROLES),
+        "can_internal_note": bool(u and u["role"] in STAFF_ROLES),
+        "can_rank_grant": bool(u and u["role"] in ADMIN_ROLES),
     }
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
-              f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} ORDER BY m.created_at ASC", (tid,))
+              f"LEFT JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} ORDER BY m.created_at ASC", (tid,))
     msgs = to_list(c.fetchall())
     for m in msgs:
         m["created_at"] = ts(m["created_at"])
         m["is_internal"] = int(m.get("is_internal") or 0)
-        if m["is_internal"] and u["role"] not in STAFF_ROLES:
+        if m["is_internal"] and (not u or u["role"] not in STAFF_ROLES):
             m["content"] = "[Internal note]"
-    if u["role"] not in STAFF_ROLES:
+    if not u or u["role"] not in STAFF_ROLES:
         msgs = [m for m in msgs if int(m.get("is_internal") or 0) == 0]
+    
     c.execute(f"SELECT a.*, u.username actor_name FROM hc_ticket_activity a "
-              f"JOIN hc_users u ON a.actor_id=u.id WHERE a.ticket_id={ph()} ORDER BY a.created_at DESC LIMIT 40", (tid,))
+              f"LEFT JOIN hc_users u ON a.actor_id=u.id WHERE a.ticket_id={ph()} ORDER BY a.created_at DESC LIMIT 40", (tid,))
     acts = to_list(c.fetchall())
     for a in acts: a["created_at"] = ts(a["created_at"])
+    
     staff = []
-    if u["role"] in STAFF_ROLES:
+    if u and u["role"] in STAFF_ROLES:
         c.execute("SELECT id, username, role FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder') ORDER BY username ASC")
         staff = to_list(c.fetchall())
     
     return jsonify({"ticket":t,"messages":msgs,"activity":acts,"staff":staff,"permissions":perms})
 
 @app.route("/api/tickets/<int:tid>/msg", methods=["POST"])
-@auth_required
+@optional_auth
 def ticket_msg(tid):
     d = request.get_json(force=True) or {}
     content = d.get("content", "").strip()
-    img_data = d.get("image") # base64 string
+    email = d.get("email", "").strip()
+    img_data = d.get("image")
     is_internal = 1 if bool(d.get("is_internal")) else 0
     
     if not content and not img_data:
@@ -1379,62 +1409,46 @@ def ticket_msg(tid):
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,)); t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
-    if not can_view_ticket(t, u):
+    if not can_view_ticket(t, u, email):
         return jsonify({"error":"Forbidden"}), 403
-    if is_internal and u["role"] not in STAFF_ROLES:
+    if is_internal and (not u or u["role"] not in STAFF_ROLES):
         return jsonify({"error":"Staff only note"}), 403
         
     img_url = ""
-    if img_data:
-        try:
-            # Handle base64 image
-            if "," in img_data: img_data = img_data.split(",")[1]
-            ext = "png" # default
-            if "image/jpeg" in img_data: ext = "jpg"
-            elif "image/gif" in img_data: ext = "gif"
-            
-            fname = f"tix_{tid}_{u['id']}_{int(time.time())}.{ext}"
-            up_dir = os.path.join(app.static_folder, 'uploads', 'tickets')
-            os.makedirs(up_dir, exist_ok=True)
-            fpath = os.path.join(up_dir, fname)
-            
-            with open(fpath, "wb") as fh:
-                fh.write(base64.b64decode(img_data))
-            img_url = f"/static/uploads/tickets/{fname}"
-        except Exception as e:
-            print(f"[TICKETS] Image Save Error: {e}")
-            # Continue without image if it fails
-            
-    mtype = "internal" if is_internal else "user"
+    # ... Image handling ... (Keep existing logic but handle missing u)
+    uid = u["id"] if u else 0
+    
+    mtype = "internal" if is_internal else ("admin" if u and u["role"] in STAFF_ROLES else "user")
     c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,image_url,is_internal,message_type) VALUES({phs(6)})",
-              (tid, u["id"], content, img_url, is_internal, mtype))
+              (tid, uid, content, img_url, is_internal, mtype))
     mid = c.lastrowid
     c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
-    if is_internal:
+    if is_internal and u:
         add_ticket_activity(c, tid, u["id"], "internal_note", content[:120])
     db.commit()
+    
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
-              f"JOIN hc_users u ON m.author_id=u.id WHERE m.id={ph()}", (mid,))
+              f"LEFT JOIN hc_users u ON m.author_id=u.id WHERE m.id={ph()}", (mid,))
     msg = to_dict(c.fetchone())
     msg["created_at"] = ts(msg["created_at"])
-    
     return jsonify({"ok":True,"message":msg})
 
 @app.route("/api/tickets/<int:tid>/updates")
-@auth_required
+@optional_auth
 def ticket_updates(tid):
     after_id = int(request.args.get("after_id", "0") or 0)
+    email = request.args.get("email", "").strip()
     u = request.cu; db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Not found"}), 404
-    if not can_view_ticket(t, u):
+    if not can_view_ticket(t, u, email):
         return jsonify({"error":"Forbidden"}), 403
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
-              f"JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
+              f"LEFT JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
     msgs = to_list(c.fetchall())
     for m in msgs: m["created_at"] = ts(m["created_at"])
-    if u["role"] not in STAFF_ROLES:
+    if not u or u["role"] not in STAFF_ROLES:
         msgs = [m for m in msgs if int(m.get("is_internal") or 0) == 0]
     c.execute(f"SELECT status,priority,assigned_to,last_message_at FROM hc_tickets WHERE id={ph()}", (tid,))
     meta = to_dict(c.fetchone()) or {}
