@@ -609,6 +609,14 @@ def admin_required(f):
         request.cu = u; return f(*a, **k)
     return w
 
+def optional_auth(f):
+    @wraps(f)
+    def w(*a, **k):
+        token = request.cookies.get("hc_token", "")
+        request.cu = get_user_by_token(token)
+        return f(*a, **k)
+    return w
+
 def log_audit(admin_id, action, target_id=None, details="", status="success", execution_time=0.0):
     try:
         db = get_db(); c = db_cursor(db)
