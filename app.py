@@ -661,9 +661,15 @@ def add_ticket_activity(c, ticket_id, actor_id, action, details=""):
 # ═══════════════════════════════════════════════════════
 @app.after_request
 def cors(r):
-    r.headers["Access-Control-Allow-Origin"]  = "*"
-    r.headers["Access-Control-Allow-Headers"] = "Content-Type,X-Auth-Token"
+    origin = request.headers.get("Origin")
+    if origin and ("hellcore.net" in origin or "localhost" in origin):
+        r.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        r.headers["Access-Control-Allow-Origin"] = "*"
+        
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type,X-Auth-Token,Authorization"
     r.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    r.headers["Access-Control-Allow-Credentials"] = "true"
     return r
 
 @app.route("/api/<path:p>", methods=["OPTIONS"])
