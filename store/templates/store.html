@@ -1581,10 +1581,11 @@
     // ════════════════════════════════════════════════════════
     async function API(url, opts = {}) {
       const isProd = window.location.hostname.includes('hellcore.net');
-      // Selective routing: Only send ticket/auth requests to the main domain
       const isRemote = url.includes('/api/tickets') || url.includes('/api/auth');
       const base = (isProd && isRemote) ? 'https://hellcore.net' : '';
       const fullUrl = url.startsWith('http') ? url : (base + url);
+
+      console.log(`[API] ${opts.method || 'GET'} ${fullUrl}`);
 
       const token = localStorage.getItem('hc_token') || '';
       const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
@@ -1595,10 +1596,19 @@
       };
       if (opts.body) cfg.body = JSON.stringify(opts.body);
 
-      const r = await fetch(fullUrl, cfg);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Request failed');
-      return d;
+      try {
+        const r = await fetch(fullUrl, cfg);
+        const text = await r.text();
+        let d = {};
+        try { d = JSON.parse(text); } catch (e) {
+          throw new Error(`Invalid JSON response from ${fullUrl} (HTTP ${r.status})`);
+        }
+        if (!r.ok) throw new Error(d.error || `Error ${r.status}: ${fullUrl}`);
+        return d;
+      } catch (e) {
+        console.error(`[API ERROR] ${fullUrl}:`, e);
+        throw e;
+      }
     }
 
     // ════════════════════════════════════════════════════════
