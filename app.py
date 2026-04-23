@@ -291,8 +291,22 @@ def hp(pw): return hashlib.sha256(pw.encode()).hexdigest()
 # -------------------------------------------------------
 # INIT TABLES
 # -------------------------------------------------------
+def get_admin_db():
+    """Returns a direct, non-pooled connection for administrative tasks."""
+    if _DB_MODE == "mysql_railway":
+        return mysql.connector.connect(host=RAILWAY_HOST, port=RAILWAY_PORT, user=RAILWAY_USER, password=RAILWAY_PASSWORD, database=RAILWAY_DATABASE, autocommit=True)
+    elif _DB_MODE == "mysql_local":
+        return mysql.connector.connect(host=LOCAL_MYSQL_HOST, port=LOCAL_MYSQL_PORT, user=LOCAL_MYSQL_USER, password=LOCAL_MYSQL_PASSWORD, database=LOCAL_MYSQL_DATABASE)
+    elif _DB_MODE == "mysql_aiven":
+        return mysql.connector.connect(host=AIVEN_HOST, port=AIVEN_PORT, user=AIVEN_USER, password=AIVEN_PASSWORD, database=AIVEN_DATABASE, autocommit=True)
+    else:
+        conn = sqlite3.connect(SQLITE_FILE)
+        conn.row_factory = sqlite3.Row
+        return conn
+
 def init_db():
-    db = get_db(); c = db_cursor(db)
+    db = get_admin_db()
+    c = db.cursor(dictionary=True) if _DB_MODE != "sqlite" else db.cursor()
     mysql = _DB_MODE != "sqlite"
     AI  = "AUTO_INCREMENT" if mysql else "AUTOINCREMENT"
     DT  = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
@@ -534,6 +548,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_push_subs(
 
     bootstrap_events(c)
     db.commit() # Final commit for bootstrap
+    c.close()
     db.close()
     print(f"[OK] Database fully initialized ({_DB_MODE})")
 
