@@ -45,6 +45,8 @@ from datetime import datetime, timedelta
 from functools import wraps
 import urllib.request
 import urllib.error
+import mysql.connector
+from mysql.connector import pooling
 
 # Load environment variables for local testing
 try:
@@ -207,9 +209,6 @@ try_connect()
 def get_db():
     if 'db' not in g:
         if _DB_MODE in ("mysql_local", "mysql_aiven", "mysql_railway"):
-            import mysql.connector
-            from mysql.connector import pooling
-
             # Use a connection pool to prevent connection exhaustion
             if not hasattr(get_db, '_pool'):
                 if _DB_MODE == "mysql_local":
