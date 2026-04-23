@@ -563,8 +563,16 @@ def get_user_by_token(token):
     if not token: return None
     try:
         db = get_db(); c = db_cursor(db)
+        # Check if we can find ANY token first
+        c.execute("SELECT COUNT(*) as cnt FROM hc_users WHERE session_token IS NOT NULL")
+        count = c.fetchone()["cnt"]
+        
         c.execute(f"SELECT * FROM hc_users WHERE session_token={ph()}", (token,))
         row = c.fetchone()
+        
+        if not row:
+            print(f"[AUTH DEBUG] No user found for token (len {len(token)}). Total users with tokens: {count}")
+            
         return to_dict(row)
     except Exception as e:
         print(f"[DB ERROR] Token lookup failed: {e}")
@@ -884,6 +892,7 @@ def logout():
 @app.route("/api/auth/me")
 @auth_required
 def auth_me():
+    u = request.cu
     return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
                     "mc_username":u.get("mc_username") or "","role":u["role"], "is_verified": bool(u.get("is_verified", 0))})
 
