@@ -396,7 +396,9 @@ f"""CREATE TABLE IF NOT EXISTS hc_tickets(
   title VARCHAR(200) NOT NULL,
   category VARCHAR(40) DEFAULT 'general',
   description TEXT NOT NULL,
-  author_id INTEGER NOT NULL,
+  author_id INTEGER, -- Nullable for guests
+  email VARCHAR(200), -- For guests
+  source VARCHAR(50) DEFAULT 'web', -- e.g. 'store', 'web'
   priority VARCHAR(20) DEFAULT 'normal',
   assigned_to INTEGER,
   status VARCHAR(20) DEFAULT 'open',
@@ -501,6 +503,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
     # MIGRATION: Add is_pinned and is_locked if missing
     for col in ["is_pinned", "is_locked"]:
         try: c.execute(f"ALTER TABLE hc_forums ADD COLUMN {col} INTEGER DEFAULT 0")
+        except: pass
+    
+    for col in ["email", "source"]:
+        try: c.execute(f"ALTER TABLE hc_tickets ADD COLUMN {col} VARCHAR(200)")
         except: pass
 
     # MIGRATION: Add image_url to ticket messages
@@ -1599,6 +1605,41 @@ def cart_clear():
     c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     db.commit()
     return jsonify({"ok":True})
+
+@app.route("/api/store/checkout", methods=["POST"])
+@optional_auth
+def store_checkout():
+    # Supports both logged-in users and guests
+    d = request.get_json(force=True) or {}
+    email = d.get("email", "").strip()
+    
+    u = request.cu
+    uid = u["id"] if u else None
+    uemail = u["email"] if u else email
+    
+    if not u and not email:
+        return jsonify({"error": "Email required for guest checkout"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    
+    # 1. Create Ticket
+    # We use a unique order ID in the title for tracking
+    title = "🧾 Store Order #" + secrets.token_hex(4).upper()
+    desc = "Direct checkout from store."
+    c.execute(
+        f"INSERT INTO hc_tickets (title, description, author_id, email, source, status, last_message_at) VALUES ({phs(7)})",
+        (title, desc, uid, uemail, "store", "open", datetime.now())
+    )
+    tid = c.lastrowid
+    
+    # 2. Create Initial Message (System notification)
+    c.execute(
+        f"INSERT INTO hc_ticket_msgs (ticket_id, author_id, content, message_type) VALUES ({phs(4)})",
+        (tid, uid or 0, "🧾 Order received. Processing your request...", "system")
+    )
+    
+    db.commit()
+    return jsonify({"ticket_id": tid})
 
 # ═══════════════════════════════════════════════════════
 # INVENTORY & GIFTS
