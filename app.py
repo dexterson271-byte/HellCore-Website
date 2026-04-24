@@ -2435,8 +2435,9 @@ def admin_cmd_suggestions():
     ])
 
 @app.route("/api/admin/users/<int:uid>/verify", methods=["POST"])
-@role_required("admin")
+@admin_required
 def admin_verify_user(uid):
+
     d = request.get_json(force=True) or {}
     status = 1 if d.get("verified") else 0
     db = get_db(); c = db_cursor(db)
