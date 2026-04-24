@@ -813,13 +813,12 @@ def send_push_notification(user_ids, title, body, url=None, data=None):
     try:
         from pywebpush import webpush, WebPushException
         vapid_priv = os.environ.get("VAPID_PRIVATE_KEY")
-        if not vapid_priv and os.path.exists(".env"):
-             with open(".env", "r") as f:
-                 for x in f:
-                     if "VAPID_PRIVATE_KEY=" in x: vapid_priv = x.split("=")[1].strip()
+        if not vapid_priv:
+             vapid_priv = "MaF2BwpAwWemM_cb05YEGs_6D1NL8T0xFYlrI3YFbVE"
+        
         if vapid_priv and os.path.exists(vapid_priv):
             with open(vapid_priv, "r") as f: vapid_priv = f.read().strip()
-        if not vapid_priv: return
+
 
         db = get_db(); c = db_cursor(db)
         phs_list = ",".join([ph()] * len(user_ids))
