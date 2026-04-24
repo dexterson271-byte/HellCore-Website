@@ -17,6 +17,9 @@ import secrets
 import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
+
+# Add parent directory to path so we can import shared_store
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from shared_store import build_purchase_metadata, rank_payload
 
 # Load environment variables
