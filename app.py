@@ -1155,7 +1155,16 @@ def register():
         traceback.print_exc()
         return jsonify({"error":f"Server error: {e}"}), 500
 
+@app.route("/api/auth/unlink", methods=["POST"])
+@auth_required
+def auth_unlink():
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_users SET mc_username='', mc_uuid='', is_verified=0 WHERE id={ph()}", (request.cu["id"],))
+    db.commit()
+    return jsonify({"success":True})
+
 @app.route("/api/auth/heartbeat", methods=["POST"])
+
 @auth_required
 def heartbeat():
     u = request.cu

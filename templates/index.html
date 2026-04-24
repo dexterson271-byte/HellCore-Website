@@ -5250,7 +5250,9 @@
                 <tr>
                   <td style="color:var(--tx2);padding:4px 0">MC Name:</td>
                   <td id="PR-MC"></td>
+                  <td style="text-align:right"><button id="PR-UNLINK-BTN" class="btn bred bxs" style="display:none" onclick="doUnlink()">Unlink</button></td>
                 </tr>
+
               </table>
             </div>
             <div class="p">
@@ -8346,7 +8348,9 @@
       I('PR-NAME').textContent = ME.username;
       I('PR-EMAIL').textContent = ME.email;
       I('PR-MC').textContent = ME.mc_username || 'Not linked';
+      I('PR-UNLINK-BTN').style.display = ME.mc_username ? 'inline-block' : 'none';
       I('PR-ROLE').innerHTML = `<span class="rb rb-${ME.role}">${ME.role.toUpperCase()}</span>`;
+
       if (ME.mc_username) I('PR-HEAD').src = `/api/skin/head/${enc(ME.mc_username)}/78`;
       API(`/api/stats/${enc(ME.username)}`).then(d => {
         const e = d.economy || {};
@@ -8362,6 +8366,16 @@
         } else { rk.innerHTML = '<div style="color:var(--tx2);font-size:.8rem">No ranks yet.</div>'; }
       }).catch(() => { });
     }
+
+    async function doUnlink() {
+      if (!confirm('Are you sure you want to unlink your Minecraft account? You will lose access to support tickets and restricted features.')) return;
+      try {
+        await API('/api/auth/unlink', { method: 'POST' });
+        toast('ok', 'Account unlinked successfully.');
+        reInitPermissions(); // Refreshes ME and UI
+      } catch (e) { toast('err', e.message); }
+    }
+
     async function loadInv() {
       const el = I('PR-INV-L'); if (!el || !ME) return;
       try {
