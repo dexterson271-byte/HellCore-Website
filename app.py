@@ -814,7 +814,7 @@ def send_push_notification(user_ids, title, body, url=None, data=None):
         from pywebpush import webpush, WebPushException
         vapid_priv = os.environ.get("VAPID_PRIVATE_KEY")
         if not vapid_priv:
-             vapid_priv = "MaF2BwpAwWemM_cb05YEGs_6D1NL8T0xFYlrI3YFbVE"
+             vapid_priv = "DquJy5faO+pzgvGMG7FGa/uEj1i5RrTYcruMcjtAAok="
         
         if vapid_priv and os.path.exists(vapid_priv):
             with open(vapid_priv, "r") as f: vapid_priv = f.read().strip()
