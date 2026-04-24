@@ -17,6 +17,7 @@ import secrets
 import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
+from shared_store import build_purchase_metadata, rank_payload
 
 # Load environment variables
 try:
@@ -162,6 +163,9 @@ def phs(n):
 
 def ts(v): return str(v) if v else ""
 
+
+STORE_SPA_ROUTES = {"", "admin", "cart", "home", "ranks", "ticket-view", "tickets"}
+
 # ═══════════════════════════════════════════════════════
 # INIT STORE TABLES
 # ═══════════════════════════════════════════════════════
@@ -195,8 +199,13 @@ f"""CREATE TABLE IF NOT EXISTS hc_tickets(
   title VARCHAR(200) NOT NULL,
   category VARCHAR(40) DEFAULT 'general',
   description TEXT NOT NULL,
-  author_id INTEGER NOT NULL,
+  author_id INTEGER,
+  email VARCHAR(200),
+  source VARCHAR(50) DEFAULT 'web',
+  priority VARCHAR(20) DEFAULT 'normal',
+  assigned_to INTEGER,
   status VARCHAR(20) DEFAULT 'open',
+  last_message_at {DT},
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
@@ -204,6 +213,18 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_msgs(
   ticket_id INTEGER NOT NULL,
   author_id INTEGER NOT NULL,
   content TEXT NOT NULL,
+  is_internal INTEGER DEFAULT 0,
+  message_type VARCHAR(20) DEFAULT 'user',
+  meta_json TEXT,
+  image_url VARCHAR(255) DEFAULT '',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_ticket_activity(
+  id INTEGER PRIMARY KEY {AI},
+  ticket_id INTEGER NOT NULL,
+  actor_id INTEGER NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  details TEXT,
   created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_store_products(
@@ -239,9 +260,15 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
   ticket_id INTEGER DEFAULT 0,
+  order_code VARCHAR(32) DEFAULT '',
   items TEXT,
   total REAL DEFAULT 0,
   status VARCHAR(20) DEFAULT 'pending',
+  payment_method VARCHAR(32) DEFAULT 'upi',
+  payment_status VARCHAR(20) DEFAULT 'pending',
+  source_app VARCHAR(32) DEFAULT 'store',
+  details_json TEXT,
+  rank_snapshot TEXT,
   mc_username VARCHAR(50) DEFAULT '',
   created_at {DT})""",
     ]
@@ -255,9 +282,26 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     db.commit() # <── Commit core tables
     print(f"  [STORE] Core tables committed.")
 
-    # MIGRATION: Add ticket_id to orders
-    try: c.execute("ALTER TABLE hc_store_orders ADD COLUMN ticket_id INTEGER DEFAULT 0")
-    except: pass
+    for sql in [
+        "ALTER TABLE hc_store_orders ADD COLUMN ticket_id INTEGER DEFAULT 0",
+        "ALTER TABLE hc_store_orders ADD COLUMN order_code VARCHAR(32) DEFAULT ''",
+        "ALTER TABLE hc_store_orders ADD COLUMN payment_method VARCHAR(32) DEFAULT 'upi'",
+        "ALTER TABLE hc_store_orders ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending'",
+        "ALTER TABLE hc_store_orders ADD COLUMN source_app VARCHAR(32) DEFAULT 'store'",
+        "ALTER TABLE hc_store_orders ADD COLUMN details_json TEXT",
+        "ALTER TABLE hc_store_orders ADD COLUMN rank_snapshot TEXT",
+        "ALTER TABLE hc_tickets ADD COLUMN email VARCHAR(200)",
+        "ALTER TABLE hc_tickets ADD COLUMN source VARCHAR(50) DEFAULT 'web'",
+        "ALTER TABLE hc_tickets ADD COLUMN priority VARCHAR(20) DEFAULT 'normal'",
+        "ALTER TABLE hc_tickets ADD COLUMN assigned_to INTEGER",
+        "ALTER TABLE hc_tickets ADD COLUMN last_message_at TIMESTAMP",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN is_internal INTEGER DEFAULT 0",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN message_type VARCHAR(20) DEFAULT 'user'",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT",
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''",
+    ]:
+        try: c.execute(sql)
+        except: pass
 
     db.commit()
 
@@ -339,6 +383,115 @@ def admin_required(f):
         request.cu = u; return f(*a, **k)
     return w
 
+
+def get_rank_payload_for_user(user_id, cursor=None):
+    if not user_id:
+        return rank_payload({})
+    owns_cursor = cursor is None
+    db = None
+    c = cursor
+    try:
+        if owns_cursor:
+            db = get_db()
+            c = db_cursor(db)
+        c.execute(f"SELECT gamemode, rank_name FROM hc_ranks WHERE user_id={ph()}", (user_id,))
+        details = {
+            row["gamemode"]: row["rank_name"]
+            for row in to_list(c.fetchall())
+            if row.get("gamemode") and row.get("rank_name")
+        }
+        return rank_payload(details)
+    except Exception:
+        traceback.print_exc()
+        return rank_payload({})
+    finally:
+        if owns_cursor and c is not None:
+            c.close()
+        if owns_cursor and db is not None:
+            db.close()
+
+
+def enrich_user_with_rank(data, user_id=None, cursor=None):
+    payload = get_rank_payload_for_user(user_id or data.get("id"), cursor)
+    data["primary_rank"] = payload["primary_rank"]
+    data["rank_details"] = payload["rank_details"]
+    return data
+
+
+def is_known_store_spa_path(path):
+    clean = (path or "/").strip("/")
+    return clean in STORE_SPA_ROUTES
+
+
+def build_store_spa_response():
+    return render_template("store.html"), 200
+
+
+def create_purchase_order_record(c, user, cart_items, source_app="store", payment_method="upi", payment_status="awaiting_proof"):
+    if not user:
+        raise ValueError("Authenticated user required")
+    if not cart_items:
+        raise ValueError("Cart is empty")
+
+    rank_info = get_rank_payload_for_user(user["id"], c)
+    total_usd = sum(float(item.get("item_price") or item.get("price") or 0) for item in cart_items)
+    total_inr = round(total_usd * USD_TO_INR, 2)
+    meta = build_purchase_metadata(
+        user=user,
+        items=cart_items,
+        rank_info=rank_info,
+        payment_method=payment_method,
+        payment_status=payment_status,
+        payment_details={
+            "upi_id": UPI_ID,
+            "amount_usd": f"{total_usd:.2f}",
+            "amount_inr": f"{total_inr:.2f}",
+        },
+        source_app=source_app,
+    )
+    now = meta["created_at"]
+    c.execute(
+        f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,status,last_message_at) "
+        f"VALUES({phs(9)})",
+        (meta["ticket_title"], meta["ticket_desc"], user["id"], user.get("email", ""), "store", "purchase", "high", "open", now),
+    )
+    ticket_id = c.lastrowid
+    c.execute(
+        f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type,meta_json) VALUES({phs(5)})",
+        (ticket_id, 1, meta["system_message"], "system", meta["details_json"]),
+    )
+    c.execute(
+        f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
+        (ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}"),
+    )
+    c.execute(
+        f"""INSERT INTO hc_store_orders
+            (user_id, ticket_id, order_code, items, total, status, payment_method, payment_status, source_app, details_json, rank_snapshot, mc_username)
+            VALUES({phs(12)})""",
+        (
+            user["id"],
+            ticket_id,
+            meta["order_code"],
+            meta["items_json"],
+            meta["total_usd"],
+            "pending",
+            payment_method,
+            payment_status,
+            source_app,
+            meta["details_json"],
+            meta["rank_snapshot"],
+            user.get("mc_username", "") or "",
+        ),
+    )
+    order_id = c.lastrowid
+    return {
+        "ticket_id": ticket_id,
+        "order_id": order_id,
+        "order_code": meta["order_code"],
+        "redirect_url": f"/tickets?id={ticket_id}",
+        "details": json.loads(meta["details_json"]),
+    }
+
 def track_event(event_type, product_id=None, product_name="", user_id=None, metadata=""):
     """Track a store analytics event."""
     try:
@@ -371,7 +524,7 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 @app.route("/")
 def index():
-    return render_template("store.html")
+    return build_store_spa_response()
 
 @app.route("/static/<path:f>")
 def static_f(f):
@@ -382,6 +535,13 @@ def static_f(f):
 def main_static(f):
     main_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
     return send_from_directory(main_static_dir, f)
+
+
+@app.route("/<path:p>")
+def catch_all(p):
+    if is_known_store_spa_path("/" + p):
+        return build_store_spa_response()
+    return "Not Found", 404
 
 # ═══════════════════════════════════════════════════════
 # PRODUCTS API
@@ -466,6 +626,14 @@ def create_checkout():
     # Get cart items
     c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     cart_items = to_list(c.fetchall())
+    if not cart_items:
+        c.close(); db.close()
+        return jsonify({"error": "Cart is empty"}), 400
+    result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+    c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
+    db.commit(); c.close(); db.close()
+    track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"]}))
+    return jsonify(result)
     
     if not cart_items:
         c.close(); db.close()
@@ -477,31 +645,46 @@ def create_checkout():
         items_desc = ", ".join([i["item_name"] for i in cart_items])
         
         # 1. Create a ticket on the main site (shared DB)
-        ticket_title = f"Rank Purchase - {request.cu['username']}"
-        ticket_desc = f"Purchase request for: {items_desc}. Total: ${total_usd:.2f}"
+        ticket_title = f"Order #{secrets.token_hex(3).upper()} - {request.cu['username']}"
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category) VALUES({phs(4)})",
-                  (ticket_title, ticket_desc, request.cu["id"], "purchase"))
+        ticket_desc = (
+            f"🛒 **New Store Order**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 **User**: {request.cu['username']}\n"
+            f"📅 **Date**: {now_str}\n"
+            f"📦 **Items**: {items_desc}\n"
+            f"💰 **Total**: ${total_usd:.2f} (₹{total_inr})\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Status: PENDING PAYMENT PROOF"
+        )
+        
+        c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category,priority) VALUES({phs(5)})",
+                  (ticket_title, ticket_desc, request.cu["id"], "purchase", "high"))
         ticket_id = c.lastrowid
         
         # 2. Create an auto-reply systematically (from System ID: 1)
-        # Assuming ID 1 is a system/admin account
         instructions = (
-            f"Hello {request.cu['username']}!\n\n"
-            f"To complete your purchase of **{items_desc}**, please follow these steps:\n\n"
-            f"1. **Pay via UPI**: Send **₹{total_inr}** to UPI ID: `{UPI_ID}`\n"
-            f"2. **Attach Screenshot**: Once paid, reply to this ticket with a screenshot of the transaction.\n\n"
-            f"An administrator will verify your payment and grant your rank manually. Thank you!"
+            f"Hello **{request.cu['username']}**! Thank you for your order.\n\n"
+            f"To complete your purchase, please follow these instructions:\n\n"
+            f"1️⃣ **Payment Amount**: ₹{total_inr}\n"
+            f"2️⃣ **UPI ID**: `{UPI_ID}`\n"
+            f"3️⃣ **Proof**: Reply to this ticket with a **screenshot** of your successful payment.\n\n"
+            f"Once received, our staff will verify the transaction and grant your rewards. 🚀"
         )
-        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content) VALUES({phs(3)})",
-                  (ticket_id, 1, instructions))
+        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type) VALUES({phs(4)})",
+                  (ticket_id, 1, instructions, "system"))
+        
+        # Add Activity
+        c.execute(f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
+                  (ticket_id, request.cu["id"], "order_created", f"Created order for {items_desc}"))
         
         # 3. Create store order record
         items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
         c.execute(f"""INSERT INTO hc_store_orders
             (user_id, ticket_id, items, total, status, mc_username)
             VALUES({phs(6)})""",
-            (request.cu["id"], ticket_id, items_json, total_usd, "ticket_open", request.cu.get("mc_username", "")))
+            (request.cu["id"], ticket_id, items_json, total_usd, "pending", request.cu.get("mc_username", "")))
         
         # 4. Clear cart
         c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
@@ -528,8 +711,19 @@ def auth_me():
     token = request.headers.get("X-Auth-Token", "") or request.cookies.get("hc_token", "")
     u = get_user_by_token(token)
     if not u: return jsonify({"error":"Not logged in"}), 401
-    return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
-                    "mc_username":u.get("mc_username","") or "","role":u["role"]})
+    
+    db = get_db(); c = db_cursor(db)
+    payload = enrich_user_with_rank({
+        "id":u["id"],
+        "username":u["username"],
+        "email":u["email"],
+        "mc_username":u.get("mc_username","") or "",
+        "role":u["role"],
+    }, u["id"], c)
+    payload["ranks"] = payload["rank_details"]
+    c.close(); db.close()
+
+    return jsonify(payload)
 
 @app.route("/api/auth/login", methods=["POST"])
 def login():
@@ -548,9 +742,26 @@ def login():
             db.close(); return jsonify({"error":"Wrong credentials"}), 401
         tok = secrets.token_hex(32)
         c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, row["id"]))
+        payload = enrich_user_with_rank({
+            "token": tok,
+            "id": row["id"],
+            "username": row["username"],
+            "email": row["email"],
+            "mc_username": row.get("mc_username","") or "",
+            "role": row["role"],
+        }, row["id"], c)
         db.commit(); c.close(); db.close()
-        return jsonify({"token":tok,"id":row["id"],"username":row["username"],
-                        "email":row["email"],"mc_username":row.get("mc_username","") or "","role":row["role"]})
+        resp = jsonify(payload)
+        resp.set_cookie(
+            "hc_token",
+            tok,
+            max_age=60*60*24*30,
+            path="/",
+            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            samesite="None",
+            secure=True
+        )
+        return resp
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error":f"Server error: {e}"}), 500
@@ -713,12 +924,24 @@ def admin_orders():
         r["created_at"] = ts(r.get("created_at",""))
         try: r["items"] = json.loads(r.get("items","[]"))
         except: r["items"] = []
+        try: r["details_json"] = json.loads(r.get("details_json","{}"))
+        except: r["details_json"] = {}
+        try: r["rank_snapshot"] = json.loads(r.get("rank_snapshot","{}"))
+        except: r["rank_snapshot"] = {}
     return jsonify(rows)
 
 # ═══════════════════════════════════════════════════════
 # INIT & RUN
 # ═══════════════════════════════════════════════════════
 init_store_db()
+
+@app.errorhandler(404)
+def not_found(e):
+    if is_known_store_spa_path(request.path):
+        return build_store_spa_response()
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Not found"}), 404
+    return "Not Found", 404
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
