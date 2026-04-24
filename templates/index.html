@@ -5769,25 +5769,36 @@
         console.log("[Push] Registering Service Worker...");
         const reg = await navigator.serviceWorker.register('/sw.js');
         const activeReg = await navigator.serviceWorker.ready;
-        console.log("[Push] SW Ready, fetching subscription...");
-        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+        console.log("[Push] SW Ready, cleaning up old subscriptions...");
+        
         let sub = await activeReg.pushManager.getSubscription();
-        if (!sub) {
-          console.log("[Push] No existing sub, creating new one...");
-          sub = await activeReg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey)
-          });
+        if (sub) {
+          console.log("[Push] Found existing sub, unsubscribing to reset...");
+          await sub.unsubscribe();
         }
+
+        console.log("[Push] Fetching fresh subscription...");
+        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+        
+        sub = await activeReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        });
+
         console.log("[Push] Sending sub to backend...");
         await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
         toast('ok', 'Notifications enabled successfully!');
         return true;
       } catch (e) {
         console.error('[Push] Setup failed:', e);
-        toast('err', 'Could not enable notifications: ' + e.message);
+        toast('err', 'Notification Error: ' + e.message);
+        // Fallback: suggest hard reset
+        if (e.message.includes('push service error')) {
+           toast('warn', 'Try clearing site data or using a non-incognito window.');
+        }
         return false;
       }
+
     }
 
     let searchDebounce;
