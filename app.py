@@ -343,7 +343,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_users(
   email VARCHAR(200) UNIQUE NOT NULL,
   username VARCHAR(50) UNIQUE NOT NULL,
   mc_username VARCHAR(50) DEFAULT '',
-  mc_verified INTEGER DEFAULT 0,
+  is_verified INTEGER DEFAULT 0,
   password_hash VARCHAR(100) NOT NULL,
   session_token VARCHAR(120),
   role VARCHAR(30) DEFAULT 'player',
@@ -603,9 +603,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
     except: 
         pass
     try:
-        c.execute("ALTER TABLE hc_users ADD COLUMN mc_verified INTEGER DEFAULT 0")
+        c.execute("ALTER TABLE hc_users ADD COLUMN is_verified INTEGER DEFAULT 0")
     except:
         pass
+
 
 
     db.commit() # <── Commit migrations
@@ -1612,8 +1613,9 @@ def ticket_create():
         return jsonify({"error": "Email required for guest tickets"}), 400
 
     if u and u.get("role") not in STAFF_ROLES:
-        if not u.get("mc_verified"):
+        if not u.get("is_verified"):
              return jsonify({"error": "Please verify your Minecraft identity to create support tickets."}), 403
+
 
 
     db = get_db(); c = db_cursor(db)
@@ -2441,7 +2443,7 @@ def admin_verify_user(uid):
     d = request.get_json(force=True) or {}
     status = 1 if d.get("verified") else 0
     db = get_db(); c = db_cursor(db)
-    c.execute(f"UPDATE hc_users SET mc_verified={ph()} WHERE id={ph()}", (status, uid))
+    c.execute(f"UPDATE hc_users SET is_verified={ph()} WHERE id={ph()}", (status, uid))
     db.commit()
     return jsonify({"success":True})
 
