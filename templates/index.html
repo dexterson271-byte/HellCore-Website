@@ -5801,6 +5801,7 @@
         console.log("[Push] Converted Key Bytes:", convertedKey.length);
         
         console.log("[Push] Calling subscribe()...");
+        let sub;
         try {
           sub = await activeReg.pushManager.subscribe({
             userVisibleOnly: true,
