@@ -47,6 +47,12 @@ import urllib.request
 import urllib.error
 import mysql.connector
 from mysql.connector import pooling
+import sys
+# Ensure current directory is in path for shared_store import
+_curr_dir = os.path.dirname(os.path.abspath(__file__))
+if _curr_dir not in sys.path:
+    sys.path.append(_curr_dir)
+
 from shared_store import build_purchase_metadata, rank_payload
 
 # Load environment variables for local testing
