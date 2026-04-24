@@ -9,10 +9,10 @@
 import os
 import sys
 
-# Ensure parent directory is in path for shared_store import
-parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if parent_dir not in sys.path:
-    sys.path.append(parent_dir)
+# Ensure current directory is in path for shared_store import
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+if curr_dir not in sys.path:
+    sys.path.append(curr_dir)
 
 import sqlite3
 import json
