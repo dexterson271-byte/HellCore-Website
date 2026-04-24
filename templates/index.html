@@ -18,9 +18,11 @@
     crossorigin="anonymous"></script>
 
   <!-- Embed / Social Meta Tags -->
-  <meta name="description" content="Hellcore Network — The ultimate Bedwars & Skywars experience. Join mc.hellcore.net for the best Minecraft competitive gameplay!">
+  <meta name="description"
+    content="Hellcore Network — The ultimate Bedwars & Skywars experience. Join mc.hellcore.net for the best Minecraft competitive gameplay!">
   <meta property="og:title" content="Hellcore Network — mc.hellcore.net">
-  <meta property="og:description" content="Join the most balanced and competitive Bedwars and Skywars network. Premium experience, lag-free gameplay.">
+  <meta property="og:description"
+    content="Join the most balanced and competitive Bedwars and Skywars network. Premium experience, lag-free gameplay.">
   <meta property="og:image" content="https://hellcore.net/static/logo.png">
   <meta property="og:url" content="https://hellcore.net">
   <meta property="og:type" content="website">
@@ -48,7 +50,7 @@
       --tx: #ffffff;
       --tx2: #b4b4b4;
       --tx3: #71717a;
-      
+
       --glass: rgba(255, 255, 255, 0.03);
       --glass-border: rgba(255, 255, 255, 0.1);
       --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -88,7 +90,7 @@
       height: 150%;
       top: -25%;
       left: -25%;
-      background: 
+      background:
         radial-gradient(circle at 20% 20%, rgba(255, 81, 47, 0.15) 0%, transparent 40%),
         radial-gradient(circle at 80% 80%, rgba(221, 36, 118, 0.15) 0%, transparent 40%),
         radial-gradient(circle at 50% 50%, rgba(15, 15, 18, 1) 0%, transparent 100%);
@@ -97,16 +99,21 @@
     }
 
     @keyframes meshGradient {
-      0% { transform: rotate(0deg) scale(1); }
-      100% { transform: rotate(10deg) scale(1.1); }
+      0% {
+        transform: rotate(0deg) scale(1);
+      }
+
+      100% {
+        transform: rotate(10deg) scale(1.1);
+      }
     }
 
     .grid-bg {
       position: fixed;
       inset: 0;
-      background-image: 
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
       background-size: 50px 50px;
       z-index: 0;
       pointer-events: none;
@@ -425,7 +432,7 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
       transition: 0.5s;
     }
 
@@ -462,7 +469,7 @@
       background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.3);
       transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
 
     .bred {
@@ -519,7 +526,7 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       transition: transform 0.3s;
     }
-    
+
     .p2:hover {
       transform: translateZ(20px);
     }
@@ -627,79 +634,425 @@
     }
 
     @media(max-width: 580px) {
-      .g2, .g3, .g4 { grid-template-columns: 1fr; }
+
+      .g2,
+      .g3,
+      .g4 {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* ═══════ ADMIN SIDEBAR LAYOUT ═══════ */
-    .adm-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 85vh; background: var(--bg2); border-radius: 12px; overflow: hidden; border: 1px solid var(--bd); margin: 20px auto; max-width: 1400px; }
-    .adm-sidebar { background: var(--bg1); border-right: 1px solid var(--bd); display: flex; flex-direction: column; }
-    .adm-sidebar-head { padding: 20px; display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; border-bottom: 1px solid var(--bd); }
-    .adm-nav { padding: 15px 10px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
-    .adm-nav-btn { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-radius: 8px; color: var(--tx2); font-weight: 500; transition: all .2s; border: none; background: transparent; text-align: left; cursor: pointer; }
-    .adm-nav-btn .ic { width: 18px; height: 18px; opacity: 0.7; }
-    .adm-nav-btn:hover { background: var(--bg2); color: var(--tx1); }
-    .adm-nav-btn.ON { background: var(--g); color: #000; font-weight: 700; }
-    .adm-nav-btn.ON .ic { opacity: 1; }
-    .adm-nav-divider { height: 1px; background: var(--bd); margin: 10px 5px; }
-    .adm-main { padding: 25px; overflow-y: auto; max-height: 85vh; background: var(--bg2); }
-    .adm-sidebar-foot { padding: 15px; border-top: 1px solid var(--bd); }
+    .adm-shell {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 85vh;
+      background: var(--bg2);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--bd);
+      margin: 20px auto;
+      max-width: 1400px;
+    }
+
+    .adm-sidebar {
+      background: var(--bg1);
+      border-right: 1px solid var(--bd);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .adm-sidebar-head {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--bd);
+    }
+
+    .adm-nav {
+      padding: 15px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .adm-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 15px;
+      border-radius: 8px;
+      color: var(--tx2);
+      font-weight: 500;
+      transition: all .2s;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .adm-nav-btn .ic {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .adm-nav-btn:hover {
+      background: var(--bg2);
+      color: var(--tx1);
+    }
+
+    .adm-nav-btn.ON {
+      background: var(--g);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .adm-nav-btn.ON .ic {
+      opacity: 1;
+    }
+
+    .adm-nav-divider {
+      height: 1px;
+      background: var(--bd);
+      margin: 10px 5px;
+    }
+
+    .adm-main {
+      padding: 25px;
+      overflow-y: auto;
+      max-height: 85vh;
+      background: var(--bg2);
+    }
+
+    .adm-sidebar-foot {
+      padding: 15px;
+      border-top: 1px solid var(--bd);
+    }
 
     @media(max-width: 1000px) {
-      .adm-shell { grid-template-columns: 1fr; }
-      .adm-sidebar { border-right: none; border-bottom: 1px solid var(--bd); }
-      .adm-nav { flex-direction: row; overflow-x: auto; padding: 10px; white-space: nowrap; }
-      .adm-nav-btn span { display: none; }
-      .adm-nav-btn { padding: 10px; }
-      .adm-sidebar-head { justify-content: center; }
-      .adm-sidebar-foot { display: none; }
+      .adm-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .adm-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--bd);
+      }
+
+      .adm-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 10px;
+        white-space: nowrap;
+      }
+
+      .adm-nav-btn span {
+        display: none;
+      }
+
+      .adm-nav-btn {
+        padding: 10px;
+      }
+
+      .adm-sidebar-head {
+        justify-content: center;
+      }
+
+      .adm-sidebar-foot {
+        display: none;
+      }
     }
 
     /* ═══════ ADMIN UI COMPONENTS ═══════ */
-    .adm-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .adm-badge.open { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
-    .adm-badge.closed { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .adm-badge.priority { background: rgba(234, 179, 8, 0.2); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.3); }
-    .adm-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .adm-table th { text-align: left; padding: 12px; border-bottom: 2px solid var(--bd); color: var(--tx3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-    .adm-table td { padding: 12px; border-bottom: 1px solid var(--bd); font-size: 0.85rem; color: var(--tx2); }
-    .adm-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .adm-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 10px; padding: 15px; transition: all 0.3s ease; }
-    .adm-card:hover { border-color: var(--g); }
-    .adm-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-    .adm-stat-card { background: var(--bg1); border: 1px solid var(--bd); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 5px; }
-    .adm-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--tx1); }
-    .adm-stat-lbl { font-size: 0.7rem; color: var(--tx3); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
-    
+    .adm-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .adm-badge.open {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .adm-badge.closed {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .adm-badge.priority {
+      background: rgba(234, 179, 8, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(234, 179, 8, 0.3);
+    }
+
+    .adm-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .adm-table th {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 2px solid var(--bd);
+      color: var(--tx3);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .adm-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--bd);
+      font-size: 0.85rem;
+      color: var(--tx2);
+    }
+
+    .adm-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .adm-card {
+      background: var(--bg1);
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      padding: 15px;
+      transition: all 0.3s ease;
+    }
+
+    .adm-card:hover {
+      border-color: var(--g);
+    }
+
+    .adm-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .adm-stat-card {
+      background: var(--bg1);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .adm-stat-val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--tx1);
+    }
+
+    .adm-stat-lbl {
+      font-size: 0.7rem;
+      color: var(--tx3);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
     /* User Management Enhancements */
-    .hl { background: rgba(255, 255, 0, 0.2); color: #fff; padding: 0 2px; border-radius: 2px; }
-    .adm-user-row { cursor: pointer; transition: background 0.2s; }
-    .adm-user-details { display: none; padding: 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--bd); animation: slideDown 0.3s ease; }
-    .adm-user-details.ON { display: block; }
-    .role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
-    .role-btn { padding: 6px; border: 1px solid var(--bd); border-radius: 6px; background: var(--bg1); color: var(--tx2); font-size: 0.7rem; cursor: pointer; transition: 0.2s; text-align: center; }
-    .role-btn:hover { background: var(--bd); }
-    .role-btn.ON { background: var(--g); color: #000; border-color: var(--g); font-weight: 700; }
+    .hl {
+      background: rgba(255, 255, 0, 0.2);
+      color: #fff;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
 
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+    .adm-user-row {
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-    .cmd-hint-item { padding: 8px 12px; cursor: pointer; border-radius: 6px; display: flex; flex-direction: column; gap: 2px; }
-    .cmd-hint-item:hover, .cmd-hint-item.ON { background: var(--bg3); }
-    .cmd-hint-name { font-weight: 700; font-family: monospace; font-size: 0.85rem; color: var(--g); }
-    .cmd-hint-desc { font-size: 0.7rem; color: var(--tx3); }
-    .cmd-hint-cat { font-size: 0.6rem; text-transform: uppercase; color: var(--tx3); opacity: 0.6; align-self: flex-end; }
+    .adm-user-details {
+      display: none;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--bd);
+      animation: slideDown 0.3s ease;
+    }
+
+    .adm-user-details.ON {
+      display: block;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .role-btn {
+      padding: 6px;
+      border: 1px solid var(--bd);
+      border-radius: 6px;
+      background: var(--bg1);
+      color: var(--tx2);
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: center;
+    }
+
+    .role-btn:hover {
+      background: var(--bd);
+    }
+
+    .role-btn.ON {
+      background: var(--g);
+      color: #000;
+      border-color: var(--g);
+      font-weight: 700;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .cmd-hint-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cmd-hint-item:hover,
+    .cmd-hint-item.ON {
+      background: var(--bg3);
+    }
+
+    .cmd-hint-name {
+      font-weight: 700;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--g);
+    }
+
+    .cmd-hint-desc {
+      font-size: 0.7rem;
+      color: var(--tx3);
+    }
+
+    .cmd-hint-cat {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: var(--tx3);
+      opacity: 0.6;
+      align-self: flex-end;
+    }
 
     /* Verification Overlay */
-    .lock-overlay { position: absolute; inset: 0; background: rgba(9,9,11,0.92); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 12px; border: 1px solid var(--bd); }
-    .lock-card { max-width: 400px; padding: 40px 20px; animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    .verify-code-box { background: var(--bg2); border: 2px dashed var(--g); border-radius: 12px; padding: 15px; font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: 5px; color: var(--g); margin: 20px 0; }
-    .verify-step { display: flex; align-items: center; gap: 15px; text-align: left; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.85rem; }
-    .verify-num { width: 24px; height: 24px; background: var(--g); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+    .lock-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 9, 11, 0.92);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 12px;
+      border: 1px solid var(--bd);
+    }
+
+    .lock-card {
+      max-width: 400px;
+      padding: 40px 20px;
+      animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .verify-code-box {
+      background: var(--bg2);
+      border: 2px dashed var(--g);
+      border-radius: 12px;
+      padding: 15px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 5px;
+      color: var(--g);
+      margin: 20px 0;
+    }
+
+    .verify-step {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      text-align: left;
+      margin-bottom: 15px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .verify-num {
+      width: 24px;
+      height: 24px;
+      background: var(--g);
+      color: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
 
     @media(max-width: 850px) {
-      #ADM-CHAT-GRID { grid-template-columns: 1fr !important; height: auto !important; }
-      #ADM-CHAT-GRID > div:first-child { max-height: 200px; }
-      #pg-admin .g4 { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+      #ADM-CHAT-GRID {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+      }
+
+      #ADM-CHAT-GRID>div:first-child {
+        max-height: 200px;
+      }
+
+      #pg-admin .g4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px;
+      }
     }
 
     /* ═══════ FORMS ═══════ */
@@ -1174,7 +1527,7 @@
       overflow: hidden;
       flex-shrink: 0;
       border: 2px solid var(--glass-border);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
 
     .tmsg-av img {
@@ -1228,7 +1581,8 @@
       border-radius: 4px 8px 8px 4px;
       margin-left: 58px;
       padding: 16px;
-      display: block; /* Overrides flex for embeds */
+      display: block;
+      /* Overrides flex for embeds */
     }
 
     .tmsg.system .tmsg-header {
@@ -1255,23 +1609,126 @@
       margin-left: 4px;
     }
 
-    .tix-dc { display:grid; grid-template-columns:280px minmax(400px, 1fr) 280px; gap:12px; min-height:72vh; }
-    .tix-left,.tix-mid,.tix-right { background:rgba(8,8,8,0.45); border:1px solid var(--bd); border-radius:12px; overflow:hidden; }
-    .tix-head { padding:12px; border-bottom:1px solid var(--bd); display:grid; gap:8px; }
-    .tix-item { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; }
-    .tix-item:hover { background:rgba(255,255,255,0.04); }
-    .tix-item.on { background:rgba(255,81,47,0.12); border-left:3px solid var(--g); }
-    .tix-chat-head { padding:12px 16px; border-bottom:1px solid var(--bd); font-weight:700; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-    .tix-chat-body { min-height:48vh; max-height:52vh; overflow:auto; padding:8px 0; }
-    .tix-composer { border-top:1px solid var(--bd); padding:12px; background:rgba(0,0,0,0.2); }
-    .tix-side { padding:12px; display:grid; gap:12px; }
-    .tix-chip { font-size:.68rem; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.05em; }
-    .tix-chip.open { background:rgba(16,185,129,0.2); color:#34d399; }
-    .tix-chip.closed { background:rgba(239,68,68,0.2); color:#f87171; }
-    .tix-mention { color:#fbbf24; background:rgba(251,191,36,0.12); padding:1px 4px; border-radius:4px; }
-    .tix-act { border:1px solid var(--bd); border-radius:10px; padding:8px 10px; font-size:.78rem; background:rgba(255,255,255,0.02); }
-    @media(max-width:1400px){ .tix-dc { grid-template-columns:280px 1fr; } .tix-right { grid-column:1 / -1; } .tix-side { grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); } }
-    @media(max-width:800px){ .tix-dc { grid-template-columns:1fr; } }
+    .tix-dc {
+      display: grid;
+      grid-template-columns: 280px minmax(400px, 1fr) 280px;
+      gap: 12px;
+      min-height: 72vh;
+    }
+
+    .tix-left,
+    .tix-mid,
+    .tix-right {
+      background: rgba(8, 8, 8, 0.45);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .tix-head {
+      padding: 12px;
+      border-bottom: 1px solid var(--bd);
+      display: grid;
+      gap: 8px;
+    }
+
+    .tix-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+    }
+
+    .tix-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tix-item.on {
+      background: rgba(255, 81, 47, 0.12);
+      border-left: 3px solid var(--g);
+    }
+
+    .tix-chat-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--bd);
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tix-chat-body {
+      min-height: 48vh;
+      max-height: 52vh;
+      overflow: auto;
+      padding: 8px 0;
+    }
+
+    .tix-composer {
+      border-top: 1px solid var(--bd);
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .tix-side {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .tix-chip {
+      font-size: .68rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .tix-chip.open {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .tix-chip.closed {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .tix-mention {
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.12);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .tix-act {
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: .78rem;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    @media(max-width:1400px) {
+      .tix-dc {
+        grid-template-columns: 280px 1fr;
+      }
+
+      .tix-right {
+        grid-column: 1 / -1;
+      }
+
+      .tix-side {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+    }
+
+    @media(max-width:800px) {
+      .tix-dc {
+        grid-template-columns: 1fr;
+      }
+    }
 
     /* ═══════ HERO ═══════ */
     .hero {
@@ -3100,7 +3557,8 @@
         display: none;
       }
 
-      #A-IN button, #A-OUT button {
+      #A-IN button,
+      #A-OUT button {
         padding: 6px 12px;
         font-size: 0.75rem;
         height: 32px;
@@ -3122,15 +3580,19 @@
       }
 
       /* Admin UI Fixes */
-      #pg-admin .tabs, #pg-profile .tabs { 
-        flex-wrap: nowrap; 
-        overflow-x: auto; 
-        scrollbar-width: none; 
+      #pg-admin .tabs,
+      #pg-profile .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
       }
-      #pg-admin .tabs::-webkit-scrollbar, #pg-profile .tabs::-webkit-scrollbar { 
-        display: none; 
+
+      #pg-admin .tabs::-webkit-scrollbar,
+      #pg-profile .tabs::-webkit-scrollbar {
+        display: none;
       }
-      #ADM-CHAT-GRID { 
+
+      #ADM-CHAT-GRID {
         grid-template-columns: 1fr !important;
         grid-template-rows: max-content 1fr;
         height: 70vh !important;
@@ -3791,7 +4253,9 @@
       </div>
 
       <button class="nburger" id="NBURGER" onclick="toggleMobileMenu()">
-        <svg class="ic"><use href="#ic-menu" /></svg>
+        <svg class="ic">
+          <use href="#ic-menu" />
+        </svg>
       </button>
 
       <div class="nlinks">
@@ -3854,16 +4318,31 @@
           <div class="nlogo-t"><b>HELLCORE</b><small>NETWORK</small></div>
         </div>
         <button class="nclose" onclick="toggleMobileMenu(false)">
-          <svg class="ic"><use href="#ic-x" /></svg>
+          <svg class="ic">
+            <use href="#ic-x" />
+          </svg>
         </button>
       </div>
       <div class="mlinks">
-        <button class="nb" onclick="GO('home'); toggleMobileMenu(false)"><svg class="ic"><use href="#ic-earth"/></svg> Home</button>
-        <button class="nb" onclick="window.location.href='https://store.hellcore.net'; toggleMobileMenu(false)"><svg class="ic"><use href="#ic-cart"/></svg> Store</button>
-        <button class="nb" onclick="GO('players'); toggleMobileMenu(false)"><svg class="ic"><use href="#ic-user"/></svg> Players</button>
-        <button class="nb" onclick="GO('forums'); toggleMobileMenu(false)"><svg class="ic"><use href="#ic-chat"/></svg> Forums</button>
-        <button class="nb" onclick="GO('rules'); toggleMobileMenu(false)"><svg class="ic"><use href="#ic-scroll"/></svg> Rules</button>
-        <button class="nb" onclick="GO('about'); toggleMobileMenu(false)"><svg class="ic"><use href="#ic-info"/></svg> About</button>
+        <button class="nb" onclick="GO('home'); toggleMobileMenu(false)"><svg class="ic">
+            <use href="#ic-earth" />
+          </svg> Home</button>
+        <button class="nb" onclick="window.location.href='https://store.hellcore.net'; toggleMobileMenu(false)"><svg
+            class="ic">
+            <use href="#ic-cart" />
+          </svg> Store</button>
+        <button class="nb" onclick="GO('players'); toggleMobileMenu(false)"><svg class="ic">
+            <use href="#ic-user" />
+          </svg> Players</button>
+        <button class="nb" onclick="GO('forums'); toggleMobileMenu(false)"><svg class="ic">
+            <use href="#ic-chat" />
+          </svg> Forums</button>
+        <button class="nb" onclick="GO('rules'); toggleMobileMenu(false)"><svg class="ic">
+            <use href="#ic-scroll" />
+          </svg> Rules</button>
+        <button class="nb" onclick="GO('about'); toggleMobileMenu(false)"><svg class="ic">
+            <use href="#ic-info" />
+          </svg> About</button>
       </div>
     </div>
 
@@ -3964,24 +4443,46 @@
         <!-- SIDEBAR -->
         <aside class="adm-sidebar" id="ADM-SIDEBAR">
           <div class="adm-sidebar-head">
-            <svg class="ic" style="color:var(--g);width:20px;height:20px"><use href="#ic-wrench" /></svg>
+            <svg class="ic" style="color:var(--g);width:20px;height:20px">
+              <use href="#ic-wrench" />
+            </svg>
             <span style="flex:1">NEXUS</span>
-            <div id="SYS-STATUS-Pill" style="font-size:0.5rem;display:flex;align-items:center;gap:4px;background:rgba(34, 197, 94, 0.1);color:#4ade80;padding:3px 8px;border-radius:20px;border:1px solid rgba(34, 197, 94, 0.2)">
-              <span style="width:5px;height:5px;background:#4ade80;border-radius:50%;box-shadow:0 0 5px #4ade80"></span> ONLINE
+            <div id="SYS-STATUS-Pill"
+              style="font-size:0.5rem;display:flex;align-items:center;gap:4px;background:rgba(34, 197, 94, 0.1);color:#4ade80;padding:3px 8px;border-radius:20px;border:1px solid rgba(34, 197, 94, 0.2)">
+              <span style="width:5px;height:5px;background:#4ade80;border-radius:50%;box-shadow:0 0 5px #4ade80"></span>
+              ONLINE
             </div>
           </div>
           <nav class="adm-nav">
-            <button id="ADM-TAB-NODE" class="adm-nav-btn ON" onclick="admT('node')"><svg class="ic"><use href="#ic-chart" /></svg><span>Dashboard</span></button>
-            <button id="ADM-TAB-PLAYERS" class="adm-nav-btn" onclick="admT('players')"><svg class="ic"><use href="#ic-users" /></svg><span>Users</span></button>
-            <button id="ADM-TAB-STAFF" class="adm-nav-btn" onclick="admT('staff')"><svg class="ic"><use href="#ic-shield" /></svg><span>Staff</span></button>
-            <button id="ADM-TAB-TICKETS" class="adm-nav-btn" onclick="admT('tickets')"><svg class="ic"><use href="#ic-mail" /></svg><span>Tickets</span></button>
+            <button id="ADM-TAB-NODE" class="adm-nav-btn ON" onclick="admT('node')"><svg class="ic">
+                <use href="#ic-chart" />
+              </svg><span>Dashboard</span></button>
+            <button id="ADM-TAB-PLAYERS" class="adm-nav-btn" onclick="admT('players')"><svg class="ic">
+                <use href="#ic-users" />
+              </svg><span>Users</span></button>
+            <button id="ADM-TAB-STAFF" class="adm-nav-btn" onclick="admT('staff')"><svg class="ic">
+                <use href="#ic-shield" />
+              </svg><span>Staff</span></button>
+            <button id="ADM-TAB-TICKETS" class="adm-nav-btn" onclick="admT('tickets')"><svg class="ic">
+                <use href="#ic-mail" />
+              </svg><span>Tickets</span></button>
             <div class="adm-nav-divider"></div>
-            <button id="ADM-TAB-CHAT" class="adm-nav-btn" onclick="admT('chat')"><svg class="ic"><use href="#ic-chat" /></svg><span>Staff Chat</span></button>
-            <button id="ADM-TAB-LOGS" class="adm-nav-btn" onclick="admT('logs')"><svg class="ic"><use href="#ic-history" /></svg><span>Audit Logs</span></button>
-            <button id="ADM-TAB-FORUMS" class="adm-nav-btn" onclick="admT('forums')"><svg class="ic"><use href="#ic-layers" /></svg><span>Forums</span></button>
-            <button id="ADM-TAB-EVENTS" class="adm-nav-btn" onclick="admT('events')"><svg class="ic"><use href="#ic-bolt" /></svg><span>Events</span></button>
+            <button id="ADM-TAB-CHAT" class="adm-nav-btn" onclick="admT('chat')"><svg class="ic">
+                <use href="#ic-chat" />
+              </svg><span>Staff Chat</span></button>
+            <button id="ADM-TAB-LOGS" class="adm-nav-btn" onclick="admT('logs')"><svg class="ic">
+                <use href="#ic-history" />
+              </svg><span>Audit Logs</span></button>
+            <button id="ADM-TAB-FORUMS" class="adm-nav-btn" onclick="admT('forums')"><svg class="ic">
+                <use href="#ic-layers" />
+              </svg><span>Forums</span></button>
+            <button id="ADM-TAB-EVENTS" class="adm-nav-btn" onclick="admT('events')"><svg class="ic">
+                <use href="#ic-bolt" />
+              </svg><span>Events</span></button>
             <div class="adm-nav-divider"></div>
-            <button id="ADM-TAB-MGMT" class="adm-nav-btn" onclick="admT('mgmt')"><svg class="ic"><use href="#ic-wrench" /></svg><span>Controls</span></button>
+            <button id="ADM-TAB-MGMT" class="adm-nav-btn" onclick="admT('mgmt')"><svg class="ic">
+                <use href="#ic-wrench" />
+              </svg><span>Controls</span></button>
           </nav>
           <div class="adm-sidebar-foot">
             <div style="font-size:0.6rem;color:var(--tx3);text-align:center">Hellcore Nexus v7.3</div>
@@ -3990,211 +4491,230 @@
         <!-- MAIN CONTENT -->
         <div class="adm-main">
 
-        <!-- Node Overview -->
-        <div id="ADM-NODE">
-          <div class="adm-stat-grid">
-            <div class="adm-stat-card">
-              <div class="adm-stat-lbl">Sync Status</div>
-              <div id="ADM-SYNC-STATUS" class="adm-stat-val" style="color:var(--g)">ONLINE</div>
-            </div>
-            <div class="adm-stat-card">
-              <div class="adm-stat-lbl">Total Users</div>
-              <div id="ADM-TOTAL-USERS" class="adm-stat-val">0</div>
-            </div>
-            <div class="adm-stat-card">
-              <div class="adm-stat-lbl">Pending CMDs</div>
-              <div id="ADM-PENDING-CMD" class="adm-stat-val" style="color:var(--r2)">0</div>
-            </div>
-            <div class="adm-stat-card">
-              <div class="adm-stat-lbl">Active Staff</div>
-              <div id="ADM-STAFF-COUNT" class="adm-stat-val" style="color:var(--g)">0</div>
-            </div>
-          </div>
-          
-          <div class="p" style="margin-bottom:20px">
-            <div class="stitle"><svg class="ic"><use href="#ic-chart" /></svg> Network Activity (Last 7 Days)</div>
-            <canvas id="admActivityChart" style="max-height:250px;width:100%"></canvas>
-          </div>
-          
-          <div class="g2">
-            <div class="p">
-              <div class="stitle"><svg class="ic"><use href="#ic-history" /></svg> Recent System Activity</div>
-              <div id="ADM-LOGS-MINI" style="max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:10px">
-                <div class="ld"><div class="sp"></div></div>
+          <!-- Node Overview -->
+          <div id="ADM-NODE">
+            <div class="adm-stat-grid">
+              <div class="adm-stat-card">
+                <div class="adm-stat-lbl">Sync Status</div>
+                <div id="ADM-SYNC-STATUS" class="adm-stat-val" style="color:var(--g)">ONLINE</div>
+              </div>
+              <div class="adm-stat-card">
+                <div class="adm-stat-lbl">Total Users</div>
+                <div id="ADM-TOTAL-USERS" class="adm-stat-val">0</div>
+              </div>
+              <div class="adm-stat-card">
+                <div class="adm-stat-lbl">Pending CMDs</div>
+                <div id="ADM-PENDING-CMD" class="adm-stat-val" style="color:var(--r2)">0</div>
+              </div>
+              <div class="adm-stat-card">
+                <div class="adm-stat-lbl">Active Staff</div>
+                <div id="ADM-STAFF-COUNT" class="adm-stat-val" style="color:var(--g)">0</div>
               </div>
             </div>
-            <div class="p">
-              <div class="stitle"><svg class="ic"><use href="#ic-user" /></svg> Staff Online Now</div>
-              <div id="ADM-ONLINE-TEAM" style="display:grid;grid-template-columns:1fr;gap:10px">
-                 <div style="color:var(--tx3);font-size:0.8rem">Refreshing...</div>
-              </div>
+
+            <div class="p" style="margin-bottom:20px">
+              <div class="stitle"><svg class="ic">
+                  <use href="#ic-chart" />
+                </svg> Network Activity (Last 7 Days)</div>
+              <canvas id="admActivityChart" style="max-height:250px;width:100%"></canvas>
             </div>
-          </div>
-        </div>
 
-        <!-- Player Management -->
-        <div id="ADM-PLAYERS" style="display:none">
-          <div class="p">
-            <div class="stitle">User Search</div>
-            <div class="fg" style="display:flex;gap:7px"><input id="ADM-P-SEARCH" class="inp"
-                placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP()"><button class="btn"
-                onclick="admSearchP()">Search</button></div>
-            <div class="dv"></div>
-            <div id="ADM-P-RES"></div>
-          </div>
-        </div>
-
-        <div id="ADM-STAFF" style="display:none">
-          <div class="p">
-            <div class="stitle">Network Staff Team</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">List of all active moderators, developers,
-              and administrators.</p>
-            <div id="ADM-S-LIST"></div>
-          </div>
-        </div>
-
-        <div id="ADM-LOGS" style="display:none">
-          <div class="p">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-              <div>
-                <div class="stitle" style="margin:0">Audit Trail</div>
-                <p style="color:var(--tx2);font-size:.8rem">Complete history of administrative actions.</p>
-              </div>
-              <div style="display:flex;gap:10px">
-                <select id="AUDIT-TYPE-FILTER" class="inp" style="width:140px;padding:5px" onchange="loadNexusLogs()">
-                  <option value="">All Actions</option>
-                  <option value="role_change">Role Changes</option>
-                  <option value="command_exec">Commands</option>
-                  <option value="ticket">Tickets</option>
-                </select>
-                <button class="bto bsm" onclick="exportAudit('csv')">Export CSV</button>
-              </div>
-            </div>
-            <div id="ADM-L-LIST"></div>
-          </div>
-        </div>
-
-        <!-- Forum Moderation -->
-        <div id="ADM-FORUMS" style="display:none">
-          <div class="p">
-            <div class="stitle">Forum Moderation</div>
-            <div id="ADM-F-LIST"></div>
-          </div>
-        </div>
-
-        <!-- Ticket Management -->
-        <div id="ADM-TICKETS" style="display:none">
-          <div class="p">
-            <div class="stitle">Support Queue</div>
-            <div id="ADM-T-QUEUE"></div>
-          </div>
-        </div>
-
-        <!-- Events Management -->
-        <div id="ADM-CHAT" style="display:none">
-          <div id="ADM-CHAT-GRID" style="display:grid;grid-template-columns:220px 1fr;gap:15px;height:600px">
-            <!-- Sidebar -->
-            <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                <div class="stitle" style="margin:0">Channels</div>
-                <div style="display:flex;gap:5px">
-                   <button class="bto bxs" id="CHAT-SET-BTN" onclick="openM('M-CHAT-SET')" title="Chat Settings"><svg class="ic" style="margin:0"><use href="#ic-wrench" /></svg></button>
-                   <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()" style="display:none">+</button>
-                </div>
-              </div>
-              <div id="CHAT-CHANNELS" style="display:flex;flex-direction:column;gap:5px"></div>
-            </div>
-            <!-- Chat Area -->
-            <div class="p" style="display:flex;flex-direction:column;padding:0;overflow:hidden;border-color:var(--bd2)">
-              <div id="CHAT-HEAD-WRAP"
-                style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:5px">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
-                  <div id="CHAT-STATUS" style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
-                    <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
-                    <span id="CHAT-STATE">Connecting...</span>
+            <div class="g2">
+              <div class="p">
+                <div class="stitle"><svg class="ic">
+                    <use href="#ic-history" />
+                  </svg> Recent System Activity</div>
+                <div id="ADM-LOGS-MINI"
+                  style="max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:10px">
+                  <div class="ld">
+                    <div class="sp"></div>
                   </div>
                 </div>
-                <div style="font-size:0.7rem;color:var(--tx3);display:flex;align-items:center;gap:5px">
-                  <span style="color:var(--grn)">🟢</span> <span id="ONLINE-USERS-LIST">Loading...</span>
+              </div>
+              <div class="p">
+                <div class="stitle"><svg class="ic">
+                    <use href="#ic-user" />
+                  </svg> Staff Online Now</div>
+                <div id="ADM-ONLINE-TEAM" style="display:grid;grid-template-columns:1fr;gap:10px">
+                  <div style="color:var(--tx3);font-size:0.8rem">Refreshing...</div>
                 </div>
               </div>
-              <div id="CHAT-MESSAGES"
-                style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px"></div>
-              <div style="padding:15px;border-top:1px solid var(--bd);display:flex;gap:10px">
-                <input id="CHAT-INP" class="inp" placeholder="Message staff..."
-                  onkeydown="if(event.key==='Enter')sendStaffMsg()">
-                <button class="btn" onclick="sendStaffMsg()">Send</button>
+            </div>
+          </div>
+
+          <!-- Player Management -->
+          <div id="ADM-PLAYERS" style="display:none">
+            <div class="p">
+              <div class="stitle">User Search</div>
+              <div class="fg" style="display:flex;gap:7px"><input id="ADM-P-SEARCH" class="inp"
+                  placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP()"><button class="btn"
+                  onclick="admSearchP()">Search</button></div>
+              <div class="dv"></div>
+              <div id="ADM-P-RES"></div>
+            </div>
+          </div>
+
+          <div id="ADM-STAFF" style="display:none">
+            <div class="p">
+              <div class="stitle">Network Staff Team</div>
+              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">List of all active moderators, developers,
+                and administrators.</p>
+              <div id="ADM-S-LIST"></div>
+            </div>
+          </div>
+
+          <div id="ADM-LOGS" style="display:none">
+            <div class="p">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+                <div>
+                  <div class="stitle" style="margin:0">Audit Trail</div>
+                  <p style="color:var(--tx2);font-size:.8rem">Complete history of administrative actions.</p>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <select id="AUDIT-TYPE-FILTER" class="inp" style="width:140px;padding:5px" onchange="loadNexusLogs()">
+                    <option value="">All Actions</option>
+                    <option value="role_change">Role Changes</option>
+                    <option value="command_exec">Commands</option>
+                    <option value="ticket">Tickets</option>
+                  </select>
+                  <button class="bto bsm" onclick="exportAudit('csv')">Export CSV</button>
+                </div>
+              </div>
+              <div id="ADM-L-LIST"></div>
+            </div>
+          </div>
+
+          <!-- Forum Moderation -->
+          <div id="ADM-FORUMS" style="display:none">
+            <div class="p">
+              <div class="stitle">Forum Moderation</div>
+              <div id="ADM-F-LIST"></div>
+            </div>
+          </div>
+
+          <!-- Ticket Management -->
+          <div id="ADM-TICKETS" style="display:none">
+            <div class="p">
+              <div class="stitle">Support Queue</div>
+              <div id="ADM-T-QUEUE"></div>
+            </div>
+          </div>
+
+          <!-- Events Management -->
+          <div id="ADM-CHAT" style="display:none">
+            <div id="ADM-CHAT-GRID" style="display:grid;grid-template-columns:220px 1fr;gap:15px;height:600px">
+              <!-- Sidebar -->
+              <div class="p" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                  <div class="stitle" style="margin:0">Channels</div>
+                  <div style="display:flex;gap:5px">
+                    <button class="bto bxs" id="CHAT-SET-BTN" onclick="openM('M-CHAT-SET')" title="Chat Settings"><svg
+                        class="ic" style="margin:0">
+                        <use href="#ic-wrench" />
+                      </svg></button>
+                    <button class="bto bxs" id="CHAT-CREATE-BTN" onclick="admCreateChatChan()"
+                      style="display:none">+</button>
+                  </div>
+                </div>
+                <div id="CHAT-CHANNELS" style="display:flex;flex-direction:column;gap:5px"></div>
+              </div>
+              <!-- Chat Area -->
+              <div class="p"
+                style="display:flex;flex-direction:column;padding:0;overflow:hidden;border-color:var(--bd2)">
+                <div id="CHAT-HEAD-WRAP"
+                  style="padding:12px 15px;border-bottom:1px solid var(--bd);background:rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div id="CHAT-HEAD" style="font-weight:700">#staff-hub</div>
+                    <div id="CHAT-STATUS"
+                      style="font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:4px">
+                      <span id="CHAT-DOT" style="width:6px;height:6px;border-radius:50%;background:#555"></span>
+                      <span id="CHAT-STATE">Connecting...</span>
+                    </div>
+                  </div>
+                  <div style="font-size:0.7rem;color:var(--tx3);display:flex;align-items:center;gap:5px">
+                    <span style="color:var(--grn)">🟢</span> <span id="ONLINE-USERS-LIST">Loading...</span>
+                  </div>
+                </div>
+                <div id="CHAT-MESSAGES"
+                  style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px"></div>
+                <div style="padding:15px;border-top:1px solid var(--bd);display:flex;gap:10px">
+                  <input id="CHAT-INP" class="inp" placeholder="Message staff..."
+                    onkeydown="if(event.key==='Enter')sendStaffMsg()">
+                  <button class="btn" onclick="sendStaffMsg()">Send</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div id="ADM-EVENTS" style="display:none">
-          <div class="p">
-            <div class="stitle">Quick Templates</div>
-            <div id="ADM-E-PRESETS" class="preset-grid">
-              <!-- Inline JS for speed or let loadNexusEvents handle it? Better in static/onload -->
-              <button class="preset-btn" onclick="admFillPreset(0)"><span class="preset-btn-name">Free Rank</span><span
-                  class="preset-btn-tag">Starter</span></button>
-              <button class="preset-btn" onclick="admFillPreset(1)"><span class="preset-btn-name">Discord</span><span
-                  class="preset-btn-tag">Social</span></button>
-              <button class="preset-btn" onclick="admFillPreset(2)"><span class="preset-btn-name">Double XP</span><span
-                  class="preset-btn-tag">Boost</span></button>
-              <button class="preset-btn" onclick="admFillPreset(3)"><span class="preset-btn-name">Vote</span><span
-                  class="preset-btn-tag">Rewards</span></button>
-              <button class="preset-btn" onclick="admFillPreset(4)"><span class="preset-btn-name">Sale</span><span
-                  class="preset-btn-tag">Shop</span></button>
-              <button class="preset-btn" onclick="admFillPreset(5)"><span class="preset-btn-name">Tournament</span><span
-                  class="preset-btn-tag">Guilds</span></button>
-              <button class="preset-btn" onclick="admFillPreset(6)"><span class="preset-btn-name">Mystery</span><span
-                  class="preset-btn-tag">Rates</span></button>
-            </div>
-
-            <div class="dv"></div>
-
-            <div class="stitle">Custom Event</div>
-            <div class="fg"><label>Event Title</label><input id="ADM-E-TI" class="inp"
-                placeholder="Seasonal Event Name"></div>
-            <div class="fg"><label>Description</label><input id="ADM-E-DE" class="inp" placeholder="Details..."></div>
-            <div class="fg"><label>Expiry Date & Time</label>
-              <input id="ADM-E-EX" type="datetime-local" class="inp">
-            </div>
-            <div class="fg"><label>Link URL (Internal e.g. /store or External)</label><input id="ADM-E-LK" class="inp"
-                placeholder="/store or https://discord.gg/..."></div>
-            <button class="btn" style="width:100%" onclick="admCreateEvent()">Publish Custom Event</button>
-            <div class="dv"></div>
-            <div id="ADM-E-LIST"></div>
-          </div>
-        </div>
-
-        <!-- Power Management -->
-        <div id="ADM-MGMT" style="display:none">
-          <div class="p">
-            <div class="stitle">Network Announcement</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Set a global message that appears at the top
-              of every page for all users.</p>
-            <div class="fg"><label>Banner Content (HTML allowed)</label><textarea id="ADM-ANN-MSG" class="inp" rows="3"
-                placeholder="Welcome to Hellcore Network v7! Check out the store."></textarea></div>
-            <button class="btn" onclick="admSetAnn()">Update Network Banner</button>
-            <button class="btn bred bsm" onclick="admSetAnn(true)" style="margin-top:7px">Remove Banner</button>
-          </div>
-          <div class="p">
-            <div class="stitle">Direct Command Engine</div>
-            <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Queue a raw command to the Velocity proxy.
-            </p>
-            <div class="fg" style="position:relative">
-              <div style="display:flex;gap:7px">
-                <input id="ADM-RAW-CMD" class="inp" placeholder="Type / for commands..." onkeydown="handleCmdKey(event)">
-                <button class="btn" onclick="admRunCmd()">Queue</button>
+          <div id="ADM-EVENTS" style="display:none">
+            <div class="p">
+              <div class="stitle">Quick Templates</div>
+              <div id="ADM-E-PRESETS" class="preset-grid">
+                <!-- Inline JS for speed or let loadNexusEvents handle it? Better in static/onload -->
+                <button class="preset-btn" onclick="admFillPreset(0)"><span class="preset-btn-name">Free
+                    Rank</span><span class="preset-btn-tag">Starter</span></button>
+                <button class="preset-btn" onclick="admFillPreset(1)"><span class="preset-btn-name">Discord</span><span
+                    class="preset-btn-tag">Social</span></button>
+                <button class="preset-btn" onclick="admFillPreset(2)"><span class="preset-btn-name">Double
+                    XP</span><span class="preset-btn-tag">Boost</span></button>
+                <button class="preset-btn" onclick="admFillPreset(3)"><span class="preset-btn-name">Vote</span><span
+                    class="preset-btn-tag">Rewards</span></button>
+                <button class="preset-btn" onclick="admFillPreset(4)"><span class="preset-btn-name">Sale</span><span
+                    class="preset-btn-tag">Shop</span></button>
+                <button class="preset-btn" onclick="admFillPreset(5)"><span
+                    class="preset-btn-name">Tournament</span><span class="preset-btn-tag">Guilds</span></button>
+                <button class="preset-btn" onclick="admFillPreset(6)"><span class="preset-btn-name">Mystery</span><span
+                    class="preset-btn-tag">Rates</span></button>
               </div>
-              <div id="ADM-CMD-HINT" class="adm-card" style="display:none;position:absolute;bottom:calc(100% + 10px);left:0;right:0;z-index:100;padding:5px;max-height:300px;overflow-y:auto"></div>
+
+              <div class="dv"></div>
+
+              <div class="stitle">Custom Event</div>
+              <div class="fg"><label>Event Title</label><input id="ADM-E-TI" class="inp"
+                  placeholder="Seasonal Event Name"></div>
+              <div class="fg"><label>Description</label><input id="ADM-E-DE" class="inp" placeholder="Details..."></div>
+              <div class="fg"><label>Expiry Date & Time</label>
+                <input id="ADM-E-EX" type="datetime-local" class="inp">
+              </div>
+              <div class="fg"><label>Link URL (Internal e.g. /store or External)</label><input id="ADM-E-LK" class="inp"
+                  placeholder="/store or https://discord.gg/..."></div>
+              <button class="btn" style="width:100%" onclick="admCreateEvent()">Publish Custom Event</button>
+              <div class="dv"></div>
+              <div id="ADM-E-LIST"></div>
             </div>
           </div>
-        </div><!-- /ADM-MGMT -->
-      </div><!-- /adm-main -->
-    </div><!-- /adm-shell -->
-  </div><!-- /pg-admin -->
+
+          <!-- Power Management -->
+          <div id="ADM-MGMT" style="display:none">
+            <div class="p">
+              <div class="stitle">Network Announcement</div>
+              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Set a global message that appears at the
+                top
+                of every page for all users.</p>
+              <div class="fg"><label>Banner Content (HTML allowed)</label><textarea id="ADM-ANN-MSG" class="inp"
+                  rows="3" placeholder="Welcome to Hellcore Network v7! Check out the store."></textarea></div>
+              <button class="btn" onclick="admSetAnn()">Update Network Banner</button>
+              <button class="btn bred bsm" onclick="admSetAnn(true)" style="margin-top:7px">Remove Banner</button>
+            </div>
+            <div class="p">
+              <div class="stitle">Direct Command Engine</div>
+              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Queue a raw command to the Velocity proxy.
+              </p>
+              <div class="fg" style="position:relative">
+                <div style="display:flex;gap:7px">
+                  <input id="ADM-RAW-CMD" class="inp" placeholder="Type / for commands..."
+                    onkeydown="handleCmdKey(event)">
+                  <button class="btn" onclick="admRunCmd()">Queue</button>
+                </div>
+                <div id="ADM-CMD-HINT" class="adm-card"
+                  style="display:none;position:absolute;bottom:calc(100% + 10px);left:0;right:0;z-index:100;padding:5px;max-height:300px;overflow-y:auto">
+                </div>
+              </div>
+            </div>
+          </div><!-- /ADM-MGMT -->
+        </div><!-- /adm-main -->
+      </div><!-- /adm-shell -->
+    </div><!-- /pg-admin -->
 
     <!-- ════════════ STORE HUB ════════════ -->
     <div class="pg" id="pg-store">
@@ -4780,7 +5300,10 @@
     <!-- ════════════ TICKETS PAGE ════════════ -->
     <div class="pg" id="pg-tickets">
       <div class="W" style="max-width: 1440px">
-        <div class="ptitle"><svg class="ic"><use href="#ic-ticket" /></svg> Support Tickets <span id="TIX-UNREAD-BADGE" class="cbadge" style="display:none;position:static;margin-left:8px">0</span></div>
+        <div class="ptitle"><svg class="ic">
+            <use href="#ic-ticket" />
+          </svg> Support Tickets <span id="TIX-UNREAD-BADGE" class="cbadge"
+            style="display:none;position:static;margin-left:8px">0</span></div>
         <div class="tix-dc">
           <aside class="tix-left">
             <div class="tix-head">
@@ -4798,13 +5321,16 @@
                   <option value="">Insert canned response...</option>
                 </select>
                 <button class="bto bsm" onclick="toggleInternalNote()">Internal Note</button>
-                <span id="TIX-INTERNAL-BADGE" style="display:none;font-size:.7rem;color:#fbbf24">Internal note mode</span>
+                <span id="TIX-INTERNAL-BADGE" style="display:none;font-size:.7rem;color:#fbbf24">Internal note
+                  mode</span>
               </div>
-              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..." oninput="ticketTyping()"></textarea>
+              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..."
+                oninput="ticketTyping()"></textarea>
               <div id="TIX-TYPING" style="display:none;margin-top:6px;font-size:.75rem;color:var(--tx2)"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
                 <div style="display:flex;gap:8px;align-items:center">
-                  <input type="file" id="TIX-IMG" style="display:none" accept="image/*" onchange="previewTicketImage(this)">
+                  <input type="file" id="TIX-IMG" style="display:none" accept="image/*"
+                    onchange="previewTicketImage(this)">
                   <button class="bto bsm" onclick="I('TIX-IMG').click()">Attach</button>
                   <span id="TIX-IMG-NM" style="font-size:.72rem;color:var(--tx2)"></span>
                 </div>
@@ -4973,7 +5499,9 @@
     <!-- CHAT SETTINGS MODAL -->
     <div class="ov" id="M-CHAT-SET">
       <div class="mdl" style="max-width:400px">
-        <div class="mhd">Staff Chat Settings <button class="mcl" onclick="closeM('M-CHAT-SET')"><svg class="ic"><use href="#ic-x" /></svg></button></div>
+        <div class="mhd">Staff Chat Settings <button class="mcl" onclick="closeM('M-CHAT-SET')"><svg class="ic">
+              <use href="#ic-x" />
+            </svg></button></div>
         <div style="display:flex;flex-direction:column;gap:20px">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
@@ -4987,7 +5515,8 @@
               <div style="font-weight:700;font-size:0.9rem">Darker Chat</div>
               <div style="font-size:0.75rem;color:var(--tx3)">Extra dark background for focused chatting</div>
             </div>
-            <input type="checkbox" id="SET-CHAT-DARK" style="width:20px;height:20px;accent-color:var(--g)" onchange="toggleChatDark(this.checked)">
+            <input type="checkbox" id="SET-CHAT-DARK" style="width:20px;height:20px;accent-color:var(--g)"
+              onchange="toggleChatDark(this.checked)">
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div>
@@ -5006,8 +5535,9 @@
       <div class="lock-card p">
         <div class="mi" style="font-size:3rem;margin-bottom:15px;color:var(--g)">🔒</div>
         <h2 style="font-size:1.8rem;margin-bottom:10px">Account Link Required</h2>
-        <p style="color:var(--tx2);margin-bottom:25px">To access the <strong>Store</strong> and <strong>Nexus Features</strong>, you must link your Minecraft account.</p>
-        
+        <p style="color:var(--tx2);margin-bottom:25px">To access the <strong>Store</strong> and <strong>Nexus
+            Features</strong>, you must link your Minecraft account.</p>
+
         <div class="verify-step">
           <div class="verify-num">1</div>
           <div>Log in to <strong>mc.hellcore.net</strong> (Minecraft Java)</div>
@@ -5016,11 +5546,13 @@
           <div class="verify-num">2</div>
           <div>Type this command in the server chat:</div>
         </div>
-        
+
         <div id="VERIFY-CODE-DISPLAY" class="verify-code-box">HC-......</div>
-        
-        <p style="font-size:0.75rem;color:var(--tx3);margin-bottom:20px">The page will unlock automatically once linked.</p>
-        <button class="btn" style="width:100%" onclick="I('VERIFY-OVERLAY').classList.remove('OPEN');GO('home')">Go Back Home</button>
+
+        <p style="font-size:0.75rem;color:var(--tx3);margin-bottom:20px">The page will unlock automatically once linked.
+        </p>
+        <button class="btn" style="width:100%" onclick="I('VERIFY-OVERLAY').classList.remove('OPEN');GO('home')">Go Back
+          Home</button>
       </div>
     </div>
   </div><!-- #APP -->
@@ -5108,73 +5640,73 @@
       const urlParams = new URLSearchParams(window.location.search);
       const tempToken = urlParams.get('temp_token');
       NEXT_AFTER_AUTH = urlParams.get('next') || '';
-      
-      async function initSession() {
-          if (tempToken) {
-              console.log("[Auth] Warmup token detected, restoring session...");
-              try {
-                  const res = await window.fetch('/api/auth/warmup', {
-                      method: 'POST',
-                      credentials: 'include',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ token: tempToken })
-                  });
-                  const r = await res.json();
-                  if (r.ok) {
-                      ME = r.user;
-                      localStorage.setItem('hc_user', JSON.stringify(ME));
-                      // Token settled, refresh to clean URL
-                      window.location.href = window.location.origin + window.location.pathname;
-                      return false; // Stop here, page will reload
-                  }
-              } catch (err) { console.log("Warmup failed:", err); }
-          }
 
-          // 2. Restore session — check Cookies, then localStorage
-          let t = getCookie('hc_token') || localStorage.getItem('hc_token');
-          const u = localStorage.getItem('hc_user');
-          if (t && u) {
-            TOK = t;
-            try { ME = JSON.parse(u); } catch (e) { }
+      async function initSession() {
+        if (tempToken) {
+          console.log("[Auth] Warmup token detected, restoring session...");
+          try {
+            const res = await window.fetch('/api/auth/warmup', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: tempToken })
+            });
+            const r = await res.json();
+            if (r.ok) {
+              ME = r.user;
+              localStorage.setItem('hc_user', JSON.stringify(ME));
+              // Token settled, refresh to clean URL
+              window.location.href = window.location.origin + window.location.pathname;
+              return false; // Stop here, page will reload
+            }
+          } catch (err) { console.log("Warmup failed:", err); }
+        }
+
+        // 2. Restore session — check Cookies, then localStorage
+        let t = getCookie('hc_token') || localStorage.getItem('hc_token');
+        const u = localStorage.getItem('hc_user');
+        if (t && u) {
+          TOK = t;
+          try { ME = JSON.parse(u); } catch (e) { }
+          refreshUI();
+          // Re-sync from server to get latest roles
+          try {
+            const r = await API('/api/auth/me');
+            ME = r;
+            localStorage.setItem('hc_user', JSON.stringify(ME));
             refreshUI();
-            // Re-sync from server to get latest roles
-            try {
-              const r = await API('/api/auth/me');
-              ME = r;
-              localStorage.setItem('hc_user', JSON.stringify(ME));
+            return true;
+          } catch (err) {
+            console.log('Session re-sync failed:', err.message);
+            if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
+              ME = null;
+              TOK = null;
+              localStorage.removeItem('hc_token');
+              localStorage.removeItem('hc_user');
               refreshUI();
-              return true;
-            } catch (err) {
-              console.log('Session re-sync failed:', err.message);
-              if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
-                ME = null;
-                TOK = null;
-                localStorage.removeItem('hc_token');
-                localStorage.removeItem('hc_user');
-                refreshUI();
-              }
             }
           }
-          if (t && !u) {
-            try {
-              const r = await API('/api/auth/me');
-              TOK = t;
-              ME = r;
-              localStorage.setItem('hc_user', JSON.stringify(ME));
+        }
+        if (t && !u) {
+          try {
+            const r = await API('/api/auth/me');
+            TOK = t;
+            ME = r;
+            localStorage.setItem('hc_user', JSON.stringify(ME));
+            refreshUI();
+            return true;
+          } catch (err) {
+            console.log('Cookie session restore failed:', err.message);
+            if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
+              ME = null;
+              TOK = null;
+              localStorage.removeItem('hc_token');
+              localStorage.removeItem('hc_user');
               refreshUI();
-              return true;
-            } catch (err) {
-              console.log('Cookie session restore failed:', err.message);
-              if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
-                ME = null;
-                TOK = null;
-                localStorage.removeItem('hc_token');
-                localStorage.removeItem('hc_user');
-                refreshUI();
-              }
             }
           }
-          return false;
+        }
+        return false;
       }
 
       await initSession();
@@ -5300,10 +5832,10 @@
         if (!ME.is_verified && ME.role !== 'owner' && ME.role !== 'dev' && ME.role !== 'founder') {
           const res = await API('/api/verify/status');
           if (!res.is_verified) {
-             startVerificationFlow();
-             return;
+            startVerificationFlow();
+            return;
           } else {
-             ME.is_verified = true;
+            ME.is_verified = true;
           }
         }
       }
@@ -5404,7 +5936,7 @@
         localStorage.setItem('hc_user', JSON.stringify(ME));
         TOK = getCookie('hc_token') || r.token || null;
         refreshUI();
-      }).catch(() => {});
+      }).catch(() => { });
       // Re-init staff systems
       if (isStaff()) {
         startHeartbeat();
@@ -5458,12 +5990,12 @@
       if (ci !== CAPS.LG) { I('LG-ERR').textContent = 'Wrong CAPTCHA code.'; genCap('LG'); return; }
       try {
         const r = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
-        
+
         // 1. RELY ON SERVER COOKIE: No more document.cookie = ...
         // 2. STORE USER INFO FOR UI ONLY
         ME = r;
         localStorage.setItem('hc_user', JSON.stringify(ME));
-        
+
         refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
@@ -5481,13 +6013,13 @@
       if (ci !== CAPS.RG) { I('RG-ERR').textContent = 'Wrong CAPTCHA code.'; genCap('RG'); return; }
       try {
         const r = await API('/api/auth/register', { method: 'POST', body: { email: em, username: us, mc_username: mc, password: pw, confirm_password: p2 } });
-        
+
         // 1. RELY ON SERVER COOKIE
         // 2. STORE USER INFO FOR UI ONLY
         ME = r;
         localStorage.setItem('hc_user', JSON.stringify(ME));
         TOK = getCookie('hc_token') || r.token || null;
-        
+
         refreshUI(); closeM('MR');
         reInitPermissions();
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
@@ -5959,16 +6491,16 @@
     async function loadShowcase() {
       const el = I('PS-SHOWCASE'); if (!el) return;
       el.innerHTML = '<div class="ld"><div class="sp"></div>Calculating champions...</div>';
-      
+
       const stats = ['wins', 'level', 'kills', 'final_kills', 'beds_destroyed'];
       const labels = ['Top Wins', 'Top Level', 'Top Kills', 'Top Finals', 'Top Beds'];
       const colors = ['var(--grn)', '#c084fc', '#f87171', '#60a5fa', '#fde047'];
-      
+
       try {
-        const results = await Promise.all(stats.map(s => 
+        const results = await Promise.all(stats.map(s =>
           API(`/api/lb/bedwars?stat=${s}&limit=1`).then(d => d[0] || null).catch(() => null)
         ));
-        
+
         const cards = results.map((p, i) => {
           if (!p) return '';
           const val = stats[i] === 'fkdr' || stats[i] === 'wlr' || stats[i] === 'kdr' ? Number(p.value).toFixed(2) : fmt(p.value);
@@ -6462,7 +6994,7 @@
 
     function setStaffChan(id, name) {
       if (CUR_CHAN === id && I('CHAT-MESSAGES').innerHTML !== "") return;
-      
+
       // Clear mentions for this channel
       UNREAD_MENTIONS[id] = 0;
       const b = I('BADGE-' + id); if (b) b.style.display = 'none';
@@ -6483,11 +7015,11 @@
       try {
         const msgs = await API(`/api/staff/channels/${CUR_CHAN}/messages`);
         const el = I('CHAT-MESSAGES'), wasAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
-        
+
         const myName = ME?.username || "";
         const settings = {
-            sound: I('SET-CHAT-SOUND')?.checked ?? true,
-            scroll: I('SET-CHAT-SCROLL')?.checked ?? true
+          sound: I('SET-CHAT-SOUND')?.checked ?? true,
+          scroll: I('SET-CHAT-SCROLL')?.checked ?? true
         };
 
         let newMention = false;
@@ -6496,9 +7028,9 @@
           const isMe = m.author_id === ME?.id;
           const hasMention = m.content.includes(`@${myName}`);
           if (hasMention && !isMe) newMention = true;
-          
-          const bubbleStyle = isMe 
-            ? `background:var(--g);color:#000;border-bottom-right-radius:2px` 
+
+          const bubbleStyle = isMe
+            ? `background:var(--g);color:#000;border-bottom-right-radius:2px`
             : (hasMention ? `background:rgba(251,191,36,0.2);color:#fff;border-bottom-left-radius:2px;border:1px solid #fbbf24` : `background:var(--p1);color:#fff;border-bottom-left-radius:2px`);
 
           return `
@@ -6513,32 +7045,32 @@
             </div>
           `;
         }).join('') || '<div class="empty">No messages. Pull the trigger on some chat!</div>';
-        
+
         if (newMention && settings.sound) playMentionSound();
         if (settings.scroll && wasAtBottom) el.scrollTop = el.scrollHeight;
       } catch (e) { }
     }
 
     function playMentionSound() {
-        // Simple notification sound via AudioContext if no file provided
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.2);
-        } catch(e) {}
+      // Simple notification sound via AudioContext if no file provided
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) { }
     }
 
     function toggleChatDark(on) {
-        I('CHAT-MESSAGES').style.background = on ? 'rgba(0,0,0,0.4)' : '';
+      I('CHAT-MESSAGES').style.background = on ? 'rgba(0,0,0,0.4)' : '';
     }
 
     async function staffPing() {
@@ -6558,7 +7090,7 @@
       PING_POLL = setInterval(staffPing, 10000);
       staffPing();
     }
-    function stopChatPoll() { 
+    function stopChatPoll() {
       if (CHAT_POLL) { clearInterval(CHAT_POLL); CHAT_POLL = null; }
       if (PING_POLL) { clearInterval(PING_POLL); PING_POLL = null; }
     }
@@ -6588,17 +7120,17 @@
           if (chanId === Number(CUR_CHAN)) {
             loadChatMsgs();
           } else {
-             // If not active channel, check for mentions
-             if (data.content.includes(`@${ME?.username}`)) {
-                 UNREAD_MENTIONS[chanId] = (UNREAD_MENTIONS[chanId] || 0) + 1;
-                 const badge = I('BADGE-' + chanId);
-                 if (badge) {
-                     badge.style.display = 'flex';
-                     badge.textContent = UNREAD_MENTIONS[chanId];
-                 }
-                 if (I('SET-CHAT-SOUND')?.checked !== false) playMentionSound();
-                 toast('ok', `Mention in ${data.channel_name || 'another channel'}`);
-             }
+            // If not active channel, check for mentions
+            if (data.content.includes(`@${ME?.username}`)) {
+              UNREAD_MENTIONS[chanId] = (UNREAD_MENTIONS[chanId] || 0) + 1;
+              const badge = I('BADGE-' + chanId);
+              if (badge) {
+                badge.style.display = 'flex';
+                badge.textContent = UNREAD_MENTIONS[chanId];
+              }
+              if (I('SET-CHAT-SOUND')?.checked !== false) playMentionSound();
+              toast('ok', `Mention in ${data.channel_name || 'another channel'}`);
+            }
           }
         });
       } catch (e) { console.error('Pusher error:', e); }
@@ -6683,8 +7215,8 @@
         const log = I('ADM-LOGS-MINI');
         if (log) log.innerHTML = d.logs.map(l => `<div style="padding:4px;border-bottom:1px solid var(--bd);opacity:0.8;font-size:0.75rem"><small style="color:var(--g)">[${fmtD(l.created_at)}]</small> <b>${esc(l.admin_name)}</b>: ${esc(l.action)} ${l.details ? `<span style="color:var(--tx3)">(${esc(l.details)})</span>` : ''}</div>`).join('') || 'No actions recorded yet.';
 
-        loadOnlineStaff(); 
-        startHeartbeat(); 
+        loadOnlineStaff();
+        startHeartbeat();
         renderActivityChart(d.stats);
       } catch (e) { }
     }
@@ -6693,7 +7225,7 @@
       const ctx = I('admActivityChart')?.getContext('2d');
       if (!ctx) return;
       if (activityChart) activityChart.destroy();
-      
+
       const labels = (data?.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
       const values = (data?.values || [0, 0, 0, 0, 0, 0, 0]);
 
@@ -6760,7 +7292,7 @@
       try {
         const logs = await API('/api/admin/audit');
         const filtered = filter ? logs.filter(l => (l.action_type || l.action).toLowerCase().includes(filter)) : logs;
-        
+
         el.innerHTML = `
           <table class="adm-table">
             <thead>
@@ -6768,9 +7300,9 @@
             </thead>
             <tbody>
               ${filtered.map(l => {
-                const act = l.action_type || l.action;
-                const statusCls = l.status === 'success' ? 'open' : 'closed';
-                return `
+          const act = l.action_type || l.action;
+          const statusCls = l.status === 'success' ? 'open' : 'closed';
+          return `
                   <tr>
                     <td><div style="font-size:0.7rem;color:var(--tx3)">${fmtD(l.created_at)}</div></td>
                     <td><strong>${esc(l.admin_name || 'System')}</strong></td>
@@ -6779,10 +7311,10 @@
                       <div style="font-size:0.7rem;color:var(--tx2);max-width:250px;white-space:normal">${esc(l.details || '')}</div>
                     </td>
                     <td><span class="adm-badge ${statusCls}">${esc(l.status || 'success')}</span></td>
-                    <td><div style="font-size:0.7rem;color:var(--tx3)">${l.execution_time ? l.execution_time+'ms' : '-'}</div></td>
+                    <td><div style="font-size:0.7rem;color:var(--tx3)">${l.execution_time ? l.execution_time + 'ms' : '-'}</div></td>
                   </tr>
                 `;
-              }).join('')}
+        }).join('')}
             </tbody>
           </table>
         ` || '<div class="empty">No logs found matching your filter.</div>';
@@ -6801,7 +7333,7 @@
           const a = document.createElement('a');
           a.setAttribute('hidden', '');
           a.setAttribute('href', url);
-          a.setAttribute('download', `audit_log_${new Date().toISOString().slice(0,10)}.csv`);
+          a.setAttribute('download', `audit_log_${new Date().toISOString().slice(0, 10)}.csv`);
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -6838,7 +7370,7 @@
       try {
         await API('/api/admin/commands/queue', { method: 'POST', body: { command: cmd } });
         const duration = (performance.now() - start).toFixed(2);
-        toast('ok', `Command queued to Velocity Proxy! (${duration}ms)`); 
+        toast('ok', `Command queued to Velocity Proxy! (${duration}ms)`);
         SV('ADM-RAW-CMD', ''); I('ADM-CMD-HINT').style.display = 'none';
         loadNexusNode();
       } catch (e) { toast('err', e.message); }
@@ -6873,7 +7405,7 @@
           const cur = inp.value;
           if (cur.startsWith('/')) {
             if (!allCmdSuggestions.length) {
-               allCmdSuggestions = await API('/api/admin/commands/suggestions');
+              allCmdSuggestions = await API('/api/admin/commands/suggestions');
             }
             const query = cur.substring(1).toLowerCase();
             filteredCmds = allCmdSuggestions.filter(s => s.command.toLowerCase().includes(query));
@@ -6893,7 +7425,7 @@
     function renderCmdHints() {
       const hintEl = I('ADM-CMD-HINT');
       if (!filteredCmds.length) { hintEl.style.display = 'none'; return; }
-      
+
       hintEl.style.display = 'block';
       hintEl.innerHTML = filteredCmds.map((s, i) => `
         <div class="cmd-hint-item ${i === activeCmdIdx ? 'ON' : ''}" onclick="selectCmdHint('${s.command}')">
@@ -6904,7 +7436,7 @@
           <span class="cmd-hint-desc">${esc(s.description)}</span>
         </div>
       `).join('');
-      
+
       const active = hintEl.querySelector('.cmd-hint-item.ON');
       if (active) active.scrollIntoView({ block: 'nearest' });
     }
@@ -6923,7 +7455,7 @@
       try {
         const users = await API(`/api/admin/users?q=${enc(q)}`);
         if (!users.length) { el.innerHTML = '<div class="empty">No users found matching "' + esc(q) + '".</div>'; return; }
-        
+
         const highlight = (text, query) => {
           if (!query) return esc(text);
           const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -6937,8 +7469,8 @@
             </thead>
             <tbody>
               ${users.map(u => {
-                const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
-                return `
+          const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
+          return `
                   <tr class="adm-user-row" onclick="admToggleUser(${u.id})">
                     <td>
                       <div style="font-weight:700">${highlight(u.username, q)}</div>
@@ -6969,7 +7501,7 @@
                     </td>
                   </tr>
                 `;
-              }).join('')}
+        }).join('')}
             </tbody>
           </table>
         `;
@@ -7737,24 +8269,24 @@
     }
 
     async function doCheckout() {
-        try {
-            // NEW ARCHITECTURE: Create ticket directly in DB first
-            // This works for both logged-in users and guests
-            const r = await API('/api/store/checkout', { 
-                method: 'POST',
-                body: { email: ME ? ME.email : (prompt("Enter your email for order tracking:") || "") }
-            });
-            
-            if (!r.ticket_id) throw new Error("Could not create order ticket.");
+      try {
+        // NEW ARCHITECTURE: Create ticket directly in DB first
+        // This works for both logged-in users and guests
+        const r = await API('/api/store/checkout', {
+          method: 'POST',
+          body: { email: ME ? ME.email : (prompt("Enter your email for order tracking:") || "") }
+        });
 
-            // Success! Redirect to the main site ticket chat immediately.
-            // We use the Deep Linking structure to open the specific ticket.
-            const mainSite = window.location.hostname.includes('hellcore.net') ? 'https://hellcore.net' : window.location.origin;
-            window.location.href = `${mainSite}/tickets?id=${r.ticket_id}`;
-        } catch (e) {
-            toast('err', 'Checkout failed: ' + e.message);
-            console.error("[Checkout] Error:", e);
-        }
+        if (!r.ticket_id) throw new Error("Could not create order ticket.");
+
+        // Success! Redirect to the main site ticket chat immediately.
+        // We use the Deep Linking structure to open the specific ticket.
+        const mainSite = window.location.hostname.includes('hellcore.net') ? 'https://hellcore.net' : window.location.origin;
+        window.location.href = `${mainSite}/tickets?id=${r.ticket_id}`;
+      } catch (e) {
+        toast('err', 'Checkout failed: ' + e.message);
+        console.error("[Checkout] Error:", e);
+      }
     }
 
     // ════════════════════════════════════════════════════
@@ -8026,10 +8558,10 @@
     async function API(url, opts = {}) {
       // 1. SOURCE OF TRUTH: The browser now handles the cookie automatically.
       // We no longer manually send X-Auth-Token headers.
-      
+
       const h = {};
       if (opts.body && !(opts.body instanceof FormData)) {
-          h['Content-Type'] = 'application/json';
+        h['Content-Type'] = 'application/json';
       }
 
       const res = await fetch(url, {
@@ -8041,25 +8573,25 @@
 
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-          // If we get a 401, don't panic immediately. 
-          // Verify if the session is ACTUALLY dead.
-          if (res.status === 401 && !isCheckingSession) {
-              isCheckingSession = true;
-              console.warn(`[Auth] 401 detected from ${url}. Verifying session...`);
-              
-              window.fetch('/api/auth/me', { credentials: 'include' })
-                .then(check => {
-                    if (check.status === 401) {
-                        console.error("[Auth] Session confirmed DEAD. Re-opening login.");
-                        handleSessionExpired();
-                    } else {
-                        console.log("[Auth] Session is still ALIVE. Ignoring 401 from " + url);
-                    }
-                })
-                .catch(err => console.error("[Auth] Session check failed:", err))
-                .finally(() => { isCheckingSession = false; });
-          }
-          throw new Error(d.error || `Error ${res.status}`);
+        // If we get a 401, don't panic immediately. 
+        // Verify if the session is ACTUALLY dead.
+        if (res.status === 401 && !isCheckingSession) {
+          isCheckingSession = true;
+          console.warn(`[Auth] 401 detected from ${url}. Verifying session...`);
+
+          window.fetch('/api/auth/me', { credentials: 'include' })
+            .then(check => {
+              if (check.status === 401) {
+                console.error("[Auth] Session confirmed DEAD. Re-opening login.");
+                handleSessionExpired();
+              } else {
+                console.log("[Auth] Session is still ALIVE. Ignoring 401 from " + url);
+              }
+            })
+            .catch(err => console.error("[Auth] Session check failed:", err))
+            .finally(() => { isCheckingSession = false; });
+        }
+        throw new Error(d.error || `Error ${res.status}`);
       }
       return d;
     }
@@ -8077,10 +8609,10 @@
         <span style="font-weight:600">${esc(msg)}</span>
       </div>`;
       c.appendChild(el);
-      setTimeout(() => { 
-        el.style.opacity = '0'; 
+      setTimeout(() => {
+        el.style.opacity = '0';
         el.style.transform = 'translateX(20px)';
-        setTimeout(() => el.remove(), 300); 
+        setTimeout(() => el.remove(), 300);
       }, 4000);
     }
 
@@ -8096,7 +8628,7 @@
         const { code } = await API('/api/verify/start', { method: 'POST' });
         I('VERIFY-CODE-DISPLAY').textContent = code;
         I('VERIFY-OVERLAY').classList.add('OPEN');
-        
+
         if (verifyPoller) clearInterval(verifyPoller);
         verifyPoller = setInterval(async () => {
           const res = await API('/api/verify/status');
@@ -8105,7 +8637,7 @@
             ME.is_verified = true;
             I('VERIFY-OVERLAY').classList.remove('OPEN');
             toast('ok', 'Account linked successfully! Features unlocked.');
-            GO(window.location.pathname.substring(1).replace(/\//g,'-') || 'home');
+            GO(window.location.pathname.substring(1).replace(/\//g, '-') || 'home');
           }
         }, 3000);
       } catch (e) { toast('err', 'Verification failed to start'); }
