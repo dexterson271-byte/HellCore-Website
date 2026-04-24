@@ -1642,11 +1642,21 @@ def ticket_create():
     # Browser push to all staff
     try:
         c_staff = db_cursor(get_db())
-        c_staff.execute("SELECT id FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder')")
+        # Roles that should receive new ticket alerts
+        staff_alert_roles = ('helper','mod','dev','admin','owner','founder')
+        c_staff.execute(f"SELECT id FROM hc_users WHERE role IN {staff_alert_roles}")
         staff_ids = [r["id"] for r in to_list(c_staff.fetchall())]
         c_staff.close()
-        send_push_notification(staff_ids, f"New Ticket: {title}", f"From {uname} • Priority: {pr}", url=f"/tickets?id={tid}")
-    except: pass
+        
+        # Payload as requested: Title "New Ticket Created", Body with title/submitter, URL /tickets/<id>
+        send_push_notification(
+            staff_ids, 
+            "New Ticket Created", 
+            f"{title} - From {uname}", 
+            url=f"/tickets/{tid}"
+        )
+    except Exception as e:
+        print(f"[Push] Error in ticket_create: {e}")
 
     return jsonify({"id":tid,"ok":True,"redirect_url":f"/tickets?id={tid}"})
 
@@ -2984,6 +2994,10 @@ def staff_messages_post(cid):
 
 
 # -------------------------------------------------------
+@app.route("/tickets/<int:tid>")
+def ticket_page_deep(tid):
+    return render_template("index.html")
+
 # STATIC FILES (ads.txt, robots.txt)
 # -------------------------------------------------------
 @app.route("/ads.txt")

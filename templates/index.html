@@ -5847,10 +5847,18 @@
       const params = new URLSearchParams(window.location.search);
       const page = params.get('page');
       const tid = params.get('id');
-      const wantsTickets = page === 'tickets' || window.location.pathname === '/tickets';
+      const path = window.location.pathname;
+      const isCleanTicketUrl = path.startsWith('/tickets/') && path.length > 9;
+      const wantsTickets = page === 'tickets' || path === '/tickets' || isCleanTicketUrl;
+      
       if (!wantsTickets) return;
-      if (page === 'tickets') {
-        const normalized = tid ? `/tickets?id=${encodeURIComponent(tid)}` : '/tickets';
+      
+      // Extract TID from clean URL if present
+      const cleanTid = isCleanTicketUrl ? path.split('/').pop() : null;
+      const finalTid = tid || cleanTid;
+
+      if (page === 'tickets' || isCleanTicketUrl) {
+        const normalized = finalTid ? `/tickets/${finalTid}` : '/tickets';
         history.replaceState({ pg: 'tickets' }, '', normalized);
       }
       if (!ME) {
@@ -5858,8 +5866,8 @@
         openM('ML');
         return;
       }
-      if (tid) {
-        setTimeout(() => openTix(tid), 300);
+      if (finalTid) {
+        setTimeout(() => openTix(finalTid), 300);
       } else {
         GO('tickets', false);
       }
@@ -7973,7 +7981,9 @@
       try {
         const pr = (I('NT-PR')?.value || 'normal');
         await API('/api/tickets', { method: 'POST', body: { title: ti, description: de, category: ca, priority: pr } });
-        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); await loadTix(); loadProfTix();
+        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); 
+        await loadTix(); loadProfTix();
+        if (isStaff()) ensurePushSubscription();
       }
       catch (e) { toast('err', e.message); }
     }
