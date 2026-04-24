@@ -1,13 +1,4 @@
-self.addEventListener('install', event => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
-});
-
 self.addEventListener('push', function(event) {
-
   let data = { title: "New Notification", body: "You have a new update." };
   if (event.data) {
     try {

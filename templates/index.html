@@ -78,35 +78,44 @@
     #BG {
       position: fixed;
       inset: 0;
-      z-index: 0;
+      z-index: -1;
       background: #000;
       overflow: hidden;
     }
 
+
     #BG::before {
       content: '';
       position: absolute;
-      width: 150%;
-      height: 150%;
-      top: -25%;
-      left: -25%;
+      width: 160%;
+      height: 160%;
+      top: -30%;
+      left: -30%;
       background:
-        radial-gradient(circle at 20% 20%, rgba(255, 81, 47, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 80% 80%, rgba(221, 36, 118, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(15, 15, 18, 1) 0%, transparent 100%);
-      filter: blur(80px);
-      animation: meshGradient 20s infinite alternate;
+        radial-gradient(circle at 15% 15%, rgba(255, 81, 47, 0.22) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(221, 36, 118, 0.22) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(240, 152, 25, 0.12) 0%, transparent 35%),
+        radial-gradient(circle at 20% 80%, rgba(255, 81, 47, 0.1) 0%, transparent 35%),
+        radial-gradient(circle at 50% 50%, rgba(3, 3, 3, 1) 0%, transparent 100%);
+      filter: blur(100px);
+      animation: meshGradient 30s infinite alternate ease-in-out;
     }
 
     @keyframes meshGradient {
       0% {
-        transform: rotate(0deg) scale(1);
+        transform: rotate(0deg) scale(1) translate(0, 0);
       }
-
+      33% {
+        transform: rotate(5deg) scale(1.05) translate(2%, 2%);
+      }
+      66% {
+        transform: rotate(-5deg) scale(1.1) translate(-2%, 1%);
+      }
       100% {
-        transform: rotate(10deg) scale(1.1);
+        transform: rotate(8deg) scale(1.02) translate(1%, -2%);
       }
     }
+
 
     .grid-bg {
       position: fixed;
@@ -115,10 +124,11 @@
         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
       background-size: 50px 50px;
-      z-index: 0;
+      z-index: -1;
       pointer-events: none;
       mask-image: radial-gradient(circle at 50% 50%, black, transparent 80%);
     }
+
 
     #APP {
       position: relative;
@@ -738,9 +748,16 @@
     @media(max-width: 1000px) {
       .adm-shell {
         grid-template-columns: 1fr;
+        height: auto;
+        min-height: 90vh;
+        border-radius: 0;
+        border: none;
       }
 
       .adm-sidebar {
+        position: sticky;
+        top: 72px;
+        z-index: 50;
         border-right: none;
         border-bottom: 1px solid var(--bd);
       }
@@ -748,26 +765,43 @@
       .adm-nav {
         flex-direction: row;
         overflow-x: auto;
-        padding: 10px;
-        white-space: nowrap;
+        padding: 8px;
+        gap: 8px;
+        scrollbar-width: none;
       }
 
-      .adm-nav-btn span {
+      .adm-nav::-webkit-scrollbar {
         display: none;
       }
 
       .adm-nav-btn {
-        padding: 10px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--bd);
+        font-size: 0.8rem;
       }
 
-      .adm-sidebar-head {
-        justify-content: center;
+      .adm-nav-btn span {
+        display: inline-block;
       }
 
+      .adm-sidebar-head,
       .adm-sidebar-foot {
         display: none;
       }
+
+      .adm-main {
+        padding: 16px;
+        max-height: none;
+      }
+
+      .adm-stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
+
 
     /* ═══════ ADMIN UI COMPONENTS ═══════ */
     .adm-badge {
@@ -797,11 +831,20 @@
       border: 1px solid rgba(234, 179, 8, 0.3);
     }
 
+    .adm-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      margin-top: 15px;
+    }
+
     .adm-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      min-width: 600px;
     }
+
 
     .adm-table th {
       text-align: left;
@@ -1611,8 +1654,8 @@
 
     .tix-dc {
       display: grid;
-      grid-template-columns: 280px 1fr 320px;
-      gap: 16px;
+      grid-template-columns: 280px minmax(400px, 1fr) 280px;
+      gap: 12px;
       min-height: 72vh;
     }
 
@@ -4233,7 +4276,9 @@
   </svg>
 
   <div id="BG"></div>
+  <div class="grid-bg"></div>
   <div id="APP">
+
     <!-- GLOBAL BANNER -->
     <div id="GLOBAL-BANNER"
       style="display:none;background:linear-gradient(90deg,var(--g),#fb923c);color:#000;text-align:center;padding:10px;font-weight:800;font-family:'Oxanium',sans-serif;font-size:0.85rem;position:sticky;top:0;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
@@ -5288,11 +5333,8 @@
           </div>
         </div>
         <div id="PR-TIX" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;flex-direction:column">
-              <span style="color:var(--tx2);font-size:.83rem">Your support tickets</span>
-              <button class="btn bsm" style="margin-top:4px;background:rgba(255,255,255,0.05);border:1px solid var(--bd)" onclick="ensurePushSubscription()">🔔 Enable Notifications</button>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="color:var(--tx2);font-size:.83rem">Your support tickets</span>
             <button class="btn bsm" onclick="openM('MT')">+ New Ticket</button>
           </div>
           <div id="PR-TIX-L"></div>
@@ -5302,7 +5344,7 @@
 
     <!-- ════════════ TICKETS PAGE ════════════ -->
     <div class="pg" id="pg-tickets">
-      <div class="W" style="max-width: 1600px">
+      <div class="W" style="max-width: 1440px">
         <div class="ptitle"><svg class="ic">
             <use href="#ic-ticket" />
           </svg> Support Tickets <span id="TIX-UNREAD-BADGE" class="cbadge"
@@ -5406,9 +5448,10 @@
           <input id="RG-US" type="text" class="inp" placeholder="CoolPlayer123" autocomplete="off" autocorrect="off"
             spellcheck="false">
         </div>
-        <div class="fg"><label>Minecraft Username <span style="color:var(--tx3)">(optional)</span></label>
+        <div class="fg"><label>Minecraft Username <span style="color:var(--tx3)">(required for support)</span></label>
           <input id="RG-MC" type="text" class="inp" placeholder="YourMCName" autocomplete="off" spellcheck="false">
         </div>
+
         <div class="fg"><label>Password <span style="color:var(--r2)">*</span></label>
           <div class="pwrap">
             <input id="RG-PW" type="password" class="inp" placeholder="At least 6 characters"
@@ -5749,89 +5792,6 @@
       }
     });
 
-    async function ensurePushSubscription() {
-      console.log("[Push] Starting enrollment...");
-      if (!ME) {
-        toast('err', 'Please log in to enable notifications.');
-        return false;
-      }
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        toast('err', 'Push notifications are not supported in this browser.');
-        return false;
-      }
-      const permission = await Notification.requestPermission();
-      console.log("[Push] Permission state:", permission);
-      if (permission !== 'granted') {
-        toast('err', 'Notification permission was denied.');
-        return false;
-      }
-      try {
-        console.log("[Push] Origin:", window.location.origin, "Secure Context:", window.isSecureContext);
-        
-        let reg = await navigator.serviceWorker.getRegistration('/');
-        
-        if (!reg) {
-          console.log("[Push] No active Service Worker found. Registering fresh...");
-          // If none at root, but maybe some at /static/, clear those first
-          const all = await navigator.serviceWorker.getRegistrations();
-          if (all.length > 0) {
-            console.log("[Push] Found other SWs, clearing for clean state...");
-            for (let r of all) await r.unregister();
-            await new Promise(r => setTimeout(r, 800));
-          }
-          reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        } else {
-          console.log("[Push] Using existing Service Worker at:", reg.scope);
-        }
-
-        
-        let serviceWorker = reg.installing || reg.waiting || reg.active;
-        console.log("[Push] SW State:", serviceWorker ? serviceWorker.state : "none");
-        
-        // Wait for it to become active
-        while (serviceWorker && serviceWorker.state !== 'activated') {
-          console.log("[Push] Waiting for activation... Current state:", serviceWorker.state);
-          await new Promise(r => setTimeout(r, 200));
-          serviceWorker = reg.installing || reg.waiting || reg.active;
-        }
-        
-        const activeReg = await navigator.serviceWorker.ready;
-        console.log("[Push] SW Activated and Ready.");
-
-
-        const vapidKey = 'BNlrznc7YORjcC8r6s6a8VFjjVMS6qZA+H8hiDO2P7gr/DKjbfl2LEppvxe8sfozR8RPWVc28RipBKnDLQ4hv2o=';
-        const convertedKey = urlBase64ToUint8Array(vapidKey);
-        console.log("[Push] Converted Key Bytes:", convertedKey.length);
-        
-        console.log("[Push] Calling subscribe()...");
-        let sub;
-        try {
-          sub = await activeReg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: convertedKey
-          });
-        } catch (subErr) {
-          console.error("[Push] subscribe() failed specifically:", subErr);
-          throw subErr;
-        }
-
-        console.log("[Push] Sending subscription to backend...");
-        await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
-        toast('ok', 'Notifications enabled successfully!');
-        return true;
-      } catch (e) {
-        console.error('[Push] Overall Setup failed:', e);
-        toast('err', 'Notification Error: ' + e.message);
-        if (e.message.includes('push service error')) {
-           toast('warn', 'This error often means the push service is blocked or the key is rejected. Try a different browser.');
-        }
-        return false;
-      }
-
-
-
-    }
-
     let searchDebounce;
     function initAdminListeners() {
       const searchInp = I('ADM-P-SEARCH');
@@ -5847,18 +5807,10 @@
       const params = new URLSearchParams(window.location.search);
       const page = params.get('page');
       const tid = params.get('id');
-      const path = window.location.pathname;
-      const isCleanTicketUrl = path.startsWith('/tickets/') && path.length > 9;
-      const wantsTickets = page === 'tickets' || path === '/tickets' || isCleanTicketUrl;
-      
+      const wantsTickets = page === 'tickets' || window.location.pathname === '/tickets';
       if (!wantsTickets) return;
-      
-      // Extract TID from clean URL if present
-      const cleanTid = isCleanTicketUrl ? path.split('/').pop() : null;
-      const finalTid = tid || cleanTid;
-
-      if (page === 'tickets' || isCleanTicketUrl) {
-        const normalized = finalTid ? `/tickets/${finalTid}` : '/tickets';
+      if (page === 'tickets') {
+        const normalized = tid ? `/tickets?id=${encodeURIComponent(tid)}` : '/tickets';
         history.replaceState({ pg: 'tickets' }, '', normalized);
       }
       if (!ME) {
@@ -5866,10 +5818,46 @@
         openM('ML');
         return;
       }
-      if (finalTid) {
-        setTimeout(() => openTix(finalTid), 300);
+      if (tid) {
+        setTimeout(() => openTix(tid), 300);
       } else {
         GO('tickets', false);
+      }
+    }
+
+    async function ensurePushSubscription() {
+      if (!ME) {
+        toast('err', 'Please log in to enable notifications.');
+        return false;
+      }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        toast('err', 'Push notifications are not supported here.');
+        return false;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast('err', 'Notification permission was not granted.');
+        return false;
+      }
+      try {
+        const reg = await navigator.serviceWorker.register('/static/sw.js');
+        const activeReg = await navigator.serviceWorker.ready;
+        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+        let sub = await activeReg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await activeReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey)
+          });
+        }
+        await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
+        toast('ok', 'Notifications enabled successfully!');
+        return true;
+
+      } catch (e) {
+        console.log('Push setup failed:', e);
+        toast('err', 'Could not enable notifications.');
+        return false;
       }
     }
 
@@ -7352,7 +7340,9 @@
         const filtered = filter ? logs.filter(l => (l.action_type || l.action).toLowerCase().includes(filter)) : logs;
 
         el.innerHTML = `
-          <table class="adm-table">
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+
             <thead>
               <tr><th>Timestamp</th><th>Admin</th><th>Action</th><th>Status</th><th>Time</th></tr>
             </thead>
@@ -7375,6 +7365,8 @@
         }).join('')}
             </tbody>
           </table>
+        </div>
+
         ` || '<div class="empty">No logs found matching your filter.</div>';
       } catch (e) { el.innerHTML = '<div class="empty">Error loading audit logs.</div>'; }
     }
@@ -7521,7 +7513,9 @@
         };
 
         el.innerHTML = `
-          <table class="adm-table">
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+
             <thead>
               <tr><th>User</th><th>Contact</th><th>Role</th><th>Actions</th></tr>
             </thead>
@@ -7554,6 +7548,12 @@
                               <button class="role-btn ${u.role === r ? 'ON' : ''}" onclick="admUpdateRole(${u.id}, '${r}')">${r.toUpperCase()}</button>
                             `).join('')}
                           </div>
+                          <div class="stitle" style="margin:15px 0 5px 0">Identity Status</div>
+                          <div style="display:flex;align-items:center;gap:10px">
+                            <div style="font-size:0.8rem;color:${u.mc_verified ? 'var(--grn)' : 'var(--r2)'}">${u.mc_verified ? 'Verified ✅' : 'Unverified ❌'}</div>
+                            <button class="btn bsm" onclick="admToggleVerify(${u.id}, ${u.mc_verified ? 0 : 1})">${u.mc_verified ? 'Revoke Verification' : 'Mark Verified'}</button>
+                          </div>
+
                         </div>
                       </div>
                     </td>
@@ -7562,7 +7562,8 @@
         }).join('')}
             </tbody>
           </table>
-        `;
+        </div>
+      `;
       } catch (e) { el.innerHTML = '<div class="empty">Error fetching users.</div>'; }
     }
 
@@ -7581,13 +7582,24 @@
       } catch (e) { toast('err', e.message); }
     }
 
+    async function admToggleVerify(uid, next) {
+      try {
+        await API(`/api/admin/users/${uid}/verify`, { method: 'POST', body: { verified: next } });
+        toast('ok', `Verification status updated.`);
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+
     async function loadNexusTickets() {
       const el = I('ADM-T-QUEUE'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
         const d = await API('/api/tickets');
         const open = d.filter(t => t.status === 'open');
         el.innerHTML = `
-          <table class="adm-table">
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+
             <thead>
               <tr><th>Ticket</th><th>Author</th><th>Priority</th><th>Actions</th></tr>
             </thead>
@@ -7605,6 +7617,8 @@
               `).join('')}
             </tbody>
           </table>
+        </div>
+
         ` || '<div class="empty">The queue is empty! Great job.</div>';
       } catch (e) { el.innerHTML = '<div class="empty">Error loading tickets.</div>'; }
     }
@@ -7926,8 +7940,7 @@
           ${t.order_summary ? `<div style="margin-top:8px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:rgba(255,255,255,0.03)"><div style="font-size:.72rem;color:var(--tx3);text-transform:uppercase">Order</div><div style="font-weight:700">${esc(t.order_summary.order_code || 'Pending')}</div><div style="font-size:.78rem;color:var(--tx2)">Payment: ${esc(t.order_summary.payment_method || 'upi')} · ${esc(t.order_summary.payment_status || t.order_summary.status || 'pending')}</div><div style="font-size:.78rem;color:var(--tx2);margin-top:4px">${(t.order_summary.items || []).map(it => `${esc(it.name)} (${esc(it.gamemode || 'global')})`).join('<br>')}</div></div>` : ''}
           <div style="margin-top:8px;display:flex;gap:8px"><span class="tix-chip ${t.status === 'open' ? 'open' : 'closed'}">${esc(t.status)}</span><span class="tix-chip">${esc(t.priority || 'normal')}</span></div>
         </div>
-        ${ME && (isStaff() || TIX.active.author_id == ME.id) ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensurePushSubscription()">🔔 Enable Push Notifications</button></div>` : ''}
-
+        ${isStaff() ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensurePushSubscription()">Enable Staff Notifications</button></div>` : ''}
         <div class="p"><div class="stitle" style="font-size:1rem">Search Messages</div><input id="TIX-MSG-SEARCH" class="inp" placeholder="Find in chat..." oninput="renderTicketMessages()"></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Priority</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('priority', { priority:this.value })"><option value="low" ${t.priority === 'low' ? 'selected' : ''}>low</option><option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>normal</option><option value="high" ${t.priority === 'high' ? 'selected' : ''}>high</option><option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>urgent</option></select></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Assignee</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('assign', { assigned_to:this.value || null })">${staffOpt}</select></div>
@@ -7981,9 +7994,7 @@
       try {
         const pr = (I('NT-PR')?.value || 'normal');
         await API('/api/tickets', { method: 'POST', body: { title: ti, description: de, category: ca, priority: pr } });
-        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); 
-        await loadTix(); loadProfTix();
-        if (isStaff()) ensurePushSubscription();
+        closeM('MT'); SV('NT-TI', ''); SV('NT-DE', ''); toast('ok', 'Ticket submitted!'); await loadTix(); loadProfTix();
       }
       catch (e) { toast('err', e.message); }
     }

@@ -343,10 +343,12 @@ f"""CREATE TABLE IF NOT EXISTS hc_users(
   email VARCHAR(200) UNIQUE NOT NULL,
   username VARCHAR(50) UNIQUE NOT NULL,
   mc_username VARCHAR(50) DEFAULT '',
+  mc_verified INTEGER DEFAULT 0,
   password_hash VARCHAR(100) NOT NULL,
   session_token VARCHAR(120),
   role VARCHAR(30) DEFAULT 'player',
   created_at {DT})""",
+
 
 f"""CREATE TABLE IF NOT EXISTS hc_ranks(
   id INTEGER PRIMARY KEY {AI},
@@ -600,6 +602,11 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
         c.execute("ALTER TABLE hc_users ADD COLUMN last_seen DATETIME")
     except: 
         pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN mc_verified INTEGER DEFAULT 0")
+    except:
+        pass
+
 
     db.commit() # <── Commit migrations
     for sql in [
@@ -813,12 +820,13 @@ def send_push_notification(user_ids, title, body, url=None, data=None):
     try:
         from pywebpush import webpush, WebPushException
         vapid_priv = os.environ.get("VAPID_PRIVATE_KEY")
-        if not vapid_priv:
-             vapid_priv = "DquJy5faO+pzgvGMG7FGa/uEj1i5RrTYcruMcjtAAok="
-        
+        if not vapid_priv and os.path.exists(".env"):
+             with open(".env", "r") as f:
+                 for x in f:
+                     if "VAPID_PRIVATE_KEY=" in x: vapid_priv = x.split("=")[1].strip()
         if vapid_priv and os.path.exists(vapid_priv):
             with open(vapid_priv, "r") as f: vapid_priv = f.read().strip()
-
+        if not vapid_priv: return
 
         db = get_db(); c = db_cursor(db)
         phs_list = ",".join([ph()] * len(user_ids))
@@ -979,11 +987,6 @@ def index(): return render_template("index.html")
 
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
-
-@app.route("/sw.js")
-def serve_sw():
-    return send_from_directory("static", "sw.js", mimetype="application/javascript")
-
 
 # ═══════════════════════════════════════════════════════
 # PROXY HELPERS — ALL external API calls go here
@@ -1608,6 +1611,11 @@ def ticket_create():
     if not u and not email:
         return jsonify({"error": "Email required for guest tickets"}), 400
 
+    if u and u.get("role") not in STAFF_ROLES:
+        if not u.get("mc_verified"):
+             return jsonify({"error": "Please verify your Minecraft identity to create support tickets."}), 403
+
+
     db = get_db(); c = db_cursor(db)
     pr = normalize_ticket_priority(d.get("priority"))
     now = datetime.now()
@@ -1642,21 +1650,11 @@ def ticket_create():
     # Browser push to all staff
     try:
         c_staff = db_cursor(get_db())
-        # Roles that should receive new ticket alerts
-        staff_alert_roles = ('helper','mod','dev','admin','owner','founder')
-        c_staff.execute(f"SELECT id FROM hc_users WHERE role IN {staff_alert_roles}")
+        c_staff.execute("SELECT id FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder')")
         staff_ids = [r["id"] for r in to_list(c_staff.fetchall())]
         c_staff.close()
-        
-        # Payload as requested: Title "New Ticket Created", Body with title/submitter, URL /tickets/<id>
-        send_push_notification(
-            staff_ids, 
-            "New Ticket Created", 
-            f"{title} - From {uname}", 
-            url=f"/tickets/{tid}"
-        )
-    except Exception as e:
-        print(f"[Push] Error in ticket_create: {e}")
+        send_push_notification(staff_ids, f"New Ticket: {title}", f"From {uname} • Priority: {pr}", url=f"/tickets?id={tid}")
+    except: pass
 
     return jsonify({"id":tid,"ok":True,"redirect_url":f"/tickets?id={tid}"})
 
@@ -2436,7 +2434,18 @@ def admin_cmd_suggestions():
         {"command": "sync", "description": "Force sync all user permissions", "category": "System"}
     ])
 
+@app.route("/api/admin/users/<int:uid>/verify", methods=["POST"])
+@role_required("admin")
+def admin_verify_user(uid):
+    d = request.get_json(force=True) or {}
+    status = 1 if d.get("verified") else 0
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_users SET mc_verified={ph()} WHERE id={ph()}", (status, uid))
+    db.commit()
+    return jsonify({"success":True})
+
 @app.route("/api/admin/users/<int:uid>/role", methods=["POST"])
+
 @admin_required
 def admin_role(uid):
     if request.cu["role"] not in SUPER_ADMIN_ROLES:
@@ -2994,10 +3003,6 @@ def staff_messages_post(cid):
 
 
 # -------------------------------------------------------
-@app.route("/tickets/<int:tid>")
-def ticket_page_deep(tid):
-    return render_template("index.html")
-
 # STATIC FILES (ads.txt, robots.txt)
 # -------------------------------------------------------
 @app.route("/ads.txt")
