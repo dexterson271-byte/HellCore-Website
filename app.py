@@ -1652,8 +1652,8 @@ def push_subscribe():
     d = request.get_json(force=True) or {}
     sub = d.get("subscription")
     if not sub: return jsonify({"error": "Missing subscription"}), 400
-    if request.cu["role"] not in STAFF_ROLES:
-        return jsonify({"error": "Staff notifications only"}), 403
+    # Any authenticated user can subscribe to their own push notifications
+
     
     endpoint = sub.get("endpoint")
     keys = sub.get("keys", {})

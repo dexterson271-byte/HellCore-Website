@@ -5288,8 +5288,11 @@
           </div>
         </div>
         <div id="PR-TIX" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <span style="color:var(--tx2);font-size:.83rem">Your support tickets</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;flex-direction:column">
+              <span style="color:var(--tx2);font-size:.83rem">Your support tickets</span>
+              <button class="btn bsm" style="margin-top:4px;background:rgba(255,255,255,0.05);border:1px solid var(--bd)" onclick="ensurePushSubscription()">🔔 Enable Notifications</button>
+            </div>
             <button class="btn bsm" onclick="openM('MT')">+ New Ticket</button>
           </div>
           <div id="PR-TIX-L"></div>
@@ -5779,9 +5782,9 @@
       }
     }
 
-    async function ensureStaffPushSubscription() {
-      if (!ME || !STAFF_ROLES.includes(ME.role)) {
-        toast('err', 'Staff account required for notifications.');
+    async function ensurePushSubscription() {
+      if (!ME) {
+        toast('err', 'Please log in to enable notifications.');
         return false;
       }
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -5805,9 +5808,9 @@
           });
         }
         await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
-        STAFF_PUSH_READY = true;
-        toast('ok', 'Staff notifications enabled.');
+        toast('ok', 'Notifications enabled successfully!');
         return true;
+
       } catch (e) {
         console.log('Push setup failed:', e);
         toast('err', 'Could not enable notifications.');
@@ -7868,7 +7871,7 @@
           ${t.order_summary ? `<div style="margin-top:8px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:rgba(255,255,255,0.03)"><div style="font-size:.72rem;color:var(--tx3);text-transform:uppercase">Order</div><div style="font-weight:700">${esc(t.order_summary.order_code || 'Pending')}</div><div style="font-size:.78rem;color:var(--tx2)">Payment: ${esc(t.order_summary.payment_method || 'upi')} · ${esc(t.order_summary.payment_status || t.order_summary.status || 'pending')}</div><div style="font-size:.78rem;color:var(--tx2);margin-top:4px">${(t.order_summary.items || []).map(it => `${esc(it.name)} (${esc(it.gamemode || 'global')})`).join('<br>')}</div></div>` : ''}
           <div style="margin-top:8px;display:flex;gap:8px"><span class="tix-chip ${t.status === 'open' ? 'open' : 'closed'}">${esc(t.status)}</span><span class="tix-chip">${esc(t.priority || 'normal')}</span></div>
         </div>
-        ${isStaff() ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensureStaffPushSubscription()">Enable Staff Notifications</button></div>` : ''}
+        ${ME && (isStaff() || TIX.active.author_id === ME.id) ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensurePushSubscription()">🔔 Enable Push Notifications</button></div>` : ''}
         <div class="p"><div class="stitle" style="font-size:1rem">Search Messages</div><input id="TIX-MSG-SEARCH" class="inp" placeholder="Find in chat..." oninput="renderTicketMessages()"></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Priority</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('priority', { priority:this.value })"><option value="low" ${t.priority === 'low' ? 'selected' : ''}>low</option><option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>normal</option><option value="high" ${t.priority === 'high' ? 'selected' : ''}>high</option><option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>urgent</option></select></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Assignee</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('assign', { assigned_to:this.value || null })">${staffOpt}</select></div>
