@@ -5766,18 +5766,24 @@
         return false;
       }
       try {
-        console.log("[Push] Registering Service Worker...");
-        const reg = await navigator.serviceWorker.register('/sw.js');
-        const activeReg = await navigator.serviceWorker.ready;
-        console.log("[Push] SW Ready, cleaning up old subscriptions...");
+        console.log("[Push] Origin:", window.location.origin, "Secure Context:", window.isSecureContext);
         
-        let sub = await activeReg.pushManager.getSubscription();
-        if (sub) {
-          console.log("[Push] Found existing sub, unsubscribing to reset...");
-          await sub.unsubscribe();
+        // NUCLEAR RESET: Unregister all SWs first
+        console.log("[Push] Performing nuclear reset of Service Workers...");
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let r of registrations) {
+          console.log("[Push] Unregistering:", r.scope);
+          await r.unregister();
         }
+        
+        // Small delay to let browser breathe
+        await new Promise(r => setTimeout(r, 500));
 
-        console.log("[Push] Fetching fresh subscription...");
+        console.log("[Push] Registering Service Worker at root...");
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        const activeReg = await navigator.serviceWorker.ready;
+        
+        console.log("[Push] SW Ready. Fetching subscription...");
         const vapidKey = 'BIJOejOl27URUivqOdmSHlIbc65S4srNDGmUySQ94iQcvaTN81raSXmOKiVKqQx4o6X0yYH1OVJdPPp3G7Ixb30';
         
         sub = await activeReg.pushManager.subscribe({
@@ -5785,19 +5791,20 @@
           applicationServerKey: urlBase64ToUint8Array(vapidKey)
         });
 
-        console.log("[Push] Sending sub to backend...");
+        console.log("[Push] Sending subscription to backend...");
         await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
         toast('ok', 'Notifications enabled successfully!');
         return true;
       } catch (e) {
         console.error('[Push] Setup failed:', e);
-        toast('err', 'Notification Error: ' + e.message);
-        // Fallback: suggest hard reset
-        if (e.message.includes('push service error')) {
-           toast('warn', 'Try clearing site data or using a non-incognito window.');
+        if (e.name === 'AbortError') {
+           toast('err', 'Browser aborted registration. Please check your internet or firewall.');
+        } else {
+           toast('err', 'Notification Error: ' + e.message);
         }
         return false;
       }
+
 
     }
 
