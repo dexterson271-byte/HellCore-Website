@@ -1611,8 +1611,8 @@
 
     .tix-dc {
       display: grid;
-      grid-template-columns: 280px minmax(400px, 1fr) 280px;
-      gap: 12px;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 16px;
       min-height: 72vh;
     }
 
@@ -5302,7 +5302,7 @@
 
     <!-- ════════════ TICKETS PAGE ════════════ -->
     <div class="pg" id="pg-tickets">
-      <div class="W" style="max-width: 1440px">
+      <div class="W" style="max-width: 1600px">
         <div class="ptitle"><svg class="ic">
             <use href="#ic-ticket" />
           </svg> Support Tickets <span id="TIX-UNREAD-BADGE" class="cbadge"
@@ -5749,6 +5749,47 @@
       }
     });
 
+    async function ensurePushSubscription() {
+      console.log("[Push] Starting enrollment...");
+      if (!ME) {
+        toast('err', 'Please log in to enable notifications.');
+        return false;
+      }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        toast('err', 'Push notifications are not supported in this browser.');
+        return false;
+      }
+      const permission = await Notification.requestPermission();
+      console.log("[Push] Permission state:", permission);
+      if (permission !== 'granted') {
+        toast('err', 'Notification permission was denied.');
+        return false;
+      }
+      try {
+        console.log("[Push] Registering Service Worker...");
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        const activeReg = await navigator.serviceWorker.ready;
+        console.log("[Push] SW Ready, fetching subscription...");
+        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+        let sub = await activeReg.pushManager.getSubscription();
+        if (!sub) {
+          console.log("[Push] No existing sub, creating new one...");
+          sub = await activeReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey)
+          });
+        }
+        console.log("[Push] Sending sub to backend...");
+        await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
+        toast('ok', 'Notifications enabled successfully!');
+        return true;
+      } catch (e) {
+        console.error('[Push] Setup failed:', e);
+        toast('err', 'Could not enable notifications: ' + e.message);
+        return false;
+      }
+    }
+
     let searchDebounce;
     function initAdminListeners() {
       const searchInp = I('ADM-P-SEARCH');
@@ -5779,42 +5820,6 @@
         setTimeout(() => openTix(tid), 300);
       } else {
         GO('tickets', false);
-      }
-    }
-
-    async function ensurePushSubscription() {
-      if (!ME) {
-        toast('err', 'Please log in to enable notifications.');
-        return false;
-      }
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        toast('err', 'Push notifications are not supported here.');
-        return false;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        toast('err', 'Notification permission was not granted.');
-        return false;
-      }
-      try {
-        const reg = await navigator.serviceWorker.register('/static/sw.js');
-        const activeReg = await navigator.serviceWorker.ready;
-        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
-        let sub = await activeReg.pushManager.getSubscription();
-        if (!sub) {
-          sub = await activeReg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidKey)
-          });
-        }
-        await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
-        toast('ok', 'Notifications enabled successfully!');
-        return true;
-
-      } catch (e) {
-        console.log('Push setup failed:', e);
-        toast('err', 'Could not enable notifications.');
-        return false;
       }
     }
 
@@ -7871,7 +7876,8 @@
           ${t.order_summary ? `<div style="margin-top:8px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:rgba(255,255,255,0.03)"><div style="font-size:.72rem;color:var(--tx3);text-transform:uppercase">Order</div><div style="font-weight:700">${esc(t.order_summary.order_code || 'Pending')}</div><div style="font-size:.78rem;color:var(--tx2)">Payment: ${esc(t.order_summary.payment_method || 'upi')} · ${esc(t.order_summary.payment_status || t.order_summary.status || 'pending')}</div><div style="font-size:.78rem;color:var(--tx2);margin-top:4px">${(t.order_summary.items || []).map(it => `${esc(it.name)} (${esc(it.gamemode || 'global')})`).join('<br>')}</div></div>` : ''}
           <div style="margin-top:8px;display:flex;gap:8px"><span class="tix-chip ${t.status === 'open' ? 'open' : 'closed'}">${esc(t.status)}</span><span class="tix-chip">${esc(t.priority || 'normal')}</span></div>
         </div>
-        ${ME && (isStaff() || TIX.active.author_id === ME.id) ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensurePushSubscription()">🔔 Enable Push Notifications</button></div>` : ''}
+        ${ME && (isStaff() || TIX.active.author_id == ME.id) ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensurePushSubscription()">🔔 Enable Push Notifications</button></div>` : ''}
+
         <div class="p"><div class="stitle" style="font-size:1rem">Search Messages</div><input id="TIX-MSG-SEARCH" class="inp" placeholder="Find in chat..." oninput="renderTicketMessages()"></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Priority</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('priority', { priority:this.value })"><option value="low" ${t.priority === 'low' ? 'selected' : ''}>low</option><option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>normal</option><option value="high" ${t.priority === 'high' ? 'selected' : ''}>high</option><option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>urgent</option></select></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Assignee</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('assign', { assigned_to:this.value || null })">${staffOpt}</select></div>

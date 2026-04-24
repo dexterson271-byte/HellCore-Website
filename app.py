@@ -981,6 +981,11 @@ def index(): return render_template("index.html")
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
 
+@app.route("/sw.js")
+def serve_sw():
+    return send_from_directory("static", "sw.js", mimetype="application/javascript")
+
+
 # ═══════════════════════════════════════════════════════
 # PROXY HELPERS — ALL external API calls go here
 # Browser never touches Mojang/mc-heads directly → no CORS
