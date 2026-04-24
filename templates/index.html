@@ -4440,7 +4440,7 @@
             <use href="#ic-gamepad" />
           </svg> Gamemodes</div>
         <div class="g2" style="margin-bottom:20px">
-          <div class="mc" onclick="GO('store-bw')">
+          <div class="mc" onclick="GO('store')">
             <span class="mi"><svg class="ic">
                 <use href="#ic-bed" />
               </svg></span>
@@ -4763,57 +4763,23 @@
 
     <!-- ════════════ STORE HUB ════════════ -->
     <div class="pg" id="pg-store">
-      <div class="W">
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-cart" />
-          </svg> Hellcore Store</div>
-        <p class="psub">Select a gamemode to browse ranks and packages</p>
-        <div class="g4">
-          <div class="mc" onclick="GO('store-bw')"><span class="mi"><svg class="ic">
-                <use href="#ic-bed" />
-              </svg></span>
-            <h3>Bedwars</h3>
-            <p>Ranks · Mystery · Coins</p>
-          </div>
-          <div class="mc" onclick="GO('store-free')"><span class="mi"><svg class="ic" style="color:#FFD700">
-                <use href="#ic-gift" />
-              </svg></span>
-            <h3>Free</h3>
-            <p>Watch Ads · Get Rewards</p>
-          </div>
-          <div class="mc" onclick="GO('store-sw')"><span class="mi"><svg class="ic">
-                <use href="#ic-cloud" />
-              </svg></span>
-            <h3>SkyWars</h3>
-            <p>VIP · VIP+ · MVP · MVP+</p>
-          </div>
+      <div class="W" style="text-align:center;padding:60px 20px">
+        <div class="ptitle">Official Store</div>
+        <p class="psub" style="margin-bottom:30px">Our store has moved to a dedicated platform for a better shopping experience.</p>
+        
+        <div class="mc" style="max-width:500px;margin:0 auto;cursor:default;background:rgba(255,255,255,0.03);border:1px solid var(--bd2)">
+          <img src="/static/logo.png" alt="Store" style="width:120px;height:120px;margin-bottom:20px;filter:drop-shadow(0 0 20px var(--g))">
+          <h2 style="font-family:'Outfit',sans-serif;margin-bottom:10px">Hellcore Webstore</h2>
+          <p style="color:var(--tx2);margin-bottom:20px">Purchase ranks, global boosters, mystery crates, and more on our official store.</p>
+          <button class="btn" style="width:100%" onclick="window.location.href='https://store.hellcore.net'">
+            <svg class="ic"><use href="#ic-cart" /></svg> Visit store.hellcore.net
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="pg" id="pg-store-bw">
-      <div class="W"><button class="bto bsm" onclick="GO('store')" style="margin-bottom:12px">← Back</button>
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-bed" />
-          </svg> Bedwars Store</div>
-        <div class="tabs" id="BW-T"><button class="tab ON" onclick="bwT('ranks')"><svg class="ic">
-              <use href="#ic-medal" />
-            </svg> Ranks</button><button class="tab" onclick="bwT('coins')"><svg class="ic">
-              <use href="#ic-coins" />
-            </svg> Coins</button><button class="tab" onclick="bwT('free')"><svg class="ic">
-              <use href="#ic-gift" />
-            </svg> Free</button></div>
-        <div class="g4" id="S-BW"></div>
-      </div>
-    </div>
-    <div class="pg" id="pg-store-sw">
-      <div class="W"><button class="bto bsm" onclick="GO('store')" style="margin-bottom:12px">← Back</button>
-        <div class="ptitle"><svg class="ic">
-            <use href="#ic-cloud" />
-          </svg> SkyWars Store</div>
-        <div class="g4" id="S-SW"></div>
-      </div>
-    </div>
+
+
     <!-- FREE STORE -->
     <div class="pg" id="pg-store-free">
       <div class="W"><button class="bto bsm" onclick="GO('store')" style="margin-bottom:12px">← Back</button>
@@ -5108,7 +5074,7 @@
               resources and be the last team standing!</p>
             <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"><span class="tag">4–16
                 Players</span><span class="tag">20+ Maps</span><span class="tag">Solo/Teams</span></div><button
-              class="btn bsm" onclick="GO('store-bw')">View Ranks</button>
+              class="btn bsm" onclick="GO('store')">View Ranks</button>
           </div>
 
           <div class="p">
@@ -5120,7 +5086,7 @@
               islands. Loot chests, bridge and be the last one standing!</p>
             <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"><span class="tag">Sky
                 Islands</span><span class="tag">Chest Loot</span><span class="tag">Solo/Teams</span></div><button
-              class="btn bsm" onclick="GO('store-sw')">View Ranks</button>
+              class="btn bsm" onclick="GO('store')">View Ranks</button>
           </div>
 
           <div class="p"
@@ -5130,7 +5096,7 @@
               </svg> </div>
             <div class="stitle" style="justify-content:center">Hub Lobby</div>
             <p style="color:var(--tx2);font-size:.82rem;line-height:1.75;margin-bottom:12px">Central hub connecting all
-              gamemodes with community activities.</p><button class="btn bsm" onclick="GO('store-gl')">Global
+              gamemodes with community activities.</p><button class="btn bsm" onclick="GO('store')">Global
               Store</button>
           </div>
         </div>
@@ -5941,13 +5907,19 @@
       // Map path back to ID
       // e.g. "store/free" -> "store-free"
       const id = path.replace(/\//g, '-');
+      
+      // Redirect legacy store paths to the main store landing page
+      if (path.startsWith('store/') && id !== 'store-free') {
+        GO('store', false); return;
+      }
+
       const target = I('pg-' + id);
       if (target) {
         GO(id, false);
       } else {
-        // Fallback for special cases or home
         GO('home', false);
       }
+
     }
 
     // ════════════════════════════════════════════════════
