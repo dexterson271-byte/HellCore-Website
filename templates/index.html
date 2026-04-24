@@ -5768,19 +5768,22 @@
       try {
         console.log("[Push] Origin:", window.location.origin, "Secure Context:", window.isSecureContext);
         
-        // NUCLEAR RESET: Unregister all SWs first
-        console.log("[Push] Performing nuclear reset...");
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let r of registrations) {
-          console.log("[Push] Unregistering scope:", r.scope);
-          await r.unregister();
-        }
+        let reg = await navigator.serviceWorker.getRegistration('/');
         
-        // Larger delay to ensure browser completes cleanup
-        await new Promise(r => setTimeout(r, 1500));
+        if (!reg) {
+          console.log("[Push] No active Service Worker found. Registering fresh...");
+          // If none at root, but maybe some at /static/, clear those first
+          const all = await navigator.serviceWorker.getRegistrations();
+          if (all.length > 0) {
+            console.log("[Push] Found other SWs, clearing for clean state...");
+            for (let r of all) await r.unregister();
+            await new Promise(r => setTimeout(r, 800));
+          }
+          reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        } else {
+          console.log("[Push] Using existing Service Worker at:", reg.scope);
+        }
 
-        console.log("[Push] Registering /sw.js...");
-        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         
         let serviceWorker = reg.installing || reg.waiting || reg.active;
         console.log("[Push] SW State:", serviceWorker ? serviceWorker.state : "none");
