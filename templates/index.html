@@ -5769,41 +5769,49 @@
         console.log("[Push] Origin:", window.location.origin, "Secure Context:", window.isSecureContext);
         
         // NUCLEAR RESET: Unregister all SWs first
-        console.log("[Push] Performing nuclear reset of Service Workers...");
+        console.log("[Push] Performing nuclear reset...");
         const registrations = await navigator.serviceWorker.getRegistrations();
         for (let r of registrations) {
-          console.log("[Push] Unregistering:", r.scope);
+          console.log("[Push] Unregistering scope:", r.scope);
           await r.unregister();
         }
         
-        // Small delay to let browser breathe
-        await new Promise(r => setTimeout(r, 500));
+        // Larger delay to ensure browser completes cleanup
+        await new Promise(r => setTimeout(r, 1500));
 
-        console.log("[Push] Registering Service Worker at root...");
+        console.log("[Push] Registering /sw.js...");
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         const activeReg = await navigator.serviceWorker.ready;
         
-        console.log("[Push] SW Ready. Fetching subscription...");
+        console.log("[Push] SW Ready. Converting Key...");
         const vapidKey = 'BIJOejOl27URUivqOdmSHlIbc65S4srNDGmUySQ94iQcvaTN81raSXmOKiVKqQx4o6X0yYH1OVJdPPp3G7Ixb30';
+        const convertedKey = urlBase64ToUint8Array(vapidKey);
+        console.log("[Push] Converted Key Bytes:", convertedKey.length);
         
-        sub = await activeReg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey)
-        });
+        console.log("[Push] Calling subscribe()...");
+        try {
+          sub = await activeReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey
+          });
+        } catch (subErr) {
+          console.error("[Push] subscribe() failed specifically:", subErr);
+          throw subErr;
+        }
 
         console.log("[Push] Sending subscription to backend...");
         await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
         toast('ok', 'Notifications enabled successfully!');
         return true;
       } catch (e) {
-        console.error('[Push] Setup failed:', e);
-        if (e.name === 'AbortError') {
-           toast('err', 'Browser aborted registration. Please check your internet or firewall.');
-        } else {
-           toast('err', 'Notification Error: ' + e.message);
+        console.error('[Push] Overall Setup failed:', e);
+        toast('err', 'Notification Error: ' + e.message);
+        if (e.message.includes('push service error')) {
+           toast('warn', 'This error often means the push service is blocked or the key is rejected. Try a different browser.');
         }
         return false;
       }
+
 
 
     }
