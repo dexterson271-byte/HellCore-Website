@@ -7839,7 +7839,7 @@
       try {
         const d = await API('/api/forums');
         el.innerHTML = d.map(f => `<div class="p" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-           <div style="font-size:.8rem"><strong>${esc(f.title)}</strong><br><small>By ${esc(f.author_name)} in ${f.category}</small></div>
+           <div style="font-size:.8rem"><strong>${esc(f.title)}</strong><br/><small>By ${esc(f.author_name)} in ${f.category}</small></div>
            <button class="btn bred bxs" onclick="admPurgeThread(${f.id})"><svg class="ic" style="margin:0"><use href="#ic-trash"/></svg></button>
          </div>`).join('') || '<div class="empty">No threads to moderate.</div>';
       } catch (e) { }
