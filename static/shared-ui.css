@@ -1,0 +1,78 @@
+:root {
+  --shared-glass-bg: rgba(255, 255, 255, 0.035);
+  --shared-glass-border: rgba(255, 255, 255, 0.11);
+  --shared-elev-1: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --shared-elev-2: 0 24px 55px rgba(0, 0, 0, 0.36);
+}
+
+.rank-card,
+.plugin-card,
+.stat-card,
+.tix-left,
+.tix-mid,
+.tix-right,
+.msg,
+.tix-item,
+.cart-summary,
+.cart-item,
+.admin-table,
+.p {
+  box-shadow: var(--shared-elev-1);
+}
+
+.rank-card,
+.plugin-card,
+.stat-card,
+.msg,
+.cart-summary,
+.cart-item {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--shared-glass-border);
+  backdrop-filter: blur(18px);
+}
+
+.tix-left,
+.tix-mid,
+.tix-right {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(8, 8, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.tix-item,
+.rank-card,
+.plugin-card,
+.cart-item,
+.nav-user,
+.btn,
+.bto {
+  transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+
+.tix-item:hover,
+.rank-card:hover,
+.plugin-card:hover,
+.cart-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shared-elev-2);
+}
+
+.tix-chat-head,
+.tix-composer,
+.tix-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+}
+
+.cbadge {
+  box-shadow: 0 0 0 4px rgba(255, 81, 47, 0.12);
+}
+
+@media (max-width: 900px) {
+  .tix-left,
+  .tix-mid,
+  .tix-right {
+    box-shadow: none;
+  }
+}

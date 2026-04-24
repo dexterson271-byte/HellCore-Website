@@ -10,6 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap"
     rel="stylesheet">
+  <link rel="stylesheet" href="/main-static/shared-ui.css">
 
 
   <meta name="description"
@@ -1594,6 +1595,10 @@
 
     function I(id) { return document.getElementById(id); }
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function redirectToMainLogin() {
+      const next = encodeURIComponent(window.location.href);
+      window.location.href = `${MAIN_SITE}/?next=${next}`;
+    }
 
     // ════════════════════════════════════════════════════════
     // API HELPER
@@ -1606,8 +1611,7 @@
 
       console.log(`[API] ${opts.method || 'GET'} ${fullUrl}`);
 
-      const token = localStorage.getItem('hc_token') || '';
-      const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+      const headers = { 'Content-Type': 'application/json' };
       const cfg = {
         method: opts.method || 'GET',
         headers,
@@ -1661,7 +1665,7 @@
         I('TIX-LIST').innerHTML = `<div class="empty">
       <div class="empty-icon">📩</div>
       Please login or provide your email to view tickets.<br><br>
-      <button class="btn" onclick="openModal('M-LOGIN')">Login</button>
+      <button class="btn" onclick="redirectToMainLogin()">Login</button>
       <button class="bto" style="margin-left:8px" onclick="setGuestEmail()">Provide Email</button>
     </div>`;
         return;
@@ -1753,7 +1757,7 @@
       } catch (e) { toast('err', e.message); }
     }
 
-    function GO(id) {
+    function GO(id, push = true) {
       document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
       document.querySelectorAll('.nav-links .nb').forEach(b => b.classList.remove('on'));
       const pg = I('pg-' + id);
@@ -1771,9 +1775,9 @@
         tickets: loadTickets,
         admin: () => loadAdmin('overview'),
       })[id]?.();
-      history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
+      if (push) history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
     }
-    window.onpopstate = (e) => { if (e.state?.pg) GO(e.state.pg); };
+    window.onpopstate = (e) => { if (e.state?.pg) GO(e.state.pg, false); };
 
     function toggleMobile() { I('M-MOBILE').classList.toggle('show'); }
     function closeModal(id) { I(id).classList.remove('show'); }
@@ -1782,49 +1786,36 @@
     // ════════════════════════════════════════════════════════
     // AUTH
     // ════════════════════════════════════════════════════════
-    function handleAuth() {
+    async function handleAuth() {
       if (ME) {
         if (confirm('Log out?')) {
-          localStorage.removeItem('hc_token');
+          try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
           ME = null;
           updateAuthUI();
           toast('ok', 'Logged out');
           GO('home');
         }
       } else {
-        openModal('M-LOGIN');
+        redirectToMainLogin();
       }
     }
 
     async function doLogin() {
-      const id = I('L-ID').value.trim(), pw = I('L-PW').value;
-      I('L-ERR').textContent = '';
-      if (!id || !pw) { I('L-ERR').textContent = 'Fill in all fields'; return; }
-      try {
-        const d = await API('/api/auth/login', { method: 'POST', body: { identifier: id, password: pw } });
-        localStorage.setItem('hc_token', d.token);
-        ME = d;
-        closeModal('M-LOGIN');
-        updateAuthUI();
-        toast('ok', `Welcome back, ${d.username}!`);
-        updateCartCount();
-      } catch (e) { I('L-ERR').textContent = e.message; }
+      redirectToMainLogin();
     }
 
     async function checkAuth() {
-      const token = localStorage.getItem('hc_token');
-      if (!token) return;
       try {
         ME = await API('/api/auth/me');
         updateAuthUI();
         updateCartCount();
-      } catch { localStorage.removeItem('hc_token'); }
+      } catch { ME = null; updateAuthUI(); }
     }
 
     function updateAuthUI() {
       const btn = I('NAV-USER');
       if (ME) {
-        btn.textContent = ME.username;
+        btn.textContent = ME.primary_rank ? `${ME.username} · ${String(ME.primary_rank).toUpperCase()}` : ME.username;
         btn.style.background = 'rgba(255,81,47,0.1)';
         btn.style.borderColor = 'rgba(255,81,47,0.3)';
         if (ADMIN_ROLES.includes(ME.role)) {
@@ -1919,7 +1910,7 @@
     // CART
     // ════════════════════════════════════════════════════════
     async function addToCart(id, name, price, gm) {
-      if (!ME) { openModal('M-LOGIN'); toast('err', 'Login to add items'); return; }
+      if (!ME) { redirectToMainLogin(); toast('err', 'Login to add items'); return; }
       try {
         await API('/api/cart', { method: 'POST', body: { item_id: String(id), item_name: name, item_price: price, gamemode: gm } });
         updateCartCount();
@@ -1938,7 +1929,7 @@
     }
 
     async function renderCart() {
-      if (!ME) { I('CART-LIST').innerHTML = '<div class="empty"><div class="empty-icon">🔐</div>Login to view your cart.<br><br><button class="btn" onclick="openModal(\'M-LOGIN\')">Login</button></div>'; I('CART-SUMMARY').innerHTML = ''; return; }
+      if (!ME) { I('CART-LIST').innerHTML = '<div class="empty"><div class="empty-icon">🔐</div>Login to view your cart.<br><br><button class="btn" onclick="redirectToMainLogin()">Login</button></div>'; I('CART-SUMMARY').innerHTML = ''; return; }
       I('CART-LIST').innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
         CART = await API('/api/cart');
@@ -1983,13 +1974,15 @@
 
     async function checkout() {
       if (CART.length === 0) { toast('err', 'Your cart is empty.'); return; }
+      if (!ME) { redirectToMainLogin(); return; }
       toast('info', 'Creating payment ticket...');
       try {
         const d = await API('/api/checkout', { method: 'POST' });
         if (d.ticket_id) {
           toast('ok', 'Order ticket created!');
           setTimeout(() => {
-            viewTicket(d.ticket_id);
+            const target = d.redirect_url ? `${MAIN_SITE}${d.redirect_url}` : `${MAIN_SITE}/tickets?id=${d.ticket_id}`;
+            window.location.href = target;
           }, 1000);
         } else {
           toast('err', d.error || 'Could not create payment ticket');
@@ -2122,11 +2115,9 @@
     async function init() {
       await loadProducts();
       await checkAuth();
-      loadHome();
-
-      // Route based on URL
       const path = window.location.pathname.substring(1).split('/')[0];
-      if (path && path !== 'checkout') GO(path);
+      if (path && path !== 'checkout') GO(path, false);
+      else GO('home', false);
     }
 
     init();

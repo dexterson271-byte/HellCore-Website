@@ -13,7 +13,8 @@ self.addEventListener('push', function(event) {
     icon: '/static/logo.png',
     badge: '/static/logo.png',
     data: {
-      url: '/?page=tickets'
+      url: (data.data && data.data.url) || '/tickets',
+      unread_count: (data.data && data.data.unread_count) || 0
     }
   };
 
@@ -24,16 +25,18 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/tickets';
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then(windowClients => {
       for (let i = 0; i < windowClients.length; i++) {
         let client = windowClients[i];
-        if (client.url.includes('?page=tickets') && 'focus' in client) {
+        if (client.url.includes('/tickets') && 'focus' in client) {
+          client.postMessage({ type: 'notification-open', url: targetUrl });
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url);
+        return clients.openWindow(targetUrl);
       }
     })
   );

@@ -47,6 +47,7 @@ import urllib.request
 import urllib.error
 import mysql.connector
 from mysql.connector import pooling
+from shared_store import build_purchase_metadata, rank_payload
 
 # Load environment variables for local testing
 try:
@@ -287,6 +288,25 @@ def upsert(c, table, cols_vals, conflict_cols):
 def ts(v): return str(v) if v else ""
 def hp(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
+
+MAIN_SPA_ROUTES = {
+    "",
+    "about",
+    "admin",
+    "cart",
+    "forums",
+    "games",
+    "players",
+    "profile",
+    "rules",
+    "staff",
+    "store",
+    "store/bw",
+    "store/free",
+    "store/sw",
+    "tickets",
+}
+
 # -------------------------------------------------------
 # INIT TABLES
 # -------------------------------------------------------
@@ -372,6 +392,51 @@ f"""CREATE TABLE IF NOT EXISTS hc_cart(
   item_name VARCHAR(80) NOT NULL,
   item_price REAL NOT NULL,
   gamemode VARCHAR(30) DEFAULT '')""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_store_products(
+  id INTEGER PRIMARY KEY {AI},
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  category VARCHAR(30) NOT NULL,
+  subcategory VARCHAR(30) DEFAULT '',
+  price REAL NOT NULL,
+  original_price REAL DEFAULT 0,
+  description TEXT,
+  perks TEXT,
+  icon VARCHAR(50) DEFAULT 'ic-star',
+  color VARCHAR(20) DEFAULT '#FF512F',
+  download_url VARCHAR(500) DEFAULT '',
+  is_free INTEGER DEFAULT 0,
+  is_featured INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'active',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_store_events(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER,
+  event_type VARCHAR(30) NOT NULL,
+  product_id INTEGER,
+  product_name VARCHAR(100) DEFAULT '',
+  metadata TEXT,
+  ip_address VARCHAR(50) DEFAULT '',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  ticket_id INTEGER DEFAULT 0,
+  order_code VARCHAR(32) DEFAULT '',
+  items TEXT,
+  total REAL DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'pending',
+  payment_method VARCHAR(32) DEFAULT 'upi',
+  payment_status VARCHAR(20) DEFAULT 'pending',
+  source_app VARCHAR(32) DEFAULT 'main',
+  details_json TEXT,
+  rank_snapshot TEXT,
+  mc_username VARCHAR(50) DEFAULT '',
+  created_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_forums(
   id INTEGER PRIMARY KEY {AI},
@@ -531,6 +596,20 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
         pass
 
     db.commit() # <── Commit migrations
+    for sql in [
+        "ALTER TABLE hc_store_orders ADD COLUMN ticket_id INTEGER DEFAULT 0",
+        "ALTER TABLE hc_store_orders ADD COLUMN order_code VARCHAR(32) DEFAULT ''",
+        "ALTER TABLE hc_store_orders ADD COLUMN payment_method VARCHAR(32) DEFAULT 'upi'",
+        "ALTER TABLE hc_store_orders ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending'",
+        "ALTER TABLE hc_store_orders ADD COLUMN source_app VARCHAR(32) DEFAULT 'main'",
+        "ALTER TABLE hc_store_orders ADD COLUMN details_json TEXT",
+        "ALTER TABLE hc_store_orders ADD COLUMN rank_snapshot TEXT"
+    ]:
+        try:
+            c.execute(sql)
+        except:
+            pass
+    db.commit()
     print(f"  [DB INFO] Migrations committed.")
 
     # --- BOOTSTRAP EVENTS ---
@@ -626,19 +705,117 @@ def optional_auth(f):
         return f(*a, **k)
     return w
 
+
+def get_rank_payload_for_user(user_id, cursor=None):
+    if not user_id:
+        return rank_payload({})
+    owns_cursor = cursor is None
+    db = None
+    c = cursor
+    try:
+        if owns_cursor:
+            db = get_db()
+            c = db_cursor(db)
+        c.execute(f"SELECT gamemode, rank_name FROM hc_ranks WHERE user_id={ph()}", (user_id,))
+        details = {
+            row["gamemode"]: row["rank_name"]
+            for row in to_list(c.fetchall())
+            if row.get("gamemode") and row.get("rank_name")
+        }
+        return rank_payload(details)
+    except Exception:
+        traceback.print_exc()
+        return rank_payload({})
+    finally:
+        if owns_cursor and c is not None:
+            c.close()
+
+
+def enrich_user_with_rank(data, user_id=None, cursor=None):
+    payload = get_rank_payload_for_user(user_id or data.get("id"), cursor)
+    data["primary_rank"] = payload["primary_rank"]
+    data["rank_details"] = payload["rank_details"]
+    return data
+
+
+def get_ticket_order_summary(ticket_id, cursor=None):
+    if not ticket_id:
+        return None
+    owns_cursor = cursor is None
+    db = None
+    c = cursor
+    try:
+        if owns_cursor:
+            db = get_db()
+            c = db_cursor(db)
+        c.execute(
+            f"SELECT id, order_code, items, total, status, payment_method, payment_status, "
+            f"source_app, details_json, rank_snapshot, mc_username, created_at "
+            f"FROM hc_store_orders WHERE ticket_id={ph()} ORDER BY id DESC",
+            (ticket_id,),
+        )
+        order = to_dict(c.fetchone())
+        if not order:
+            return None
+        for field in ("items", "details_json", "rank_snapshot"):
+            try:
+                order[field] = json.loads(order.get(field) or "[]")
+            except Exception:
+                order[field] = [] if field == "items" else {}
+        order["created_at"] = ts(order.get("created_at"))
+        return order
+    except Exception:
+        traceback.print_exc()
+        return None
+    finally:
+        if owns_cursor and c is not None:
+            c.close()
+
+
+def is_known_main_spa_path(path):
+    clean = (path or "/").strip("/")
+    if clean in MAIN_SPA_ROUTES:
+        return True
+    if clean.startswith("tickets/"):
+        return True
+    return False
+
+
+def build_main_spa_response():
+    return render_template("index.html"), 200
+
+
+def pusher_trigger(channel, event_name, payload):
+    if not pusher_client:
+        return
+    try:
+        pusher_client.trigger(channel, event_name, payload)
+    except Exception:
+        traceback.print_exc()
+
+
+def emit_ticket_event(ticket_id, event_name, payload):
+    if not ticket_id:
+        return
+    pusher_trigger(f"ticket-{ticket_id}", event_name, payload)
+    if event_name in ("ticket-created", "ticket-updated"):
+        pusher_trigger("tickets-global", event_name, payload)
+
 def log_audit(admin_id, action, target_id=None, details="", status="success", execution_time=0.0):
     try:
         db = get_db(); c = db_cursor(db)
-        # Check if columns exist (for status and execution_time)
         try:
             c.execute(f"INSERT INTO hc_audit_logs(admin_id, action, target_id, details, status, execution_time) VALUES({phs(6)})",
                       (admin_id, action, target_id, details, status, execution_time))
         except:
-            # Fallback to old schema if table wasn't fully migrated yet
             c.execute(f"INSERT INTO hc_audit_logs(admin_id, action, target_id, details) VALUES({phs(4)})",
                       (admin_id, action, target_id, details))
         db.commit()
-    except: traceback.print_exc()
+    except:
+        traceback.print_exc()
+    finally:
+        if 'c' in locals(): c.close()
+        if 'db' in locals(): db.close()
 
 def normalize_ticket_priority(v):
     p = str(v or "normal").strip().lower()
@@ -666,6 +843,70 @@ def add_ticket_activity(c, ticket_id, actor_id, action, details=""):
         f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
         (ticket_id, actor_id, action, details)
     )
+
+
+def create_purchase_order_record(c, user, cart_items, source_app="main", payment_method="upi", payment_status="awaiting_proof"):
+    if not user:
+        raise ValueError("Authenticated user required")
+    if not cart_items:
+        raise ValueError("Cart is empty")
+
+    rank_info = get_rank_payload_for_user(user["id"], c)
+    total_usd = sum(float(item.get("item_price") or item.get("price") or 0) for item in cart_items)
+    total_inr = round(total_usd * 83.0, 2)
+    payment_details = {
+        "upi_id": os.environ.get("STORE_UPI_ID", "lakshitdhirani@fam"),
+        "amount_usd": f"{total_usd:.2f}",
+        "amount_inr": f"{total_inr:.2f}",
+    }
+    meta = build_purchase_metadata(
+        user=user,
+        items=cart_items,
+        rank_info=rank_info,
+        payment_method=payment_method,
+        payment_status=payment_status,
+        payment_details=payment_details,
+        source_app=source_app,
+    )
+    now = meta["created_at"]
+    c.execute(
+        f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,status,last_message_at) "
+        f"VALUES({phs(9)})",
+        (meta["ticket_title"], meta["ticket_desc"], user["id"], user.get("email", ""), "store", "purchase", "high", "open", now),
+    )
+    ticket_id = c.lastrowid
+    c.execute(
+        f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type,meta_json) VALUES({phs(5)})",
+        (ticket_id, 1, meta["system_message"], "system", meta["details_json"]),
+    )
+    add_ticket_activity(c, ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}")
+    c.execute(
+        f"""INSERT INTO hc_store_orders
+            (user_id, ticket_id, order_code, items, total, status, payment_method, payment_status, source_app, details_json, rank_snapshot, mc_username)
+            VALUES({phs(12)})""",
+        (
+            user["id"],
+            ticket_id,
+            meta["order_code"],
+            meta["items_json"],
+            meta["total_usd"],
+            "pending",
+            payment_method,
+            payment_status,
+            source_app,
+            meta["details_json"],
+            meta["rank_snapshot"],
+            user.get("mc_username", "") or "",
+        ),
+    )
+    order_id = c.lastrowid
+    return {
+        "ticket_id": ticket_id,
+        "order_id": order_id,
+        "order_code": meta["order_code"],
+        "redirect_url": f"/tickets?id={ticket_id}",
+        "details": json.loads(meta["details_json"]),
+    }
 
 # ═══════════════════════════════════════════════════════
 # CORS
@@ -839,7 +1080,25 @@ def register():
             c.execute("INSERT INTO hc_economy(user_id) VALUES(%s) ON DUPLICATE KEY UPDATE user_id=user_id", (uid,))
 
         db.commit()
-        return jsonify({"token":tok,"id":uid,"username":us,"email":em,"mc_username":mc,"role":"player"})
+        payload = {
+            "token": tok,
+            "id": uid,
+            "username": us,
+            "email": em,
+            "mc_username": mc,
+            "role": "player",
+        }
+        resp = jsonify(enrich_user_with_rank(payload, uid, c))
+        resp.set_cookie(
+            "hc_token",
+            tok,
+            max_age=60*60*24*30,
+            path="/",
+            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            samesite="None",
+            secure=True
+        )
+        return resp
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error":f"Server error: {e}"}), 500
@@ -854,6 +1113,7 @@ def heartbeat():
         now = datetime.now()
         c.execute(f"UPDATE hc_users SET last_seen={ph()} WHERE id={ph()}", (now, u["id"]))
         db.commit()
+        pusher_trigger("tickets-global", "presence", {"user_id": u["id"], "username": u["username"], "role": u["role"], "online": True, "last_seen": now.isoformat()})
         return jsonify({"success": True})
     except:
         traceback.print_exc()
@@ -871,8 +1131,8 @@ def get_online_staff():
         sql = f"SELECT id, username, role, last_seen FROM hc_users WHERE role IN ({placeholders}) AND last_seen > {ph()} ORDER BY last_seen DESC"
         params = list(STAFF_ROLES) + [threshold]
         c.execute(sql, tuple(params))
-        rows = c.fetchall()
-        return jsonify(to_list(rows))
+        rows = [enrich_user_with_rank(row, row.get("id"), c) for row in to_list(c.fetchall())]
+        return jsonify(rows)
     except:
         traceback.print_exc()
         return jsonify([])
@@ -910,6 +1170,17 @@ def login():
             samesite="None",
             secure=True
         )
+        payload = {
+            "token": tok,
+            "id": row["id"],
+            "username": row["username"],
+            "email": row["email"],
+            "mc_username": row["mc_username"] or "",
+            "role": row["role"],
+            "is_verified": bool(row.get("is_verified", 0)),
+        }
+        resp.set_data(json.dumps(enrich_user_with_rank(payload, row["id"], c)))
+        resp.mimetype = "application/json"
         return resp
     except Exception as e:
         traceback.print_exc()
@@ -929,8 +1200,18 @@ def logout():
 @auth_required
 def auth_me():
     u = request.cu
-    return jsonify({"id":u["id"],"username":u["username"],"email":u["email"],
-                    "mc_username":u.get("mc_username") or "","role":u["role"], "is_verified": bool(u.get("is_verified", 0))})
+    db = get_db(); c = db_cursor(db)
+    payload = {
+        "id": u["id"],
+        "username": u["username"],
+        "email": u["email"],
+        "mc_username": u.get("mc_username") or "",
+        "role": u["role"],
+        "is_verified": bool(u.get("is_verified", 0))
+    }
+    payload = enrich_user_with_rank(payload, u["id"], c)
+    payload["ranks"] = payload["rank_details"]
+    return jsonify(payload)
 
 @app.route("/api/auth/temp-token", methods=["POST"])
 @auth_required
@@ -971,7 +1252,12 @@ def session_warmup():
     c.execute(f"DELETE FROM hc_temp_tokens WHERE token={ph()}", (temp,))
     db.commit()
     
-    resp = jsonify({"ok":True, "user": {"id":user["id"], "username":user["username"], "role":user["role"]}})
+    warm_user = enrich_user_with_rank(
+        {"id": user["id"], "username": user["username"], "role": user["role"]},
+        user["id"],
+        c,
+    )
+    resp = jsonify({"ok":True, "user": warm_user})
     resp.set_cookie(
         "hc_token", 
         tok, 
@@ -1246,11 +1532,16 @@ def tickets_list():
     for r in rows:
         r["created_at"] = ts(r["created_at"])
         r["last_message_at"] = ts(r.get("last_message_at") or r["created_at"])
-        c.execute(f"SELECT COUNT(*) cnt FROM hc_ticket_msgs WHERE ticket_id={ph()}", (r["id"],))
+        c.execute(f"SELECT COUNT(*) cnt, COALESCE(MAX(id), 0) last_message_id FROM hc_ticket_msgs WHERE ticket_id={ph()}", (r["id"],))
         mc = to_dict(c.fetchone())
         r["message_count"] = int(mc["cnt"]) if mc else 0
+        r["last_message_id"] = int(mc.get("last_message_id") or 0) if mc else 0
         r["priority"] = normalize_ticket_priority(r.get("priority"))
-    
+        enrich_user_with_rank(r, r.get("author_id"), c)
+        r["author_name"] = r.get("author_name") or r.get("email") or "Guest"
+        if r.get("category") == "purchase" or r.get("source") == "store":
+            r["order_summary"] = get_ticket_order_summary(r["id"], c)
+
     return jsonify(rows)
 
 @app.route("/api/tickets", methods=["POST"])
@@ -1281,8 +1572,18 @@ def ticket_create():
     c.execute(f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,last_message_at) VALUES({phs(8)})",
               (title, description, uid, uemail, source, category, pr, now))
     db.commit(); tid = c.lastrowid
+    emit_ticket_event(tid, "ticket-created", {
+        "ticket_id": tid,
+        "title": title,
+        "username": uname,
+        "priority": pr,
+        "category": category,
+        "url": f"/tickets?id={tid}",
+    })
 
     if category == "purchase":
+        ticket_title = title
+        priority = pr
         try:
             import requests
             wh = globals().get("STAFF_WEBHOOK", "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj")
@@ -1318,7 +1619,16 @@ def ticket_create():
                     vapid_priv = f.read().strip()
 
             if vapid_priv and subs:
-                payload = json.dumps({"title": "New Payment Ticket", "body": f"Created by {request.cu['username']}"})
+                payload = json.dumps({
+                    "title": f"New Ticket: {ticket_title}",
+                    "body": f"Created by {request.cu['username']} • Priority: {priority}",
+                    "data": {"url": f"/tickets?id={tid}"}
+                })
+                payload = json.dumps({
+                    "title": f"New Ticket: {title}",
+                    "body": f"Created by {uname} - Priority: {pr}",
+                    "data": {"url": f"/tickets?id={tid}", "unread_count": 1}
+                })
                 for s in subs:
                     sub_info = {
                         "endpoint": s["endpoint"],
@@ -1339,7 +1649,7 @@ def ticket_create():
         except Exception as e:
             print("Web push failed:", e)
 
-    return jsonify({"id":tid,"ok":True})
+    return jsonify({"id":tid,"ok":True,"redirect_url":f"/tickets?id={tid}"})
 
 @app.route("/api/push/subscribe", methods=["POST"])
 @auth_required
@@ -1347,6 +1657,8 @@ def push_subscribe():
     d = request.get_json(force=True) or {}
     sub = d.get("subscription")
     if not sub: return jsonify({"error": "Missing subscription"}), 400
+    if request.cu["role"] not in STAFF_ROLES:
+        return jsonify({"error": "Staff notifications only"}), 403
     
     endpoint = sub.get("endpoint")
     keys = sub.get("keys", {})
@@ -1381,6 +1693,9 @@ def ticket_get(tid):
     t["created_at"] = ts(t["created_at"])
     t["last_message_at"] = ts(t.get("last_message_at") or t["created_at"])
     t["priority"] = normalize_ticket_priority(t.get("priority"))
+    enrich_user_with_rank(t, t.get("author_id"), c)
+    t["author_name"] = t.get("author_name") or t.get("email") or "Guest"
+    t["order_summary"] = get_ticket_order_summary(tid, c)
     perms = {
         "can_manage": can_manage_ticket(t, u, email),
         "can_delete": bool(u and (t["author_id"] == u["id"] or u["role"] in ADMIN_ROLES)),
@@ -1394,6 +1709,7 @@ def ticket_get(tid):
     for m in msgs:
         m["created_at"] = ts(m["created_at"])
         m["is_internal"] = int(m.get("is_internal") or 0)
+        enrich_user_with_rank(m, m.get("author_id"), c)
         if m["is_internal"] and (not u or u["role"] not in STAFF_ROLES):
             m["content"] = "[Internal note]"
     if not u or u["role"] not in STAFF_ROLES:
@@ -1407,9 +1723,22 @@ def ticket_get(tid):
     staff = []
     if u and u["role"] in STAFF_ROLES:
         c.execute("SELECT id, username, role FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder') ORDER BY username ASC")
-        staff = to_list(c.fetchall())
+        staff = [enrich_user_with_rank(row, row.get("id"), c) for row in to_list(c.fetchall())]
     
     return jsonify({"ticket":t,"messages":msgs,"activity":acts,"staff":staff,"permissions":perms})
+
+@app.route("/api/tickets/<int:tid>/typing", methods=["POST"])
+@optional_auth
+def ticket_typing(tid):
+    if not pusher_client: return jsonify({"ok":False}), 501
+    u = request.cu
+    if not u: return jsonify({"ok":False}), 401
+    typing_rank = get_rank_payload_for_user(u["id"])
+    pusher_client.trigger(f'ticket-{tid}', 'typing', {
+        "username": u["username"],
+        "primary_rank": typing_rank["primary_rank"],
+    })
+    return jsonify({"ok":True})
 
 @app.route("/api/tickets/<int:tid>/msg", methods=["POST"])
 @optional_auth
@@ -1448,6 +1777,17 @@ def ticket_msg(tid):
               f"LEFT JOIN hc_users u ON m.author_id=u.id WHERE m.id={ph()}", (mid,))
     msg = to_dict(c.fetchone())
     msg["created_at"] = ts(msg["created_at"])
+    enrich_user_with_rank(msg, msg.get("author_id"), c)
+
+    # WebSocket Update
+    emit_ticket_event(tid, "new-message", {"message": msg})
+    emit_ticket_event(tid, "ticket-updated", {
+        "ticket_id": tid,
+        "last_message_id": mid,
+        "status": t.get("status", "open"),
+        "priority": t.get("priority", "normal"),
+    })
+
     return jsonify({"ok":True,"message":msg})
 
 @app.route("/api/tickets/<int:tid>/updates")
@@ -1464,12 +1804,15 @@ def ticket_updates(tid):
     c.execute(f"SELECT m.*, u.username author_name, u.role author_role FROM hc_ticket_msgs m "
               f"LEFT JOIN hc_users u ON m.author_id=u.id WHERE m.ticket_id={ph()} AND m.id>{ph()} ORDER BY m.id ASC", (tid, after_id))
     msgs = to_list(c.fetchall())
-    for m in msgs: m["created_at"] = ts(m["created_at"])
+    for m in msgs:
+        m["created_at"] = ts(m["created_at"])
+        enrich_user_with_rank(m, m.get("author_id"), c)
     if not u or u["role"] not in STAFF_ROLES:
         msgs = [m for m in msgs if int(m.get("is_internal") or 0) == 0]
-    c.execute(f"SELECT status,priority,assigned_to,last_message_at FROM hc_tickets WHERE id={ph()}", (tid,))
+    c.execute(f"SELECT status,priority,assigned_to,last_message_at,COALESCE((SELECT MAX(id) FROM hc_ticket_msgs WHERE ticket_id={ph()}),0) last_message_id FROM hc_tickets WHERE id={ph()}", (tid, tid))
     meta = to_dict(c.fetchone()) or {}
     meta["last_message_at"] = ts(meta.get("last_message_at"))
+    meta["order_summary"] = get_ticket_order_summary(tid, c)
     
     return jsonify({"messages":msgs, "ticket_meta":meta})
 
@@ -1488,9 +1831,15 @@ def ticket_action(tid):
     if action == "close":
         c.execute(f"UPDATE hc_tickets SET status='closed' WHERE id={ph()}", (tid,))
         add_ticket_activity(c, tid, u["id"], "status", "closed")
+        event_status = "closed"
+        event_priority = t.get("priority")
+        event_assigned_to = t.get("assigned_to")
     elif action == "reopen":
         c.execute(f"UPDATE hc_tickets SET status='open' WHERE id={ph()}", (tid,))
         add_ticket_activity(c, tid, u["id"], "status", "open")
+        event_status = "open"
+        event_priority = t.get("priority")
+        event_assigned_to = t.get("assigned_to")
     elif action == "assign":
         if u["role"] not in STAFF_ROLES:
             return jsonify({"error":"Staff only"}), 403
@@ -1498,6 +1847,7 @@ def ticket_action(tid):
         if assigned_to in (None, "", 0):
             c.execute(f"UPDATE hc_tickets SET assigned_to=NULL WHERE id={ph()}", (tid,))
             add_ticket_activity(c, tid, u["id"], "assignment", "unassigned")
+            event_assigned_to = None
         else:
             c.execute(f"SELECT id, username FROM hc_users WHERE id={ph()}", (int(assigned_to),))
             au = to_dict(c.fetchone())
@@ -1505,21 +1855,36 @@ def ticket_action(tid):
                 return jsonify({"error":"Assignee not found"}), 404
             c.execute(f"UPDATE hc_tickets SET assigned_to={ph()} WHERE id={ph()}", (au["id"], tid))
             add_ticket_activity(c, tid, u["id"], "assignment", f"assigned_to:{au['username']}")
+            event_assigned_to = au["id"]
+        event_status = t.get("status")
+        event_priority = t.get("priority")
     elif action == "priority":
         if u["role"] not in STAFF_ROLES:
             return jsonify({"error":"Staff only"}), 403
         p = normalize_ticket_priority(d.get("priority"))
         c.execute(f"UPDATE hc_tickets SET priority={ph()} WHERE id={ph()}", (p, tid))
         add_ticket_activity(c, tid, u["id"], "priority", p)
+        event_status = t.get("status")
+        event_priority = p
+        event_assigned_to = t.get("assigned_to")
     elif action in ("payment_received", "payment_pending", "need_details"):
         if u["role"] not in STAFF_ROLES:
             return jsonify({"error":"Staff only"}), 403
         add_ticket_activity(c, tid, u["id"], "payment", action)
+        event_status = t.get("status")
+        event_priority = t.get("priority")
+        event_assigned_to = t.get("assigned_to")
     else:
         return jsonify({"error":"Unknown action"}), 400
 
     c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     db.commit()
+    emit_ticket_event(tid, "ticket-updated", {
+        "ticket_id": tid,
+        "status": event_status,
+        "priority": event_priority,
+        "assigned_to": event_assigned_to,
+    })
     return jsonify({"ok":True})
 
 @app.route("/api/tickets/<int:tid>/close", methods=["POST"])
@@ -1534,6 +1899,7 @@ def ticket_close(tid):
     c.execute(f"UPDATE hc_tickets SET status='closed', last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     add_ticket_activity(c, tid, u["id"], "status", "closed")
     db.commit()
+    emit_ticket_event(tid, "ticket-updated", {"ticket_id": tid, "status": "closed"})
     return jsonify({"ok":True})
 
 @app.route("/api/tickets/<int:tid>/rank", methods=["POST"])
@@ -1570,6 +1936,7 @@ def ticket_rank_grant(tid):
               (tid, u["id"], f"Rank grant queued for {username} -> {rank} ({mode}{' '+duration if mode=='temp_add' else ''})", 1, "system"))
     c.execute(f"UPDATE hc_tickets SET last_message_at={ph()} WHERE id={ph()}", (datetime.now(), tid))
     db.commit()
+    emit_ticket_event(tid, "ticket-updated", {"ticket_id": tid, "status": t.get("status", "open"), "rank_grant": True})
     return jsonify({"ok":True, "queued_command":cmd})
 
 @app.route("/api/tickets/canned")
@@ -1598,6 +1965,7 @@ def ticket_del(tid):
     c.execute(f"DELETE FROM hc_ticket_activity WHERE ticket_id={ph()}", (tid,))
     c.execute(f"DELETE FROM hc_tickets WHERE id={ph()}", (tid,))
     db.commit()
+    emit_ticket_event(tid, "ticket-updated", {"ticket_id": tid, "deleted": True})
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
@@ -1638,13 +2006,29 @@ def cart_clear():
     return jsonify({"ok":True})
 
 @app.route("/api/store/checkout", methods=["POST"])
-@optional_auth
+@auth_required
 def store_checkout():
     # Supports both logged-in users and guests
     d = request.get_json(force=True) or {}
     email = d.get("email", "").strip()
     
     u = request.cu
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (u["id"],))
+    cart_items = to_list(c.fetchall())
+    if not cart_items:
+        return jsonify({"error": "Cart is empty"}), 400
+    result = create_purchase_order_record(c, u, cart_items, source_app="main")
+    c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (u["id"],))
+    db.commit()
+    emit_ticket_event(result["ticket_id"], "ticket-updated", {
+        "ticket_id": result["ticket_id"],
+        "status": "open",
+        "priority": "high",
+        "order_code": result["order_code"],
+    })
+    return jsonify(result)
+
     uid = u["id"] if u else None
     uemail = u["email"] if u else email
     
@@ -2458,6 +2842,13 @@ def staff_ping():
     
     # Return active users
     active = [{"username": d["username"], "role": d["role"]} for d in ONLINE_STAFF.values()]
+    pusher_trigger("tickets-global", "presence", {
+        "user_id": cu["id"],
+        "username": cu["username"],
+        "role": cu["role"],
+        "online": True,
+        "last_seen": now.isoformat(),
+    })
     return jsonify(active)
 
 STAFF_WEBHOOK = "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj"
@@ -2510,7 +2901,12 @@ def staff_messages_list(cid):
               f"JOIN hc_users u ON m.author_id=u.id WHERE m.channel_id={ph()} "
               f"ORDER BY m.created_at DESC LIMIT 50", (cid,))
     rows = c.fetchall()
-    return jsonify([to_dict(r) for r in reversed(rows)])
+    payload = []
+    for row in reversed(to_list(rows)):
+        row["created_at"] = ts(row.get("created_at"))
+        enrich_user_with_rank(row, row.get("author_id"), c)
+        payload.append(row)
+    return jsonify(payload)
 
 @app.route("/api/staff/channels/<int:cid>/messages", methods=["POST"])
 @staff_required
@@ -2532,11 +2928,14 @@ def staff_messages_post(cid):
         # Pusher Broadcast
         if pusher_client:
             try:
+                author_rank = get_rank_payload_for_user(request.cu["id"])
                 pusher_client.trigger('staff-chat', 'new-message', {
                     "channel_id": cid,
                     "author_id": request.cu["id"],
                     "username": request.cu["username"],
                     "role": request.cu["role"],
+                    "primary_rank": author_rank["primary_rank"],
+                    "rank_details": author_rank["rank_details"],
                     "content": content,
                     "created_at": datetime.now().isoformat()
                 })
@@ -2579,9 +2978,9 @@ def robots_txt():
 # -------------------------------------------------------
 @app.route("/<path:p>")
 def catch_all(p):
-    # Only serve index.html for non-file paths or specific SPA routes
-    if "." in p: return "Not Found", 404
-    return render_template("index.html")
+    if is_known_main_spa_path("/" + p):
+        return build_main_spa_response()
+    return "Not Found", 404
 
 # -------------------------------------------------------
 # BACKGROUND STATUS WORKER
@@ -2617,6 +3016,14 @@ def status_worker():
             print(f"[STATUS WORKER] Error: {e}")
             
         time.sleep(60)
+
+@app.errorhandler(404)
+def not_found(e):
+    if is_known_main_spa_path(request.path):
+        return build_main_spa_response()
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Not found"}), 404
+    return "Not Found", 404
 
 # -------------------------------------------------------
 # RUN

@@ -10,6 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap"
     rel="stylesheet">
+  <link rel="stylesheet" href="/static/shared-ui.css">
   <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0-rc.3/bundles/skinview3d.bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.3.0/dist/web/pusher.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -31,20 +32,26 @@
       --g: #FF512F;
       --g2: #DD2476;
       --g3: #F09819;
+      --accent: #FF512F;
+      --accent-glow: rgba(255, 81, 47, 0.4);
 
       --r2: #ef4444;
       --grn: #10b981;
 
-      --bg: #09090b;
-      --p1: rgba(24, 24, 27, 0.65);
-      --p2: rgba(39, 39, 42, 0.75);
+      --bg: #030303;
+      --p1: rgba(15, 15, 18, 0.75);
+      --p2: rgba(25, 25, 30, 0.85);
 
-      --bd: rgba(255, 255, 255, 0.1);
-      --bd2: rgba(255, 255, 255, 0.2);
+      --bd: rgba(255, 255, 255, 0.08);
+      --bd2: rgba(255, 255, 255, 0.15);
 
-      --tx: #fafafa;
-      --tx2: #a1a1aa;
+      --tx: #ffffff;
+      --tx2: #b4b4b4;
       --tx3: #71717a;
+      
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     }
 
     *,
@@ -58,26 +65,52 @@
     html,
     body {
       min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: var(--tx);
       background: var(--bg);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
     }
 
     #BG {
       position: fixed;
       inset: 0;
       z-index: 0;
-      background: url('/static/modern_bg.png') center/cover no-repeat fixed;
-      opacity: 0.9;
+      background: #000;
+      overflow: hidden;
     }
 
-    #BG::after {
+    #BG::before {
       content: '';
       position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(255, 81, 47, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(221, 36, 118, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(15, 15, 18, 1) 0%, transparent 100%);
+      filter: blur(80px);
+      animation: meshGradient 20s infinite alternate;
+    }
+
+    @keyframes meshGradient {
+      0% { transform: rotate(0deg) scale(1); }
+      100% { transform: rotate(10deg) scale(1.1); }
+    }
+
+    .grid-bg {
+      position: fixed;
       inset: 0;
-      background: radial-gradient(circle at 50% -20%, rgba(221, 36, 118, 0.15) 0%, var(--bg) 80%);
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 0;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 50% 50%, black, transparent 80%);
     }
 
     #APP {
@@ -89,7 +122,7 @@
     }
 
     ::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
     }
 
     ::-webkit-scrollbar-track {
@@ -97,13 +130,12 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 4px;
-      border: 2px solid var(--bg);
+      background: var(--bd2);
+      border-radius: 10px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.4);
+      background: var(--g);
     }
 
     /* ═══════ NAVBAR ═══════ */
@@ -113,16 +145,16 @@
       left: 0;
       right: 0;
       z-index: 1000;
-      height: 68px;
-      background: rgba(9, 9, 11, 0.75);
-      border-bottom: 1px solid var(--bd);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      height: 72px;
+      background: rgba(3, 3, 3, 0.6);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       display: flex;
       align-items: center;
-      padding: 0 24px;
-      gap: 8px;
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      padding: 0 32px;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     .nlogo {
@@ -366,71 +398,71 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       background: linear-gradient(135deg, var(--g), var(--g2));
       color: #fff;
       border: none;
-      padding: 10px 22px;
-      border-radius: 8px;
+      padding: 12px 28px;
+      border-radius: 12px;
       font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
+      font-weight: 800;
+      font-size: 0.95rem;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       white-space: nowrap;
       user-select: none;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(255, 81, 47, 0.25);
+      box-shadow: 0 10px 20px var(--accent-glow);
     }
 
-    .btn::after {
+    .btn::before {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(rgba(255, 255, 255, 0.2), transparent);
-      opacity: 0;
-      transition: opacity 0.2s;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: 0.5s;
     }
 
     .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 81, 47, 0.45);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 15px 30px var(--accent-glow);
     }
 
-    .btn:hover::after {
-      opacity: 1;
+    .btn:hover::before {
+      left: 100%;
     }
 
     .btn:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 10px rgba(255, 81, 47, 0.3);
+      transform: translateY(0) scale(0.98);
     }
 
     .bto {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--bd2);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
       color: var(--tx);
-      padding: 9px 21px;
-      border-radius: 8px;
+      padding: 11px 26px;
+      border-radius: 12px;
       font-family: 'Outfit', sans-serif;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 0.9rem;
       cursor: pointer;
-      transition: all 0.25s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      white-space: nowrap;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(10px);
     }
 
     .bto:hover {
       background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.4);
-      color: #fff;
-      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
 
     .bred {
@@ -462,25 +494,34 @@
     /* ═══════ PANELS ═══════ */
     .p {
       background: var(--p1);
-      border: 1px solid var(--bd);
-      border-radius: 16px;
-      padding: 24px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      transition: border-color 0.3s;
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 32px;
+      backdrop-filter: blur(30px) saturate(150%);
+      -webkit-backdrop-filter: blur(30px) saturate(150%);
+      box-shadow: var(--shadow);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform-style: preserve-3d;
+      perspective: 1000px;
     }
 
     .p:hover {
-      border-color: var(--bd2);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-5px) scale(1.01);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
     }
 
     .p2 {
       background: var(--p2);
-      border: 1px solid var(--bd2);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s;
+    }
+    
+    .p2:hover {
+      transform: translateZ(20px);
     }
 
     /* ═══════ PAGES ═══════ */
@@ -1110,23 +1151,30 @@
     .tmsg {
       display: flex;
       gap: 16px;
-      padding: 12px 16px;
-      margin: 4px 0;
-      transition: background 0.2s;
+      padding: 20px;
+      margin-bottom: 12px;
+      border-radius: 18px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
 
     .tmsg:hover {
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateX(4px);
     }
 
     .tmsg-av {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: var(--p2);
-      flex-shrink: 0;
-      border: 1px solid var(--bd);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid var(--glass-border);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
 
     .tmsg-av img {
@@ -1142,9 +1190,10 @@
 
     .tmsg-header {
       display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 4px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
     }
 
     .tmsg-user {
@@ -4731,7 +4780,7 @@
     <!-- ════════════ TICKETS PAGE ════════════ -->
     <div class="pg" id="pg-tickets">
       <div class="W" style="max-width: 1440px">
-        <div class="ptitle"><svg class="ic"><use href="#ic-ticket" /></svg> Support Tickets</div>
+        <div class="ptitle"><svg class="ic"><use href="#ic-ticket" /></svg> Support Tickets <span id="TIX-UNREAD-BADGE" class="cbadge" style="display:none;position:static;margin-left:8px">0</span></div>
         <div class="tix-dc">
           <aside class="tix-left">
             <div class="tix-head">
@@ -4751,7 +4800,8 @@
                 <button class="bto bsm" onclick="toggleInternalNote()">Internal Note</button>
                 <span id="TIX-INTERNAL-BADGE" style="display:none;font-size:.7rem;color:#fbbf24">Internal note mode</span>
               </div>
-              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..."></textarea>
+              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..." oninput="ticketTyping()"></textarea>
+              <div id="TIX-TYPING" style="display:none;margin-top:6px;font-size:.75rem;color:var(--tx2)"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
                 <div style="display:flex;gap:8px;align-items:center">
                   <input type="file" id="TIX-IMG" style="display:none" accept="image/*" onchange="previewTicketImage(this)">
@@ -4983,7 +5033,11 @@
     let ME = null, TOK = null, CART_N = 0;
     let SV3D = null, LAST_UUID = null, LAST_UNAME = null;
     const CAPS = { LG: '', RG: '' };
+    const STAFF_ROLES = ['helper', 'mod', 'admin', 'dev', 'owner', 'founder'];
     let CUR_FORUM = null;
+    let PENDING_ROUTE = null, PENDING_TICKET_ID = null, NEXT_AFTER_AUTH = null;
+    let STAFF_PUSH_READY = false, TIX_TYPING_TIMER = null, TIX_TYPING_HIDE = null;
+    let isCheckingSession = false;
 
 
     function toggleMobileMenu(open = null) {
@@ -4995,13 +5049,65 @@
       document.body.style.overflow = nav.classList.contains('open') ? 'hidden' : '';
     }
 
+    function getCookie(name) {
+      return (document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`)) || [])[2] || '';
+    }
+
+    function rememberAuthIntent(routeId = null, ticketId = null) {
+      if (routeId) PENDING_ROUTE = routeId;
+      if (ticketId) PENDING_TICKET_ID = ticketId;
+      if (!NEXT_AFTER_AUTH) {
+        const next = new URLSearchParams(window.location.search).get('next');
+        NEXT_AFTER_AUTH = next || '';
+      }
+    }
+
+    function redirectToNextAfterAuth() {
+      if (NEXT_AFTER_AUTH) {
+        const next = NEXT_AFTER_AUTH;
+        NEXT_AFTER_AUTH = '';
+        window.location.href = next;
+        return true;
+      }
+      if (PENDING_ROUTE) {
+        const targetRoute = PENDING_ROUTE;
+        const targetTicket = PENDING_TICKET_ID;
+        PENDING_ROUTE = null;
+        PENDING_TICKET_ID = null;
+        GO(targetRoute);
+        if (targetTicket) setTimeout(() => openTix(targetTicket), 120);
+        return true;
+      }
+      return false;
+    }
+
+    function rememberVisibleRouteForAuth() {
+      const routeId = window.location.pathname.substring(1).replace(/\//g, '-') || 'home';
+      const ticketId = routeId === 'tickets'
+        ? (TIX?.activeId || new URLSearchParams(window.location.search).get('id'))
+        : null;
+      if (routeId !== 'home') rememberAuthIntent(routeId, ticketId);
+    }
+
+    function handleSessionExpired() {
+      rememberVisibleRouteForAuth();
+      ME = null;
+      TOK = null;
+      localStorage.removeItem('hc_token');
+      localStorage.removeItem('hc_user');
+      refreshUI();
+      openM('ML');
+      toast('err', 'Your session expired. Please log in again.');
+    }
+
     // ════════════════════════════════════════════════════
     // BOOT
     // ════════════════════════════════════════════════════
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // 1. SESSION WARMUP (Checkout Token Check)
       const urlParams = new URLSearchParams(window.location.search);
       const tempToken = urlParams.get('temp_token');
+      NEXT_AFTER_AUTH = urlParams.get('next') || '';
       
       async function initSession() {
           if (tempToken) {
@@ -5009,6 +5115,8 @@
               try {
                   const res = await window.fetch('/api/auth/warmup', {
                       method: 'POST',
+                      credentials: 'include',
+                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ token: tempToken })
                   });
                   const r = await res.json();
@@ -5017,67 +5125,64 @@
                       localStorage.setItem('hc_user', JSON.stringify(ME));
                       // Token settled, refresh to clean URL
                       window.location.href = window.location.origin + window.location.pathname;
-                      return; // Stop here, page will reload
+                      return false; // Stop here, page will reload
                   }
               } catch (err) { console.log("Warmup failed:", err); }
           }
 
           // 2. Restore session — check Cookies, then localStorage
-          let t = (document.cookie.match(new RegExp('(^| )hc_token=([^;]+)')) || [])[2] || localStorage.getItem('hc_token');
+          let t = getCookie('hc_token') || localStorage.getItem('hc_token');
           const u = localStorage.getItem('hc_user');
           if (t && u) {
             TOK = t;
             try { ME = JSON.parse(u); } catch (e) { }
             refreshUI();
             // Re-sync from server to get latest roles
-            API('/api/auth/me').then(r => {
+            try {
+              const r = await API('/api/auth/me');
               ME = r;
               localStorage.setItem('hc_user', JSON.stringify(ME));
               refreshUI();
-            }).catch((err) => {
-              console.log('Session re-sync failed, keeping local session:', err.message);
-            });
+              return true;
+            } catch (err) {
+              console.log('Session re-sync failed:', err.message);
+              if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
+                ME = null;
+                TOK = null;
+                localStorage.removeItem('hc_token');
+                localStorage.removeItem('hc_user');
+                refreshUI();
+              }
+            }
           }
+          if (t && !u) {
+            try {
+              const r = await API('/api/auth/me');
+              TOK = t;
+              ME = r;
+              localStorage.setItem('hc_user', JSON.stringify(ME));
+              refreshUI();
+              return true;
+            } catch (err) {
+              console.log('Cookie session restore failed:', err.message);
+              if ((err.message || '').includes('401') || (err.message || '').includes('Authentication')) {
+                ME = null;
+                TOK = null;
+                localStorage.removeItem('hc_token');
+                localStorage.removeItem('hc_user');
+                refreshUI();
+              }
+            }
+          }
+          return false;
       }
 
-      initSession();
+      await initSession();
 
       genCap('LG'); genCap('RG');
       checkAnn();
 
-      // Push Notifications Setup for Staff
-      const STAFF_ROLES = ['helper', 'mod', 'admin', 'dev', 'owner', 'founder'];
-      if (ME && STAFF_ROLES.includes(ME.role) && 'serviceWorker' in navigator && 'PushManager' in window) {
-         navigator.serviceWorker.register('/static/sw.js').then(reg => {
-            navigator.serviceWorker.ready.then(activeReg => {
-                activeReg.pushManager.getSubscription().then(sub => {
-                    if (!sub) {
-                        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
-                        activeReg.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(vapidKey)
-                        }).then(newSub => {
-                            API('/api/push/subscribe', { method: 'POST', body: { subscription: newSub } });
-                        }).catch(e => console.log('Push sub failed:', e));
-                    } else {
-                        API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
-                    }
-                });
-            });
-         }).catch(e => console.log('SW reg failed:', e));
-      }
-
-      // Deep Linking
-      const params = new URLSearchParams(window.location.search);
-      const page = params.get('page');
-      const tid = params.get('id');
-      if (page === 'tickets') {
-        if (tid) {
-          setTimeout(() => openTix(tid), 300);
-        } else {
-          GO('tickets');
-        }
-      }
+      TOK = getCookie('hc_token') || TOK;
 
       // Close overlay on backdrop click
       document.querySelectorAll('.ov').forEach(o => {
@@ -5092,7 +5197,21 @@
       renderRecentSearches();
       loadShowcase();
       initRouting();
+      handleTicketDeepLink();
       initAdminListeners();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', event => {
+          if (event.data?.type !== 'notification-open' || !event.data.url) return;
+          const target = new URL(event.data.url, window.location.origin);
+          if (target.pathname === '/tickets') {
+            const targetId = target.searchParams.get('id');
+            GO('tickets', false);
+            if (targetId) setTimeout(() => openTix(targetId), 180);
+            return;
+          }
+          window.location.href = `${target.pathname}${target.search}`;
+        });
+      }
     });
 
     let searchDebounce;
@@ -5106,6 +5225,64 @@
       }
     }
 
+    function handleTicketDeepLink() {
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get('page');
+      const tid = params.get('id');
+      const wantsTickets = page === 'tickets' || window.location.pathname === '/tickets';
+      if (!wantsTickets) return;
+      if (page === 'tickets') {
+        const normalized = tid ? `/tickets?id=${encodeURIComponent(tid)}` : '/tickets';
+        history.replaceState({ pg: 'tickets' }, '', normalized);
+      }
+      if (!ME) {
+        rememberAuthIntent('tickets', tid);
+        openM('ML');
+        return;
+      }
+      if (tid) {
+        setTimeout(() => openTix(tid), 300);
+      } else {
+        GO('tickets', false);
+      }
+    }
+
+    async function ensureStaffPushSubscription() {
+      if (!ME || !STAFF_ROLES.includes(ME.role)) {
+        toast('err', 'Staff account required for notifications.');
+        return false;
+      }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        toast('err', 'Push notifications are not supported here.');
+        return false;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast('err', 'Notification permission was not granted.');
+        return false;
+      }
+      try {
+        const reg = await navigator.serviceWorker.register('/static/sw.js');
+        const activeReg = await navigator.serviceWorker.ready;
+        const vapidKey = 'BESlhKyTo4E7kr2llj371KeAwjhO1j0pCy-DTwly3xDTW4Gy1uQPuNc_Qa6-9XlnCxi_RjUA0TL9JNH-rR_OVvo';
+        let sub = await activeReg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await activeReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey)
+          });
+        }
+        await API('/api/push/subscribe', { method: 'POST', body: { subscription: sub } });
+        STAFF_PUSH_READY = true;
+        toast('ok', 'Staff notifications enabled.');
+        return true;
+      } catch (e) {
+        console.log('Push setup failed:', e);
+        toast('err', 'Could not enable notifications.');
+        return false;
+      }
+    }
+
     // ════════════════════════════════════════════════════
     // NAVIGATION
     // ════════════════════════════════════════════════════
@@ -5115,6 +5292,7 @@
       const restricted = ['store', 'store-gl', 'store-bw', 'store-sw', 'store-ls', 'store-sv', 'store-pr', 'store-free', 'chat', 'admin', 'logs', 'staff', 'mgmt'];
       if (restricted.includes(id)) {
         if (!ME) {
+          rememberAuthIntent(id);
           openM('ML');
           toast('err', 'Please log in to access this feature.');
           return;
@@ -5155,7 +5333,7 @@
       ({
         forums: renderForumIndex,
         players: () => { plT('skin'); initSV3D(); },
-        profile: () => { if (ME) { loadProfile(); loadInv(); loadGifts(); loadProfTix(); } else openM('ML'); },
+        profile: () => { if (ME) { loadProfile(); loadInv(); loadGifts(); loadProfTix(); } else { rememberAuthIntent('profile'); openM('ML'); } },
         tickets: loadTix,
         staff: loadStaff,
         admin: () => { admT('node'); },
@@ -5224,6 +5402,7 @@
       API('/api/auth/me').then(r => {
         ME = r;
         localStorage.setItem('hc_user', JSON.stringify(ME));
+        TOK = getCookie('hc_token') || r.token || null;
         refreshUI();
       }).catch(() => {});
       // Re-init staff systems
@@ -5288,6 +5467,7 @@
         refreshUI(); closeM('ML');
         reInitPermissions();
         ['LG-ID', 'LG-PW', 'LG-CI'].forEach(x => SV(x, '')); genCap('LG');
+        if (!redirectToNextAfterAuth()) handleTicketDeepLink();
         toast('ok', '✓ Welcome back, ' + r.username + '!');
       } catch (e) { I('LG-ERR').textContent = e.message; genCap('LG'); }
     }
@@ -5306,10 +5486,12 @@
         // 2. STORE USER INFO FOR UI ONLY
         ME = r;
         localStorage.setItem('hc_user', JSON.stringify(ME));
+        TOK = getCookie('hc_token') || r.token || null;
         
         refreshUI(); closeM('MR');
         reInitPermissions();
         ['RG-EM', 'RG-US', 'RG-MC', 'RG-PW', 'RG-P2', 'RG-CI'].forEach(x => SV(x, '')); genCap('RG');
+        if (!redirectToNextAfterAuth()) handleTicketDeepLink();
         toast('ok', '✓ Account created! Welcome, ' + r.username + '!');
       } catch (e) { I('RG-ERR').textContent = e.message; genCap('RG'); }
     }
@@ -5317,6 +5499,7 @@
     async function doLogout() {
       try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
       ME = null; TOK = null;
+      PENDING_ROUTE = null; PENDING_TICKET_ID = null; NEXT_AFTER_AUTH = '';
       const domain = window.location.hostname.endsWith('hellcore.net') ? '; domain=.hellcore.net' : '';
       document.cookie = `hc_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC${domain}`;
       localStorage.removeItem('hc_token'); localStorage.removeItem('hc_user');
@@ -6181,7 +6364,7 @@
       try {
         const d = await fetch('/api/upload', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + TOK },
+          credentials: 'include',
           body: formData
         }).then(res => res.json());
         if (d.error) throw new Error(d.error);
@@ -6231,8 +6414,8 @@
       if (HEART_ACTIVE) return;
       HEART_ACTIVE = true;
       HEARTBEAT_TIMER = setInterval(async () => {
-        if (!TOK) return;
-        try { await fetch('/api/auth/heartbeat', { method: 'POST', headers: { 'X-Auth-Token': TOK } }); } catch (e) { }
+        if (!ME) return;
+        try { await fetch('/api/auth/heartbeat', { method: 'POST', credentials: 'include' }); } catch (e) { }
       }, 60000); // 1 minute heartbeat
     }
 
@@ -6249,7 +6432,7 @@
             <img src="/api/skin/head/${enc(u.username)}/24" style="width:24px;height:24px;border-radius:4px" alt="">
             <div style="flex:1;min-width:0">
               <div class="sbar-n" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.username)}</div>
-              <span class="rb rb-${u.role}" style="font-size:0.5rem;padding:0 4px">${u.role.toUpperCase()}</span>
+              <span class="rb rb-${u.role}" style="font-size:0.5rem;padding:0 4px">${u.role.toUpperCase()}</span>${u.primary_rank ? `<span class="rb rb-${rbcls(u.primary_rank)}" style="font-size:0.5rem;padding:0 4px;margin-left:4px">${esc(u.primary_rank)}</span>` : ''}
             </div>
             <div style="width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px var(--grn)"></div>
           </div>
@@ -6321,7 +6504,7 @@
           return `
             <div style="display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'}">
               <div style="font-size:0.65rem;color:var(--tx3);margin-bottom:2px">
-                <b>${esc(m.username)}</b> <span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
+                <b>${esc(m.username)}</b> ${m.primary_rank ? `<span class="rb rb-${rbcls(m.primary_rank)}" style="font-size:0.5rem;padding:0 3px">${esc(m.primary_rank)}</span>` : ''}<span class="rb rb-${m.role}" style="font-size:0.5rem;padding:0 3px">${m.role.toUpperCase()}</span> 
                 · ${fmtD(m.created_at)}
               </div>
               <div class="p" style="padding:8px 12px;max-width:80%;font-size:0.85rem;${bubbleStyle};border-radius:12px">
@@ -6380,7 +6563,7 @@
       if (PING_POLL) { clearInterval(PING_POLL); PING_POLL = null; }
     }
 
-    let PUSHER_INST = null, P_CHAN = null;
+    let PUSHER_INST = null, P_CHAN = null, TIX_GLOBAL_CHAN = null, TIX_RT_CHAN = null, TIX_RT_ID = null;
     function initPusher() {
       if (PUSHER_INST) return;
       try {
@@ -6393,6 +6576,12 @@
         });
 
         P_CHAN = PUSHER_INST.subscribe('staff-chat');
+        TIX_GLOBAL_CHAN = PUSHER_INST.subscribe('tickets-global');
+        TIX_GLOBAL_CHAN.bind('ticket-created', function () { if (ME) loadTix(); });
+        TIX_GLOBAL_CHAN.bind('ticket-updated', function () { if (ME) loadTix(); });
+        TIX_GLOBAL_CHAN.bind('presence', function () {
+          if (I('ADM-ONLINE-TEAM')) loadOnlineStaff();
+        });
         P_CHAN.bind('new-message', function (data) {
           console.log('Chat Event:', data);
           const chanId = Number(data.channel_id);
@@ -6414,6 +6603,40 @@
         });
       } catch (e) { console.error('Pusher error:', e); }
 
+    }
+
+    function bindTicketRealtime(ticketId) {
+      initPusher();
+      if (!PUSHER_INST || !ticketId) return;
+      if (TIX_RT_CHAN && TIX_RT_ID && TIX_RT_ID !== ticketId) {
+        try { PUSHER_INST.unsubscribe(`ticket-${TIX_RT_ID}`); } catch (e) { }
+        TIX_RT_CHAN = null;
+      }
+      if (TIX_RT_ID === ticketId && TIX_RT_CHAN) return;
+      TIX_RT_ID = ticketId;
+      TIX_RT_CHAN = PUSHER_INST.subscribe(`ticket-${ticketId}`);
+      TIX_RT_CHAN.bind('new-message', function (data) {
+        if (data?.message && data.message.id && !TIX.messages.find(m => m.id === data.message.id)) {
+          TIX.messages.push(data.message);
+          renderTicketMessages();
+          loadTix();
+        }
+      });
+      TIX_RT_CHAN.bind('ticket-updated', function () {
+        if (TIX.activeId === ticketId) openTix(ticketId);
+        else loadTix();
+      });
+      TIX_RT_CHAN.bind('typing', function (data) {
+        const username = data?.username;
+        if (!username || username === ME?.username) return;
+        if (!TIX.typingUsers.includes(username)) TIX.typingUsers.push(username);
+        updateTypingIndicator();
+        clearTimeout(TIX_TYPING_HIDE);
+        TIX_TYPING_HIDE = setTimeout(() => {
+          TIX.typingUsers = TIX.typingUsers.filter(name => name !== username);
+          updateTypingIndicator();
+        }, 1800);
+      });
     }
 
     async function sendStaffMsg() {
@@ -6961,10 +7184,21 @@
     // ════════════════════════════════════════════════════
     // TICKETS (DISCORD WORKSPACE)
     // ════════════════════════════════════════════════════
-    const TIX = { list: [], activeId: null, active: null, messages: [], activity: [], staff: [], perms: {}, poll: null, internal: false, canned: [] };
+    const TIX = { list: [], activeId: null, active: null, messages: [], activity: [], staff: [], perms: {}, poll: null, internal: false, canned: [], typingUsers: [] };
     const tixSeenKey = id => `hc_tix_seen_${ME?.id || 0}_${id}`;
     const tixMarkSeen = (id, mid) => { try { localStorage.setItem(tixSeenKey(id), String(mid || 0)); } catch (e) { } };
     const tixGetSeen = id => { try { return parseInt(localStorage.getItem(tixSeenKey(id)) || '0', 10) || 0; } catch (e) { return 0; } };
+    function updateTicketUnreadUI(totalUnread = null) {
+      const total = totalUnread == null
+        ? (TIX.list || []).reduce((sum, t) => sum + Math.max(0, (t.last_message_id || 0) - tixGetSeen(t.id)), 0)
+        : totalUnread;
+      const badge = I('TIX-UNREAD-BADGE');
+      if (badge) {
+        badge.style.display = total ? 'inline-flex' : 'none';
+        badge.textContent = total;
+      }
+      document.title = total ? `(${total}) Hellcore Network` : 'Hellcore Network — mc.hellcore.net';
+    }
 
     async function loadTix() {
       if (!ME) { const el = I('TIX-L'); if (el) el.innerHTML = '<div class="empty">Please log in to view your tickets.</div>'; return; }
@@ -6978,6 +7212,7 @@
         TIX.list = tickets || [];
         TIX.canned = canned || [];
         renderTixList(TIX.list, el);
+        updateTicketUnreadUI();
         renderCannedReplies();
       } catch (e) { el.innerHTML = `<div class="empty">${esc(e.message || 'Failed to load tickets.')}</div>`; }
     }
@@ -7022,10 +7257,21 @@
         TIX.activity = d.activity || [];
         TIX.staff = d.staff || [];
         TIX.perms = d.permissions || {};
+        TIX.typingUsers = [];
+        updateTypingIndicator();
         renderTixList(TIX.list, I('TIX-L'));
         renderTicketWorkspace();
+        bindTicketRealtime(id);
         startTicketPolling();
-      } catch (e) { toast('err', e.message); }
+        updateTicketUnreadUI();
+      } catch (e) {
+        if ((e.message || '').includes('Authentication')) {
+          rememberAuthIntent('tickets', id);
+          openM('ML');
+          return;
+        }
+        toast('err', e.message);
+      }
     }
     function closeTixD() {
       if (TIX.poll) clearInterval(TIX.poll);
@@ -7042,7 +7288,7 @@
       const t = TIX.active; if (!t) return;
       const head = I('TIX-CHAT-HEAD');
       const canManage = !!TIX.perms.can_manage;
-      head.innerHTML = `<div>#${t.id} ${esc(t.title)}</div><div style="display:flex;gap:8px">${canManage && t.status === 'open' ? `<button class="bto bsm" onclick="ticketAction('close')">Close</button>` : ''}${canManage && t.status !== 'open' ? `<button class="bto bsm" onclick="ticketAction('reopen')">Reopen</button>` : ''}${TIX.perms.can_delete ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}</div>`;
+      head.innerHTML = `<div>#${t.id} ${esc(t.title)}${t.primary_rank ? ` <span class="rb rb-${rbcls(t.primary_rank)}" style="font-size:.6rem">${esc(t.primary_rank)}</span>` : ''}</div><div style="display:flex;gap:8px">${canManage && t.status === 'open' ? `<button class="bto bsm" onclick="ticketAction('close')">Close</button>` : ''}${canManage && t.status !== 'open' ? `<button class="bto bsm" onclick="ticketAction('reopen')">Reopen</button>` : ''}${TIX.perms.can_delete ? `<button class="btn bred bsm" onclick="delTix(${t.id})">Delete</button>` : ''}</div>`;
       I('TIX-COMPOSER').style.display = t.status === 'open' ? '' : 'none';
       renderTicketMessages();
       renderTicketSide();
@@ -7063,7 +7309,7 @@
       return `<div class="tmsg ${isSys ? 'system' : ''}">
         ${isSys ? '' : `<div class="tmsg-av"><img src="${av}" alt=""></div>`}
         <div class="tmsg-main">
-          <div class="tmsg-header"><span class="tmsg-user">${esc(isSys ? 'Hellcore System' : m.author_name)}</span>${m.author_role ? `<span class="rb rb-${m.author_role}" style="font-size:.6rem">${m.author_role}</span>` : ''}${badge}<span class="tmsg-time">${fmtD(m.created_at)}</span></div>
+          <div class="tmsg-header"><span class="tmsg-user">${esc(isSys ? 'Hellcore System' : m.author_name)}</span>${m.primary_rank ? `<span class="rb rb-${rbcls(m.primary_rank)}" style="font-size:.58rem">${esc(m.primary_rank)}</span>` : ''}${m.author_role ? `<span class="rb rb-${m.author_role}" style="font-size:.6rem">${m.author_role}</span>` : ''}${badge}<span class="tmsg-time">${fmtD(m.created_at)}</span></div>
           <div class="tmsg-content">${highlightMentions(m.content || '')}</div>
           ${m.image_url ? `<img src="${m.image_url}" class="tmsg-img" onclick="window.open(this.src)">` : ''}
         </div>
@@ -7085,10 +7331,12 @@
       el.innerHTML = `
         <div class="p"><div class="stitle" style="font-size:1rem">Ticket Details</div>
           <div style="font-size:.8rem;color:var(--tx2)">Category: <strong>${esc(t.category)}</strong></div>
-          <div style="font-size:.8rem;color:var(--tx2)">Author: <strong>${esc(t.author_name)}</strong></div>
+          <div style="font-size:.8rem;color:var(--tx2)">Author: <strong>${esc(t.author_name)}</strong>${t.primary_rank ? ` <span class="rb rb-${rbcls(t.primary_rank)}" style="font-size:.58rem">${esc(t.primary_rank)}</span>` : ''}</div>
           <div style="font-size:.8rem;color:var(--tx2)">Created: <strong>${fmtD(t.created_at)}</strong></div>
+          ${t.order_summary ? `<div style="margin-top:8px;padding:10px;border:1px solid var(--bd);border-radius:10px;background:rgba(255,255,255,0.03)"><div style="font-size:.72rem;color:var(--tx3);text-transform:uppercase">Order</div><div style="font-weight:700">${esc(t.order_summary.order_code || 'Pending')}</div><div style="font-size:.78rem;color:var(--tx2)">Payment: ${esc(t.order_summary.payment_method || 'upi')} · ${esc(t.order_summary.payment_status || t.order_summary.status || 'pending')}</div><div style="font-size:.78rem;color:var(--tx2);margin-top:4px">${(t.order_summary.items || []).map(it => `${esc(it.name)} (${esc(it.gamemode || 'global')})`).join('<br>')}</div></div>` : ''}
           <div style="margin-top:8px;display:flex;gap:8px"><span class="tix-chip ${t.status === 'open' ? 'open' : 'closed'}">${esc(t.status)}</span><span class="tix-chip">${esc(t.priority || 'normal')}</span></div>
         </div>
+        ${isStaff() ? `<div class="p"><div class="stitle" style="font-size:1rem">Notifications</div><button class="btn bsm" onclick="ensureStaffPushSubscription()">Enable Staff Notifications</button></div>` : ''}
         <div class="p"><div class="stitle" style="font-size:1rem">Search Messages</div><input id="TIX-MSG-SEARCH" class="inp" placeholder="Find in chat..." oninput="renderTicketMessages()"></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Priority</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('priority', { priority:this.value })"><option value="low" ${t.priority === 'low' ? 'selected' : ''}>low</option><option value="normal" ${t.priority === 'normal' ? 'selected' : ''}>normal</option><option value="high" ${t.priority === 'high' ? 'selected' : ''}>high</option><option value="urgent" ${t.priority === 'urgent' ? 'selected' : ''}>urgent</option></select></div>
         <div class="p"><div class="stitle" style="font-size:1rem">Assignee</div><select class="inp" ${canAssign ? '' : 'disabled'} onchange="ticketAction('assign', { assigned_to:this.value || null })">${staffOpt}</select></div>
@@ -7101,6 +7349,24 @@
     function toggleInternalNote() {
       TIX.internal = !TIX.internal;
       I('TIX-INTERNAL-BADGE').style.display = TIX.internal ? '' : 'none';
+    }
+    function updateTypingIndicator() {
+      const el = I('TIX-TYPING');
+      if (!el) return;
+      const others = (TIX.typingUsers || []).filter(name => name && name !== ME?.username);
+      if (!others.length) {
+        el.style.display = 'none';
+        el.textContent = '';
+        return;
+      }
+      el.style.display = 'block';
+      el.textContent = `${others.join(', ')} typing...`;
+    }
+    async function ticketTyping() {
+      if (!TIX.activeId || !ME) return;
+      if (TIX_TYPING_TIMER) return;
+      TIX_TYPING_TIMER = setTimeout(() => { TIX_TYPING_TIMER = null; }, 1500);
+      try { await API(`/api/tickets/${TIX.activeId}/typing`, { method: 'POST' }); } catch (e) { }
     }
     function previewTicketImage(input) {
       const f = input?.files?.[0];
@@ -7186,6 +7452,7 @@
     function startTicketPolling() {
       if (TIX.poll) clearInterval(TIX.poll);
       if (!TIX.activeId) return;
+      initPusher();
       TIX.poll = setInterval(async () => {
         try {
           const last = TIX.messages.length ? TIX.messages[TIX.messages.length - 1].id : 0;
@@ -7201,7 +7468,7 @@
             TIX.active.priority = d.ticket_meta.priority || TIX.active.priority;
           }
         } catch (e) { }
-      }, 4000);
+      }, 12000);
     }
 
     // ════════════════════════════════════════════════════
@@ -7483,7 +7750,7 @@
             // Success! Redirect to the main site ticket chat immediately.
             // We use the Deep Linking structure to open the specific ticket.
             const mainSite = window.location.hostname.includes('hellcore.net') ? 'https://hellcore.net' : window.location.origin;
-            window.location.href = `${mainSite}?page=tickets&id=${r.ticket_id}`;
+            window.location.href = `${mainSite}/tickets?id=${r.ticket_id}`;
         } catch (e) {
             toast('err', 'Checkout failed: ' + e.message);
             console.error("[Checkout] Error:", e);
@@ -7783,8 +8050,8 @@
               window.fetch('/api/auth/me', { credentials: 'include' })
                 .then(check => {
                     if (check.status === 401) {
-                        console.error("[Auth] Session confirmed DEAD. Logging out.");
-                        doLogout();
+                        console.error("[Auth] Session confirmed DEAD. Re-opening login.");
+                        handleSessionExpired();
                     } else {
                         console.log("[Auth] Session is still ALIVE. Ignoring 401 from " + url);
                     }
