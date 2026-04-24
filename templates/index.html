@@ -5781,9 +5781,20 @@
 
         console.log("[Push] Registering /sw.js...");
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        const activeReg = await navigator.serviceWorker.ready;
         
-        console.log("[Push] SW Ready. Converting Key...");
+        // Wait for it to become active if it isn't yet
+        let serviceWorker = reg.installing || reg.waiting || reg.active;
+        console.log("[Push] Current SW State:", serviceWorker ? serviceWorker.state : "none");
+        
+        const activeReg = await navigator.serviceWorker.ready;
+        console.log("[Push] SW Ready, waiting for active status...");
+        
+        // Final check for activity
+        if (!activeReg.active) {
+           console.log("[Push] Not active yet, sleeping 1s...");
+           await new Promise(r => setTimeout(r, 1000));
+        }
+
         const vapidKey = 'BNlrznc7YORjcC8r6s6a8VFjjVMS6qZA+H8hiDO2P7gr/DKjbfl2LEppvxe8sfozR8RPWVc28RipBKnDLQ4hv2o=';
         const convertedKey = urlBase64ToUint8Array(vapidKey);
         console.log("[Push] Converted Key Bytes:", convertedKey.length);
