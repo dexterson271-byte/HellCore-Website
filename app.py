@@ -3167,12 +3167,16 @@ def claim_trial(tid):
     if c.fetchone():
         return jsonify({"error": "You have already claimed this trial offer."}), 400
         
-    # 4. Grant Rank with expiration
+    # 4. Grant Rank with expiration (Database)
     expires_at = datetime.now() + timedelta(days=int(trial["duration_days"]))
     c.execute(f"INSERT OR REPLACE INTO hc_ranks (user_id, gamemode, rank_name, expires_at) VALUES ({ph()}, {ph()}, {ph()}, {ph()})",
               (u["id"], trial["gamemode"], trial["rank_name"], expires_at))
               
-    # 5. Record claim
+    # 5. Push command to proxy (Direct Command Engine)
+    cmd = f"lpv user {u['mc_username']} parent addtemp {trial['rank_name']} {trial['duration_days']}d"
+    c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+              
+    # 6. Record claim
     c.execute(f"INSERT INTO hc_user_trials (user_id, trial_id, claimed_at) VALUES ({ph()}, {ph()}, {ph()})",
               (u["id"], tid, datetime.now()))
               
