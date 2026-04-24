@@ -807,6 +807,44 @@ def emit_ticket_event(ticket_id, event_name, payload):
     if event_name in ("ticket-created", "ticket-updated"):
         pusher_trigger("tickets-global", event_name, payload)
 
+def send_push_notification(user_ids, title, body, url=None, data=None):
+    if not user_ids: return
+    if isinstance(user_ids, (int, str)): user_ids = [user_ids]
+    try:
+        from pywebpush import webpush, WebPushException
+        vapid_priv = os.environ.get("VAPID_PRIVATE_KEY")
+        if not vapid_priv and os.path.exists(".env"):
+             with open(".env", "r") as f:
+                 for x in f:
+                     if "VAPID_PRIVATE_KEY=" in x: vapid_priv = x.split("=")[1].strip()
+        if vapid_priv and os.path.exists(vapid_priv):
+            with open(vapid_priv, "r") as f: vapid_priv = f.read().strip()
+        if not vapid_priv: return
+
+        db = get_db(); c = db_cursor(db)
+        phs_list = ",".join([ph()] * len(user_ids))
+        c.execute(f"SELECT endpoint, p256dh, auth FROM hc_push_subs WHERE user_id IN ({phs_list})", tuple(user_ids))
+        subs = to_list(c.fetchall())
+        if not subs: return
+
+        notif_data = {"title": title, "body": body, "data": data or {}}
+        if url: notif_data["data"]["url"] = url
+        payload = json.dumps(notif_data)
+
+        for s in subs:
+            try:
+                webpush(
+                    subscription_info={"endpoint": s["endpoint"], "keys": {"p256dh": s["p256dh"], "auth": s["auth"]}},
+                    data=payload, vapid_private_key=vapid_priv,
+                    vapid_claims={"sub": "mailto:admin@hellcore.net"}
+                )
+            except WebPushException as ex:
+                if ex.response and ex.response.status_code in [404, 410]:
+                    c.execute(f"DELETE FROM hc_push_subs WHERE endpoint={ph()}", (s["endpoint"],))
+                    db.commit()
+    except Exception as e:
+        print(f"[PUSH ERROR] {e}")
+
 def log_audit(admin_id, action, target_id=None, details="", status="success", execution_time=0.0):
     try:
         db = get_db(); c = db_cursor(db)
@@ -1793,6 +1831,31 @@ def ticket_msg(tid):
         "status": t.get("status", "open"),
         "priority": t.get("priority", "normal"),
     })
+
+    # Browser Push Notification
+    if not is_internal:
+        author_name = msg.get("author_name") or "System"
+        notif_title = f"New reply: Ticket #{tid}"
+        notif_body = f"{author_name}: {content[:60]}..."
+        notif_url = f"/tickets?id={tid}"
+        
+        if u and u["role"] in STAFF_ROLES:
+            # Staff replied -> Notify author
+            if t["author_id"]:
+                send_push_notification(t["author_id"], notif_title, notif_body, url=notif_url)
+        else:
+            # User replied -> Notify staff
+            try:
+                c_push = db_cursor(get_db())
+                # Notify assigned staff or all staff if not assigned
+                if t.get("assigned_to"):
+                    target_staff = [t["assigned_to"]]
+                else:
+                    c_push.execute("SELECT id FROM hc_users WHERE role IN ('helper','mod','dev','admin','owner','founder')")
+                    target_staff = [r["id"] for r in to_list(c_push.fetchall())]
+                c_push.close()
+                send_push_notification(target_staff, notif_title, notif_body, url=notif_url)
+            except: pass
 
     return jsonify({"ok":True,"message":msg})
 
