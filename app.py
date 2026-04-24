@@ -562,6 +562,19 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
   token VARCHAR(64) PRIMARY KEY,
   user_id INTEGER NOT NULL,
   expires_at DATETIME NOT NULL)""",
+f"""CREATE TABLE IF NOT EXISTS hc_trials(
+  id INTEGER PRIMARY KEY {AI},
+  title VARCHAR(100) NOT NULL,
+  gamemode VARCHAR(30) NOT NULL,
+  rank_name VARCHAR(30) NOT NULL,
+  duration_days INTEGER NOT NULL,
+  is_active INTEGER DEFAULT 1,
+  created_at {DT})""",
+f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  trial_id INTEGER NOT NULL,
+  claimed_at {DT})""",
     ]
 
     for sql in tables:
@@ -606,8 +619,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_temp_tokens(
         c.execute("ALTER TABLE hc_users ADD COLUMN is_verified INTEGER DEFAULT 0")
     except:
         pass
-
-
+    try:
+        c.execute("ALTER TABLE hc_ranks ADD COLUMN expires_at DATETIME")
+    except:
+        pass
 
     db.commit() # <── Commit migrations
     for sql in [
@@ -730,6 +745,10 @@ def get_rank_payload_for_user(user_id, cursor=None):
         if owns_cursor:
             db = get_db()
             c = db_cursor(db)
+            
+        c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()} AND expires_at IS NOT NULL AND expires_at < {ph()}", (user_id, datetime.now()))
+        if owns_cursor and db: db.commit()
+        
         c.execute(f"SELECT gamemode, rank_name FROM hc_ranks WHERE user_id={ph()}", (user_id,))
         details = {
             row["gamemode"]: row["rank_name"]
@@ -3072,7 +3091,96 @@ def status_worker():
             
         time.sleep(60)
 
+# -------------------------------------------------------
+# TRIALS (ADMIN & USER)
+# -------------------------------------------------------
+@app.route("/api/admin/trials", methods=["GET"])
+@admin_required
+def admin_get_trials():
+    db = get_db(); c = db_cursor(db)
+    c.execute("SELECT * FROM hc_trials ORDER BY created_at DESC")
+    return jsonify(to_list(c.fetchall()))
+
+@app.route("/api/admin/trials", methods=["POST"])
+@admin_required
+def admin_save_trial():
+    d = request.get_json() or {}
+    db = get_db(); c = db_cursor(db)
+    
+    if "id" in d and d["id"]:
+        c.execute(f"UPDATE hc_trials SET title={ph()}, gamemode={ph()}, rank_name={ph()}, duration_days={ph()}, is_active={ph()} WHERE id={ph()}",
+                  (d["title"], d["gamemode"], d["rank_name"], int(d["duration_days"]), 1 if d.get("is_active", 1) else 0, d["id"]))
+    else:
+        c.execute(f"INSERT INTO hc_trials (title, gamemode, rank_name, duration_days, is_active, created_at) VALUES ({phs(6)})",
+                  (d["title"], d["gamemode"], d["rank_name"], int(d["duration_days"]), 1 if d.get("is_active", 1) else 0, datetime.now()))
+    db.commit()
+    return jsonify({"success": True})
+
+@app.route("/api/admin/trials/<int:tid>", methods=["DELETE"])
+@admin_required
+def admin_delete_trial(tid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"DELETE FROM hc_trials WHERE id={ph()}", (tid,))
+    db.commit()
+    return jsonify({"success": True})
+
+@app.route("/api/trials", methods=["GET"])
+def get_active_trials():
+    db = get_db(); c = db_cursor(db)
+    c.execute("SELECT * FROM hc_trials WHERE is_active=1")
+    trials = to_list(c.fetchall())
+    
+    # If logged in, attach whether user has claimed it
+    token = request.cookies.get("hc_token")
+    u = get_user_by_token(token) if token else None
+    
+    if u:
+        c.execute(f"SELECT trial_id FROM hc_user_trials WHERE user_id={ph()}", (u["id"],))
+        claimed = {row["trial_id"] for row in to_list(c.fetchall())}
+        for t in trials:
+            t["claimed"] = t["id"] in claimed
+    else:
+        for t in trials:
+            t["claimed"] = False
+            
+    return jsonify(trials)
+
+@app.route("/api/trials/claim/<int:tid>", methods=["POST"])
+@auth_required
+def claim_trial(tid):
+    u = request.cu
+    db = get_db(); c = db_cursor(db)
+    
+    # 1. Check if verified
+    if not u.get("is_verified"):
+        return jsonify({"error": "You must link your Minecraft account to claim free trials."}), 403
+        
+    # 2. Check if trial exists and is active
+    c.execute(f"SELECT * FROM hc_trials WHERE id={ph()} AND is_active=1", (tid,))
+    trial = c.fetchone()
+    if not trial:
+        return jsonify({"error": "Trial not found or no longer active."}), 404
+    trial = to_dict(trial)
+        
+    # 3. Check if already claimed
+    c.execute(f"SELECT id FROM hc_user_trials WHERE user_id={ph()} AND trial_id={ph()}", (u["id"], tid))
+    if c.fetchone():
+        return jsonify({"error": "You have already claimed this trial offer."}), 400
+        
+    # 4. Grant Rank with expiration
+    expires_at = datetime.now() + timedelta(days=int(trial["duration_days"]))
+    c.execute(f"INSERT OR REPLACE INTO hc_ranks (user_id, gamemode, rank_name, expires_at) VALUES ({ph()}, {ph()}, {ph()}, {ph()})",
+              (u["id"], trial["gamemode"], trial["rank_name"], expires_at))
+              
+    # 5. Record claim
+    c.execute(f"INSERT INTO hc_user_trials (user_id, trial_id, claimed_at) VALUES ({ph()}, {ph()}, {ph()})",
+              (u["id"], tid, datetime.now()))
+              
+    db.commit()
+    return jsonify({"success": True, "expires_at": expires_at.isoformat()})
+
 @app.errorhandler(404)
+
 def not_found(e):
     if is_known_main_spa_path(request.path):
         return build_main_spa_response()

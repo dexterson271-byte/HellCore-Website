@@ -4410,6 +4410,12 @@
               </svg> Forums</button>
           </div>
         </div>
+        
+        <!-- Trial Offers Box -->
+        <div id="TRIAL-BOX" style="margin-bottom:20px; display:none">
+          <!-- Populated by JS -->
+        </div>
+
         <div class="stitle"><svg class="ic">
             <use href="#ic-megaphone" />
           </svg> Current Event</div>
@@ -4524,6 +4530,9 @@
             <button id="ADM-TAB-EVENTS" class="adm-nav-btn" onclick="admT('events')"><svg class="ic">
                 <use href="#ic-bolt" />
               </svg><span>Events</span></button>
+            <button id="ADM-TAB-TRIALS" class="adm-nav-btn" onclick="admT('trials')"><svg class="ic">
+                <use href="#ic-gift" />
+              </svg><span>Trials</span></button>
             <div class="adm-nav-divider"></div>
             <button id="ADM-TAB-MGMT" class="adm-nav-btn" onclick="admT('mgmt')"><svg class="ic">
                 <use href="#ic-wrench" />
@@ -4726,6 +4735,25 @@
               <button class="btn" style="width:100%" onclick="admCreateEvent()">Publish Custom Event</button>
               <div class="dv"></div>
               <div id="ADM-E-LIST"></div>
+            </div>
+          </div>
+
+          <!-- Trial Management -->
+          <div id="ADM-TRIALS" style="display:none">
+            <div class="p" style="margin-bottom:15px">
+              <div class="stitle">Create Trial Offer</div>
+              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Configure a free rank trial for new verified users to claim.</p>
+              <div class="g2" style="margin-bottom:10px">
+                <div class="fg"><label>Offer Title</label><input type="text" id="ADM-TR-TITLE" class="inp" placeholder="e.g. 7-Day VIP+ Trial"></div>
+                <div class="fg"><label>Gamemode</label><input type="text" id="ADM-TR-GM" class="inp" placeholder="e.g. global"></div>
+                <div class="fg"><label>Rank Name</label><input type="text" id="ADM-TR-RANK" class="inp" placeholder="e.g. vip_plus"></div>
+                <div class="fg"><label>Duration (Days)</label><input type="number" id="ADM-TR-DAYS" class="inp" value="7"></div>
+              </div>
+              <button class="btn" onclick="admSaveTrial()">Create Trial Offer</button>
+            </div>
+            <div class="p">
+              <div class="stitle" style="margin-bottom:15px">Active Trial Offers</div>
+              <div id="ADM-TR-LIST"></div>
             </div>
           </div>
 
@@ -5946,6 +5974,7 @@
       }
       updateCart();
       loadEvents();
+      loadActiveTrials();
     }
     const isStaff = () => ME && ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(ME.role);
     const isAdmin = () => ME && ['helper', 'mod', 'dev', 'admin', 'owner', 'founder'].includes(ME.role);
@@ -6111,6 +6140,7 @@
 
         renderStatus(d);
         loadEvents();
+        loadActiveTrials();
 
         // --- Update BW Arenas / Players from Nexus API ---
         try {
@@ -6947,7 +6977,7 @@
     // HELLCORE NEXUS (ADMIN SETTINGS)
     // ════════════════════════════════════════════════════
     function admT(t) {
-      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'MGMT'].forEach(k => {
+      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'TRIALS', 'MGMT'].forEach(k => {
         const el = I('ADM-' + k); if (el) el.style.display = k === t.toUpperCase() ? 'block' : 'none';
         const tab = I('ADM-TAB-' + k); if (tab) tab.className = 'adm-nav-btn' + (k === t.toUpperCase() ? ' ON' : '');
       });
@@ -6957,6 +6987,7 @@
       if (t === 'events') loadNexusEvents();
       if (t === 'forums') loadNexusForums();
       if (t === 'tickets') loadNexusTickets();
+      if (t === 'trials') loadNexusTrials();
       if (t === 'chat') loadNexusChat();
       else stopChatPoll();
     }
@@ -7608,6 +7639,50 @@
       catch (e) { toast('err', e.message); }
     }
 
+    async function loadNexusTrials() {
+      const el = I('ADM-TR-LIST'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      try {
+        const res = await API('/api/admin/trials');
+        if (!res.length) { el.innerHTML = '<div class="empty">No active trial offers.</div>'; return; }
+        el.innerHTML = res.map(t => `
+          <div class="adm-card" style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:600;font-size:1.05rem;color:var(--g)">${esc(t.title)} <span style="font-size:0.7rem;color:var(--tx2);font-weight:normal;background:var(--p2);padding:2px 6px;border-radius:4px;margin-left:5px">${t.is_active ? 'ACTIVE' : 'INACTIVE'}</span></div>
+              <div style="color:var(--tx2);font-size:0.8rem;margin-top:4px">Gamemode: <b>${esc(t.gamemode)}</b> | Rank: <b>${esc(t.rank_name)}</b> | Duration: <b>${t.duration_days} days</b></div>
+            </div>
+            <div>
+              <button class="bto bxs bred" onclick="admDelTrial(${t.id})">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) { el.innerHTML = '<div class="empty">Error loading trials.</div>'; }
+    }
+
+    async function admSaveTrial() {
+      const d = {
+        title: V('ADM-TR-TITLE'),
+        gamemode: V('ADM-TR-GM'),
+        rank_name: V('ADM-TR-RANK'),
+        duration_days: V('ADM-TR-DAYS')
+      };
+      if (!d.title || !d.gamemode || !d.rank_name || !d.duration_days) return toast('err', 'Fill all fields.');
+      try {
+        await API('/api/admin/trials', { method: 'POST', body: d });
+        toast('ok', 'Trial offer saved successfully.');
+        SV('ADM-TR-TITLE', ''); SV('ADM-TR-GM', ''); SV('ADM-TR-RANK', ''); SV('ADM-TR-DAYS', '7');
+        loadNexusTrials();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admDelTrial(id) {
+      if (!confirm('Delete this trial offer?')) return;
+      try {
+        await API(`/api/admin/trials/${id}`, { method: 'DELETE' });
+        toast('ok', 'Trial offer deleted.');
+        loadNexusTrials();
+      } catch (e) { toast('err', e.message); }
+    }
+
     async function loadNexusEvents() {
       const el = I('ADM-E-LIST'); el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
@@ -7655,6 +7730,46 @@
 
     // NOTE: admRunCmd is defined earlier at line ~6315 using the correct input ID 'ADM-RAW-CMD'
     // The duplicate that was here used the wrong ID 'ADM-TERM-IN' and was removed.
+
+    async function loadActiveTrials() {
+      const el = I('TRIAL-BOX'); if (!el) return;
+      try {
+        const res = await API('/api/trials');
+        const available = res.filter(t => !t.claimed);
+        if (!available.length) { el.style.display = 'none'; return; }
+        
+        el.style.display = 'block';
+        el.innerHTML = available.map(t => `
+          <div class="p" style="border:1px solid var(--g); background:var(--accent-glow); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px">
+            <div>
+              <div style="font-weight:700; font-size:1.2rem; color:var(--tx)">${esc(t.title)}</div>
+              <div style="font-size:0.85rem; color:var(--tx2); margin-top:2px">Free ${t.duration_days}-Day Trial for new verified users.</div>
+            </div>
+            <button class="btn" onclick="claimTrial(${t.id})">Claim Free Trial</button>
+          </div>
+        `).join('');
+      } catch (e) { el.style.display = 'none'; }
+    }
+
+    async function claimTrial(tid) {
+      if (!ME) {
+        toast('err', 'Please log in to claim this trial.');
+        openM('ML');
+        return;
+      }
+      if (!ME.is_verified) {
+        startVerificationFlow();
+        return;
+      }
+      try {
+        const res = await API(\`/api/trials/claim/\${tid}\`, { method: 'POST' });
+        toast('ok', 'Trial claimed successfully!');
+        loadActiveTrials();
+        reInitPermissions();
+      } catch (e) {
+        toast('err', e.message);
+      }
+    }
 
     async function loadEvents() {
       const el = I('EVENT-BOX'); if (!el) return;
