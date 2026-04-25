@@ -14,9 +14,8 @@
   <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0-rc.3/bundles/skinview3d.bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pusher-js@8.3.0/dist/web/pusher.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Monetag / PropellerAds -->
+  <!-- Monetag / PropellerAds (verification only - ad script loaded only on /store/free) -->
   <meta name="monetag" content="b2512e321bacc6a4168dab88ddf710fb">
-  <script src="https://quge5.com/88/tag.min.js" data-zone="233299" async data-cfasync="false"></script>
 
   <meta name="654e811153a19abf74f32b4d37f07f28813a457c" content="654e811153a19abf74f32b4d37f07f28813a457c" />
 
@@ -3853,6 +3852,470 @@
         font-size: 2.2rem;
       }
     }
+
+    .skeleton {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+    }
+
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+      animation: rewardShimmer 1.35s infinite;
+    }
+
+    @keyframes rewardShimmer {
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    .xp-dashboard-shell {
+      margin-bottom: 14px;
+    }
+
+    .xp-dashboard-card {
+      background:
+        radial-gradient(circle at top left, rgba(240, 152, 25, 0.22), transparent 42%),
+        radial-gradient(circle at bottom right, rgba(255, 81, 47, 0.18), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+      padding: 22px;
+    }
+
+    .xp-dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .dash-eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.66rem;
+      color: var(--tx3);
+      margin-bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dash-eyebrow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--g3), var(--g));
+      box-shadow: 0 0 12px rgba(255, 81, 47, 0.5);
+    }
+
+    .dash-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .dash-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(1.8rem, 3vw, 2.7rem);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .dash-copy {
+      color: var(--tx2);
+      max-width: 580px;
+    }
+
+    .dash-rank-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .dash-rank-pill.bronze {
+      color: #ffd2a0;
+      background: rgba(212, 115, 32, 0.18);
+      border-color: rgba(212, 115, 32, 0.35);
+    }
+
+    .dash-rank-pill.silver {
+      color: #ececec;
+      background: rgba(134, 134, 134, 0.2);
+      border-color: rgba(180, 180, 180, 0.32);
+    }
+
+    .dash-rank-pill.gold {
+      color: #ffeaa1;
+      background: rgba(214, 165, 27, 0.2);
+      border-color: rgba(214, 165, 27, 0.4);
+    }
+
+    .dash-rank-pill.unranked {
+      color: var(--tx2);
+    }
+
+    .xp-stat-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .xp-stat-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .xp-stat-label {
+      color: var(--tx2);
+      font-size: 0.84rem;
+    }
+
+    .xp-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      line-height: 0.95;
+      color: #fff2d0;
+      text-shadow: 0 0 28px rgba(240, 152, 25, 0.22);
+    }
+
+    .progress-shell {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--tx2);
+      font-size: 0.77rem;
+      flex-wrap: wrap;
+    }
+
+    .progress-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f09819, #ff512f);
+      box-shadow: 0 0 22px rgba(255, 81, 47, 0.34);
+      transition: width 0.55s ease;
+    }
+
+    .dashboard-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .metric-card {
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      min-height: 94px;
+    }
+
+    .metric-card strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-top: 10px;
+      color: #fff;
+    }
+
+    .metric-card span {
+      color: var(--tx2);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .ad-panel {
+      border-radius: 22px;
+      padding: 18px;
+      background: rgba(8, 8, 12, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ad-panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .ad-panel-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      margin-bottom: 4px;
+    }
+
+    .ad-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #ffe7bc;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .ad-progress {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .ad-progress > div {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f59e0b, #f97316, #ef4444);
+      transition: width 0.25s linear;
+    }
+
+    .ad-footnote {
+      color: var(--tx3);
+      font-size: 0.78rem;
+      line-height: 1.55;
+    }
+
+    .reward-store-page {
+      padding-top: 24px;
+      padding-bottom: 34px;
+    }
+
+    .reward-store-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .store-summary-chip {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-width: 170px;
+    }
+
+    .store-summary-chip span {
+      display: block;
+      color: var(--tx2);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .store-summary-chip strong {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+    }
+
+    .rank-store-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .reward-empty {
+      padding: 28px;
+      border-radius: 20px;
+      text-align: center;
+      color: var(--tx2);
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.03);
+      margin-bottom: 18px;
+    }
+
+    .rank-tier-card {
+      position: relative;
+      border-radius: 24px;
+      padding: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.12), transparent 36%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+      box-shadow: 0 20px 42px rgba(0, 0, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 360px;
+    }
+
+    .rank-tier-card.locked {
+      opacity: 0.72;
+      filter: saturate(0.8);
+    }
+
+    .rank-tier-card.current::before,
+    .rank-tier-card.affordable::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      pointer-events: none;
+    }
+
+    .rank-tier-card.bronze {
+      background:
+        radial-gradient(circle at top right, rgba(255, 183, 94, 0.28), transparent 36%),
+        linear-gradient(180deg, rgba(163, 91, 28, 0.24), rgba(56, 30, 12, 0.72));
+    }
+
+    .rank-tier-card.silver {
+      background:
+        radial-gradient(circle at top right, rgba(232, 232, 232, 0.22), transparent 36%),
+        linear-gradient(180deg, rgba(125, 125, 125, 0.18), rgba(42, 42, 46, 0.78));
+    }
+
+    .rank-tier-card.gold {
+      background:
+        radial-gradient(circle at top right, rgba(255, 226, 126, 0.28), transparent 38%),
+        linear-gradient(180deg, rgba(165, 122, 0, 0.26), rgba(47, 34, 4, 0.8));
+    }
+
+    .rank-tier-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .rank-tier-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.45rem;
+      margin-bottom: 6px;
+    }
+
+    .rank-tier-cost {
+      color: var(--tx2);
+      font-size: 0.92rem;
+    }
+
+    .rank-state {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      white-space: nowrap;
+    }
+
+    .rank-perks {
+      display: grid;
+      gap: 9px;
+      color: var(--tx2);
+      font-size: 0.86rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      flex: 1;
+    }
+
+    .rank-perks li {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      line-height: 1.45;
+    }
+
+    .rank-perks li::before {
+      content: '•';
+      color: #fff;
+    }
+
+    #CONFETTI {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2200;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 10px;
+      height: 18px;
+      border-radius: 4px;
+      opacity: 0.92;
+      animation: confettiFall 1400ms linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0% {
+        transform: translate3d(0, -20px, 0) rotate(0deg);
+      }
+      100% {
+        transform: translate3d(var(--x-shift), 100vh, 0) rotate(540deg);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .xp-dashboard-grid,
+      .rank-store-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .xp-dashboard-card,
+      .rank-tier-card {
+        border-radius: 18px;
+      }
+
+      .dashboard-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .reward-store-page {
+        padding-top: 8px;
+      }
+    }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -4640,6 +5103,20 @@
               </div>
               <div id="ADM-L-LIST"></div>
             </div>
+            <div class="p" style="margin-top:15px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px">
+                <div>
+                  <div class="stitle" style="margin:0">Ad & Rank Reward Logs</div>
+                  <p style="color:var(--tx2);font-size:.8rem">Recent ad watches and rank purchases with abuse flags.</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <input id="ADM-RW-USER" class="inp" style="width:160px" placeholder="Filter by user">
+                  <input id="ADM-RW-DATE" class="inp" style="width:170px" type="date">
+                  <button class="bto bsm" onclick="loadRewardLogs()">Apply</button>
+                </div>
+              </div>
+              <div id="ADM-RW-LOGS"></div>
+            </div>
           </div>
 
           <!-- Forum Moderation -->
@@ -4795,18 +5272,19 @@
 
     <!-- ════════════ STORE HUB ════════════ -->
     <div class="pg" id="pg-store">
-      <div class="W" style="text-align:center;padding:60px 20px">
-        <div class="ptitle">Official Store</div>
-        <p class="psub" style="margin-bottom:30px">Our store has moved to a dedicated platform for a better shopping experience.</p>
-        
-        <div class="mc" style="max-width:500px;margin:0 auto;cursor:default;background:rgba(255,255,255,0.03);border:1px solid var(--bd2)">
-          <img src="/static/logo.png" alt="Store" style="width:120px;height:120px;margin-bottom:20px;filter:drop-shadow(0 0 20px var(--g))">
-          <h2 style="font-family:'Outfit',sans-serif;margin-bottom:10px">Hellcore Webstore</h2>
-          <p style="color:var(--tx2);margin-bottom:20px">Purchase ranks, global boosters, mystery crates, and more on our official store.</p>
-          <button class="btn" style="width:100%" onclick="window.location.href='https://store.hellcore.net'">
-            <svg class="ic"><use href="#ic-cart" /></svg> Visit store.hellcore.net
-          </button>
+      <div class="W reward-store-page">
+        <div class="reward-store-head">
+          <div>
+            <div class="ptitle"><svg class="ic"><use href="#ic-star" /></svg> Rank Store</div>
+            <p class="psub">Spend earned XP on permanent Bronze, Silver, and Gold rank upgrades.</p>
+          </div>
+          <div class="store-summary-chip">
+            <span>Balance</span>
+            <strong id="STORE-XP-BALANCE">0 XP</strong>
+          </div>
         </div>
+        <div id="STORE-EMPTY" class="reward-empty" style="display:none">Watch ads to earn XP and unlock ranks!</div>
+        <div id="STORE-RANKS" class="rank-store-grid"></div>
       </div>
     </div>
 
@@ -5269,6 +5747,9 @@
             </svg> Tickets</button>
         </div>
         <div id="PR-OV">
+          <div class="xp-dashboard-shell">
+            <div id="XP-DASHBOARD" class="xp-dashboard-card"></div>
+          </div>
           <div class="g2" style="gap:14px">
             <div class="p">
               <div style="text-align:center;margin-bottom:14px">
@@ -5611,10 +6092,22 @@
           Home</button>
       </div>
     </div>
+    <div class="ov" id="MRANKBUY">
+      <div class="mdl" style="max-width:420px">
+        <div class="mhd">Confirm Rank Purchase <button class="mcl" onclick="closeM('MRANKBUY')"><svg class="ic"><use href="#ic-x" /></svg></button></div>
+        <div id="RANK-BUY-BODY" style="color:var(--tx2);font-size:.92rem;line-height:1.6">Loading purchase details...</div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button class="bto" style="flex:1" onclick="closeM('MRANKBUY')">Cancel</button>
+          <button class="btn" style="flex:1" id="RANK-BUY-CONFIRM" onclick="confirmRankPurchase()">Buy Rank</button>
+        </div>
+      </div>
+    </div>
+    <div id="CONFETTI"></div>
   </div><!-- #APP -->
 
   <script>
     'use strict';
+    const AD_COMPLETION_SECRET = {{ ad_completion_secret|tojson }};
     // ════════════════════════════════════════════════════
     // STATE
     // ════════════════════════════════════════════════════
@@ -5626,6 +6119,12 @@
     let PENDING_ROUTE = null, PENDING_TICKET_ID = null, NEXT_AFTER_AUTH = null;
     let STAFF_PUSH_READY = false, TIX_TYPING_TIMER = null, TIX_TYPING_HIDE = null;
     let isCheckingSession = false;
+    let XP_STATE = { current_xp: 0, rank: null, daily_ads_watched: 0, ads_remaining_today: 20, next_ad_available_at: null };
+    let STORE_RANKS_CACHE = [];
+    let DASHBOARD_TIMER = null;
+    let ACTIVE_AD_SESSION = null;
+    let ACTIVE_AD_INTERVAL = null;
+    let PENDING_RANK_PURCHASE = null;
 
 
     function toggleMobileMenu(open = null) {
@@ -5927,14 +6426,28 @@
         admin: () => { admT('node'); },
         cart: renderCart,
         about: loadAbout,
-        store: () => { buildStores(); if (window.innerWidth < 600) document.querySelectorAll('#pg-store .g4')[0]?.style.setProperty('grid-template-columns', '1fr'); },
+        store: () => { if (ME) loadRewardStore(); else { rememberAuthIntent('store'); openM('ML'); } },
         'store-gl': () => showStore('gl'),
         'store-bw': () => showStore('bw'),
         'store-sw': () => showStore('sw'),
         'store-ls': () => showStore('ls'),
         'store-sv': () => showStore('sv'),
         'store-pr': () => showStore('pr'),
-        'store-free': () => { showStore('free'); loadAdStatus(); },
+        'store-free': () => {
+          if (ME) {
+            // Inject PropellerAds only once when entering Free Store
+            if (!document.getElementById('propeller-ads-script')) {
+              const _s = document.createElement('script');
+              _s.id = 'propeller-ads-script';
+              _s.src = 'https://quge5.com/88/tag.min.js';
+              _s.setAttribute('data-zone', '233299');
+              _s.async = true;
+              _s.setAttribute('data-cfasync', 'false');
+              document.body.appendChild(_s);
+            }
+            loadNexus();
+          } else { rememberAuthIntent('store-free'); openM('ML'); }
+        },
       })[id]?.();
     }
 
@@ -5973,7 +6486,14 @@
       const li = !!ME;
       I('A-OUT').style.display = li ? 'none' : 'flex';
       I('A-IN').style.display = li ? 'flex' : 'none';
-      if (!li) return;
+      if (!li) {
+        XP_STATE = { current_xp: 0, rank: null, daily_ads_watched: 0, ads_remaining_today: 20, next_ad_available_at: null };
+        STORE_RANKS_CACHE = [];
+        if (DASHBOARD_TIMER) { clearInterval(DASHBOARD_TIMER); DASHBOARD_TIMER = null; }
+        if (ACTIVE_AD_INTERVAL) { clearInterval(ACTIVE_AD_INTERVAL); ACTIVE_AD_INTERVAL = null; }
+        ACTIVE_AD_SESSION = null;
+        return;
+      }
       I('NB-ME').innerHTML = '<svg class="ic"><use href="#ic-user"/></svg>  ' + ME.username;
       I('NB-STAFF').style.display = isStaff() ? '' : 'none';
       I('NB-ADMIN').style.display = isAdmin() ? '' : 'none';
@@ -7387,6 +7907,7 @@
         </div>
 
         ` || '<div class="empty">No logs found matching your filter.</div>';
+        loadRewardLogs();
       } catch (e) { el.innerHTML = '<div class="empty">Error loading audit logs.</div>'; }
     }
 
@@ -8469,8 +8990,491 @@
     // ════════════════════════════════════════════════════
     // PROFILE
     // ════════════════════════════════════════════════════
+    function rewardTierClass(name) {
+      const v = String(name || '').toLowerCase();
+      if (v.includes('gold')) return 'gold';
+      if (v.includes('silver')) return 'silver';
+      if (v.includes('bronze')) return 'bronze';
+      return 'unranked';
+    }
+
+    function rewardErrorMessage(err, fallback) {
+      const code = err?.data?.code;
+      const map = {
+        missing_fingerprint: 'This browser tab could not start a tracked ad session. Refresh and try again.',
+        daily_limit_reached: 'You reached the 20 ads per day limit. Try again after the daily reset.',
+        cooldown_active: 'Your cooldown is still active. Wait for the timer to finish and try again.',
+        active_tab_conflict: 'Another tab already has an active ad session. Finish that one first.',
+        ad_already_active: 'You already have an ad in progress in this tab.',
+        too_fast: 'The ad ended too quickly, so no XP was awarded.',
+        token_replayed: 'That ad session was already used.',
+        invalid_proof: 'We could not verify the ad completion proof.',
+        token_expired: 'That ad session expired. Start a fresh one.',
+        ip_rate_limited: 'Too many ad rewards came from this connection in the last hour.',
+        insufficient_xp: 'You do not have enough XP for that rank yet.',
+        already_owned: 'You already own this rank.',
+        lower_tier_owned: 'You cannot downgrade to a lower-tier rank.',
+      };
+      return map[code] || fallback || 'Something went wrong. Please try again.';
+    }
+
+    function getRewardDeviceId() {
+      const key = 'hc_reward_device_id';
+      let value = localStorage.getItem(key);
+      if (!value) {
+        value = uid();
+        localStorage.setItem(key, value);
+      }
+      return value;
+    }
+
+    function getRewardTabId() {
+      const key = 'hc_reward_tab_id';
+      let value = sessionStorage.getItem(key);
+      if (!value) {
+        value = uid();
+        sessionStorage.setItem(key, value);
+      }
+      return value;
+    }
+
+    function getAdSessionFingerprint() {
+      const fingerprint = `${getRewardTabId()}:${getRewardDeviceId()}`;
+      localStorage.setItem('hc_ad_session_fingerprint', fingerprint);
+      return fingerprint;
+    }
+
+    async function sha256Hex(value) {
+      const bytes = new TextEncoder().encode(value);
+      const hash = await crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function countdownSeconds(targetIso) {
+      if (!targetIso) return 0;
+      const diff = Math.ceil((new Date(targetIso).getTime() - Date.now()) / 1000);
+      return diff > 0 ? diff : 0;
+    }
+
+    function fmtCountdown(totalSeconds) {
+      const seconds = Math.max(0, Number(totalSeconds) || 0);
+      const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const ss = String(seconds % 60).padStart(2, '0');
+      return `${mm}:${ss}`;
+    }
+
+    function fmtDT(value) {
+      try {
+        return new Date(value).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return value || '';
+      }
+    }
+
+    function animateValue(el, from, to, suffix = '') {
+      if (!el) return;
+      const start = Number.isFinite(from) ? from : 0;
+      const end = Number.isFinite(to) ? to : 0;
+      const startedAt = performance.now();
+      const duration = 800;
+
+      function tick(now) {
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = `${Math.round(start + (end - start) * eased).toLocaleString()}${suffix}`;
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function rewardDashboardSkeleton() {
+      return `
+        <div class="xp-dashboard-grid">
+          <div>
+            <div class="skeleton" style="height:14px;width:110px;margin-bottom:12px"></div>
+            <div class="skeleton" style="height:42px;width:70%;margin-bottom:12px"></div>
+            <div class="skeleton" style="height:15px;width:88%;margin-bottom:18px"></div>
+            <div class="skeleton" style="height:56px;width:180px;margin-bottom:14px"></div>
+            <div class="skeleton" style="height:12px;width:100%;margin-bottom:12px"></div>
+            <div class="dashboard-metrics">
+              <div class="skeleton" style="height:92px"></div>
+              <div class="skeleton" style="height:92px"></div>
+              <div class="skeleton" style="height:92px"></div>
+            </div>
+          </div>
+          <div class="skeleton" style="height:320px;border-radius:22px"></div>
+        </div>
+      `;
+    }
+
+    function rewardStoreSkeleton() {
+      return Array.from({ length: 3 }).map(() => `
+        <div class="rank-tier-card">
+          <div class="skeleton" style="height:22px;width:50%"></div>
+          <div class="skeleton" style="height:14px;width:34%"></div>
+          <div class="skeleton" style="height:14px;width:100%"></div>
+          <div class="skeleton" style="height:14px;width:92%"></div>
+          <div class="skeleton" style="height:14px;width:86%"></div>
+          <div class="skeleton" style="height:44px;width:100%;margin-top:auto"></div>
+        </div>
+      `).join('');
+    }
+
+    function rewardLogsSkeleton() {
+      return `
+        <div class="skeleton" style="height:170px;margin-bottom:14px"></div>
+        <div class="skeleton" style="height:210px"></div>
+      `;
+    }
+
+    async function refreshRewardState() {
+      const [xp, ranks] = await Promise.all([
+        API('/api/user/xp'),
+        API('/api/store/ranks')
+      ]);
+      XP_STATE = xp;
+      STORE_RANKS_CACHE = ranks;
+      return { xp, ranks };
+    }
+
+    function renderRewardDashboard(previousXp = null) {
+      const el = I('XP-DASHBOARD');
+      if (!el) return;
+      const rank = XP_STATE.rank;
+      const tierClass = rewardTierClass(rank?.name);
+      const nextRank = STORE_RANKS_CACHE.find(r => (rank ? r.tier_order > rank.tier_order : true));
+      const progressPct = nextRank ? Math.max(0, Math.min(100, (XP_STATE.current_xp / Math.max(1, nextRank.xp_cost)) * 100)) : 100;
+      const cooldownLeft = countdownSeconds(XP_STATE.next_ad_available_at);
+      const active = ACTIVE_AD_SESSION;
+      const serverLock = !!XP_STATE.active_ad_in_progress && !active;
+      const activeRemaining = active ? Math.max(0, active.remainingSeconds || 0) : 0;
+      const adsWatched = XP_STATE.daily_ads_watched || 0;
+      const adsRemaining = XP_STATE.ads_remaining_today || 0;
+      const buttonDisabled = !!active || serverLock || cooldownLeft > 0 || adsRemaining <= 0;
+      const buttonLabel = active
+        ? `Watching Ad ${fmtCountdown(activeRemaining)}`
+        : serverLock
+          ? 'Ad Session Locked'
+        : cooldownLeft > 0
+          ? `Next Ad In ${fmtCountdown(cooldownLeft)}`
+          : adsRemaining <= 0
+            ? 'Daily Limit Reached'
+            : 'Watch Ad';
+
+      el.innerHTML = `
+        <div class="xp-dashboard-grid">
+          <div>
+            <div class="dash-eyebrow"><span class="dash-eyebrow-dot"></span> XP Dashboard</div>
+            <div class="dash-head">
+              <div>
+                <div class="dash-title">${esc(ME?.username || 'Player')}</div>
+                <div class="dash-copy">Earn XP from rewarded ads, keep the remainder after rank purchases, and climb through the rank tiers at your own pace.</div>
+              </div>
+              <div class="dash-rank-pill ${tierClass}">${esc(rank?.name || 'Unranked')}</div>
+            </div>
+            <div class="xp-stat-block">
+              <div class="xp-stat-line">
+                <span class="xp-stat-label">Current XP</span>
+                <span class="xp-stat-label">${nextRank ? `${esc(nextRank.name)} at ${nextRank.xp_cost} XP` : 'Top tier reached'}</span>
+              </div>
+              <div class="xp-value" id="DASH-XP-VALUE">0</div>
+              <div class="progress-shell">
+                <div class="progress-meta">
+                  <span>${rank ? `Current rank: ${esc(rank.name)}` : 'No rank owned yet'}</span>
+                  <span>${nextRank ? `${Math.max(0, nextRank.xp_cost - XP_STATE.current_xp)} XP to go` : 'All ranks unlocked'}</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+              </div>
+            </div>
+            <div class="dashboard-metrics">
+              <div class="metric-card">
+                <span>Ads Watched Today</span>
+                <strong>${adsWatched}/20</strong>
+              </div>
+              <div class="metric-card">
+                <span>Ads Remaining</span>
+                <strong>${adsRemaining}</strong>
+              </div>
+              <div class="metric-card">
+                <span>Cooldown</span>
+                <strong>${active ? fmtCountdown(activeRemaining) : (cooldownLeft ? fmtCountdown(cooldownLeft) : 'Ready')}</strong>
+              </div>
+            </div>
+          </div>
+          <div class="ad-panel">
+            <div class="ad-panel-head">
+              <div>
+                <div class="ad-panel-title">Rewarded Ad Queue</div>
+                <div style="color:var(--tx2);font-size:.84rem">${adsWatched}/20 ads watched today</div>
+              </div>
+              <div class="ad-chip">${active ? 'IN PROGRESS' : (serverLock ? 'LOCKED' : (cooldownLeft ? 'COOLDOWN' : 'READY'))}</div>
+            </div>
+            <div style="font-size:1.7rem;font-family:'Outfit',sans-serif">+10 to +50 XP</div>
+            <div style="color:var(--tx2);line-height:1.6">Server-side checks enforce the daily cap, cooldown, timing window, tab lock, and one-time token validation before XP is awarded.</div>
+            <div class="ad-progress"><div id="DASH-AD-PROGRESS" style="width:${active ? `${Math.min(100, ((active.totalSeconds - activeRemaining) / active.totalSeconds) * 100)}%` : '0%'}"></div></div>
+            <button class="btn" id="DASH-WATCH-BTN" ${buttonDisabled ? 'disabled' : ''} onclick="watchRewardAd()">${buttonLabel}</button>
+            <div class="ad-footnote">${active ? 'Keep this tab active while the ad finishes.' : (serverLock ? 'A previous ad session is still active on the server, so new requests stay blocked until it expires.' : (cooldownLeft ? `Next ad available in ${fmtCountdown(cooldownLeft)}.` : 'When the ad completes, your XP reward lands instantly and is logged server-side.'))}</div>
+          </div>
+        </div>
+      `;
+
+      animateValue(I('DASH-XP-VALUE'), previousXp == null ? XP_STATE.current_xp : previousXp, XP_STATE.current_xp, ' XP');
+    }
+
+    async function loadRewardDashboard(previousXp = null) {
+      const el = I('XP-DASHBOARD');
+      if (!el || !ME) return;
+      el.innerHTML = rewardDashboardSkeleton();
+      try {
+        const before = previousXp == null ? XP_STATE.current_xp : previousXp;
+        await refreshRewardState();
+        renderRewardDashboard(before);
+        if (DASHBOARD_TIMER) clearInterval(DASHBOARD_TIMER);
+        DASHBOARD_TIMER = setInterval(() => {
+          if (!I('XP-DASHBOARD')) return;
+          if (ACTIVE_AD_SESSION || countdownSeconds(XP_STATE.next_ad_available_at) > 0) renderRewardDashboard(XP_STATE.current_xp);
+        }, 1000);
+      } catch (e) {
+        el.innerHTML = `<div class="reward-empty">${esc(rewardErrorMessage(e, 'We could not load your XP dashboard right now.'))}</div>`;
+      }
+    }
+
+    function renderRewardStore() {
+      const grid = I('STORE-RANKS');
+      if (!grid) return;
+      I('STORE-XP-BALANCE').textContent = `${Number(XP_STATE.current_xp || 0).toLocaleString()} XP`;
+      I('STORE-EMPTY').style.display = XP_STATE.current_xp > 0 ? 'none' : '';
+      grid.innerHTML = STORE_RANKS_CACHE.map(rank => {
+        const needed = Math.max(0, rank.xp_cost - XP_STATE.current_xp);
+        const tierClass = rewardTierClass(rank.name);
+        const locked = !rank.affordable && !rank.already_purchased;
+        const stateLabel = rank.is_current ? 'Current Rank' : rank.already_purchased ? 'Owned' : locked ? 'Locked' : 'Unlocked';
+        const buttonText = rank.is_current
+          ? 'Equipped'
+          : rank.already_purchased
+            ? 'Already Owned'
+            : rank.affordable
+              ? `Buy for ${rank.xp_cost} XP`
+              : `Need ${needed} More XP`;
+        return `
+          <div class="rank-tier-card ${tierClass} ${rank.affordable ? 'affordable' : ''} ${rank.is_current ? 'current' : ''} ${locked ? 'locked' : ''}">
+            <div class="rank-tier-top">
+              <div>
+                <div class="rank-tier-name">${esc(rank.name)}</div>
+                <div class="rank-tier-cost">${rank.xp_cost.toLocaleString()} XP</div>
+              </div>
+              <div class="rank-state">${stateLabel}</div>
+            </div>
+            <ul class="rank-perks">
+              ${rank.perks.map(perk => `<li>${esc(perk)}</li>`).join('')}
+            </ul>
+            <button class="btn" ${rank.is_current || rank.already_purchased || !rank.affordable ? 'disabled' : ''} onclick="openRankPurchaseModal(${rank.id})">${buttonText}</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadRewardStore() {
+      const grid = I('STORE-RANKS');
+      if (!grid || !ME) return;
+      grid.innerHTML = rewardStoreSkeleton();
+      try {
+        await refreshRewardState();
+        renderRewardStore();
+      } catch (e) {
+        grid.innerHTML = `<div class="reward-empty">${esc(rewardErrorMessage(e, 'We could not load the rank store right now.'))}</div>`;
+      }
+    }
+
+    function openRankPurchaseModal(rankId) {
+      const rank = STORE_RANKS_CACHE.find(item => Number(item.id) === Number(rankId));
+      if (!rank) return;
+      PENDING_RANK_PURCHASE = rank;
+      I('RANK-BUY-BODY').innerHTML = `
+        <div style="font-size:1.15rem;font-weight:700;color:var(--tx);margin-bottom:6px">${esc(rank.name)}</div>
+        <div style="margin-bottom:10px">Spend <strong>${rank.xp_cost} XP</strong> to unlock this tier. Your remaining XP carries over after the purchase.</div>
+        <div style="color:var(--tx3);font-size:.82rem">Perks: ${esc(rank.perks.join(' • '))}</div>
+      `;
+      I('RANK-BUY-CONFIRM').disabled = false;
+      openM('MRANKBUY');
+    }
+
+    async function confirmRankPurchase() {
+      if (!PENDING_RANK_PURCHASE) return;
+      const previousXp = XP_STATE.current_xp;
+      I('RANK-BUY-CONFIRM').disabled = true;
+      try {
+        await API('/api/store/purchase', { method: 'POST', body: { rank_id: PENDING_RANK_PURCHASE.id } });
+        closeM('MRANKBUY');
+        toast('ok', `${PENDING_RANK_PURCHASE.name} unlocked!`);
+        fireConfetti();
+        PENDING_RANK_PURCHASE = null;
+        await refreshRewardState();
+        renderRewardStore();
+        renderRewardDashboard(previousXp);
+      } catch (e) {
+        I('RANK-BUY-CONFIRM').disabled = false;
+        toast('err', rewardErrorMessage(e, 'We could not complete that purchase.'));
+      }
+    }
+
+    function fireConfetti() {
+      const root = I('CONFETTI');
+      if (!root) return;
+      root.innerHTML = '';
+      ['#f97316', '#f59e0b', '#fde047', '#e5e7eb'].forEach((color, colorIdx) => {
+        for (let i = 0; i < 18; i++) {
+          const piece = document.createElement('div');
+          piece.className = 'confetti-piece';
+          piece.style.background = color;
+          piece.style.left = `${5 + Math.random() * 90}%`;
+          piece.style.top = `${-10 - Math.random() * 20}px`;
+          piece.style.setProperty('--x-shift', `${(Math.random() - 0.5) * (180 + colorIdx * 35)}px`);
+          piece.style.animationDelay = `${Math.random() * 160}ms`;
+          root.appendChild(piece);
+        }
+      });
+      setTimeout(() => { root.innerHTML = ''; }, 1800);
+    }
+
+    async function watchRewardAd() {
+      if (!ME) {
+        openM('ML');
+        toast('err', 'Please log in to earn XP from ads.');
+        return;
+      }
+      if (ACTIVE_AD_SESSION) return;
+      if (XP_STATE.active_ad_in_progress) {
+        toast('err', 'An earlier ad session is still locked on the server. Please wait for it to clear.');
+        return;
+      }
+      const cooldownLeft = countdownSeconds(XP_STATE.next_ad_available_at);
+      if (cooldownLeft > 0) {
+        toast('err', `Your next ad unlocks in ${fmtCountdown(cooldownLeft)}.`);
+        return;
+      }
+      if ((XP_STATE.ads_remaining_today || 0) <= 0) {
+        toast('err', 'You reached the ad cap for today.');
+        return;
+      }
+
+      try {
+        const res = await API('/api/ads/request', {
+          method: 'POST',
+          body: { session_fingerprint: getAdSessionFingerprint() }
+        });
+        ACTIVE_AD_SESSION = {
+          token: res.ad_token,
+          totalSeconds: Number(res.ad?.duration_seconds || 25),
+          remainingSeconds: Number(res.ad?.duration_seconds || 25),
+        };
+        renderRewardDashboard(XP_STATE.current_xp);
+        ACTIVE_AD_INTERVAL = setInterval(async () => {
+          if (!ACTIVE_AD_SESSION) return;
+          ACTIVE_AD_SESSION.remainingSeconds -= 1;
+          renderRewardDashboard(XP_STATE.current_xp);
+          if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
+            clearInterval(ACTIVE_AD_INTERVAL);
+            ACTIVE_AD_INTERVAL = null;
+            await finalizeRewardAd();
+          }
+        }, 1000);
+      } catch (e) {
+        toast('err', rewardErrorMessage(e, 'We could not start an ad right now.'));
+        await loadRewardDashboard(XP_STATE.current_xp);
+      }
+    }
+
+    async function finalizeRewardAd() {
+      if (!ACTIVE_AD_SESSION) return;
+      const token = ACTIVE_AD_SESSION.token;
+      const previousXp = XP_STATE.current_xp;
+      try {
+        const completion_proof = await sha256Hex(token + AD_COMPLETION_SECRET);
+        const res = await API('/api/ads/complete', {
+          method: 'POST',
+          body: { ad_token: token, completion_proof }
+        });
+        ACTIVE_AD_SESSION = null;
+        toast('ok', `+${res.xp_earned} XP earned!`);
+        await refreshRewardState();
+        renderRewardDashboard(previousXp);
+        if (I('STORE-RANKS')?.closest('.pg')?.classList.contains('ON')) renderRewardStore();
+      } catch (e) {
+        ACTIVE_AD_SESSION = null;
+        toast('err', rewardErrorMessage(e, 'The ad could not be verified.'));
+        await loadRewardDashboard(previousXp);
+      }
+    }
+
+    async function loadRewardLogs() {
+      const el = I('ADM-RW-LOGS');
+      if (!el || !isAdmin()) return;
+      el.innerHTML = rewardLogsSkeleton();
+      try {
+        const query = new URLSearchParams();
+        if (V('ADM-RW-USER').trim()) query.set('user', V('ADM-RW-USER').trim());
+        if (V('ADM-RW-DATE').trim()) query.set('date', V('ADM-RW-DATE').trim());
+        const data = await API(`/api/admin/reward-logs${query.toString() ? `?${query}` : ''}`);
+        const purchases = data.rank_purchases || [];
+        const ads = data.ad_watches || [];
+        el.innerHTML = `
+          <div class="adm-table-wrap" style="margin-bottom:14px">
+            <table class="adm-table">
+              <thead><tr><th>Rank Purchases</th><th>User</th><th>Rank</th><th>XP Spent</th></tr></thead>
+              <tbody>
+                ${purchases.length ? purchases.map(row => `
+                  <tr>
+                    <td>${fmtDT(row.created_at)}</td>
+                    <td><strong>${esc(row.username)}</strong></td>
+                    <td>${esc(row.rank_name)}</td>
+                    <td>${row.xp_spent}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="4">No rank purchases matched these filters.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+              <thead><tr><th>Ad Watches</th><th>User</th><th>Status</th><th>Duration</th><th>XP</th></tr></thead>
+              <tbody>
+                ${ads.length ? ads.map(row => `
+                  <tr style="${row.suspicious ? 'background:rgba(239,68,68,0.08)' : ''}">
+                    <td>
+                      <div>${fmtDT(row.started_at)}</div>
+                      <div style="font-size:.68rem;color:var(--tx3)">${row.ip_address ? esc(row.ip_address) : 'IP hidden'}</div>
+                    </td>
+                    <td><strong>${esc(row.username)}</strong></td>
+                    <td>
+                      <span class="adm-badge ${row.status === 'completed' ? 'open' : 'closed'}">${esc(row.status)}</span>
+                      ${row.suspicious ? '<div style="font-size:.68rem;color:#fca5a5;margin-top:4px">Flagged</div>' : ''}
+                      ${row.failure_reason ? `<div style="font-size:.68rem;color:var(--tx3);margin-top:4px">${esc(row.failure_reason)}</div>` : ''}
+                    </td>
+                    <td>${row.duration_seconds || 0}s</td>
+                    <td>${row.xp_awarded || 0}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="5">No ad watches matched these filters.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        el.innerHTML = `<div class="reward-empty">${esc(rewardErrorMessage(e, 'We could not load the reward logs.'))}</div>`;
+      }
+    }
+
+    function watchAd() { return watchRewardAd(); }
+
     function loadProfile() {
       if (!ME) return;
+      loadRewardDashboard(XP_STATE.current_xp);
       I('PR-NAME').textContent = ME.username;
       I('PR-EMAIL').textContent = ME.email;
       I('PR-MC').textContent = ME.mc_username || 'Not linked';
@@ -8780,7 +9784,10 @@
             .catch(err => console.error("[Auth] Session check failed:", err))
             .finally(() => { isCheckingSession = false; });
         }
-        throw new Error(d.error || `Error ${res.status}`);
+        const err = new Error(d.error || `Error ${res.status}`);
+        err.data = d;
+        err.status = res.status;
+        throw err;
       }
       return d;
     }
@@ -8811,6 +9818,8 @@
     const I = id => document.getElementById(id);
     const V = id => I(id)?.value || '';
     const SV = (id, v) => { const e = I(id); if (e) e.value = v; };
+    const uid = () => (window.crypto?.randomUUID?.() || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`);
+    const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     let verifyPoller = null;
     async function startVerificationFlow() {
       try {

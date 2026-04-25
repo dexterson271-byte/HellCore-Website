@@ -33,6 +33,7 @@ import time
 import json
 import uuid
 import hashlib
+import hmac
 import re
 import traceback
 import secrets
@@ -42,6 +43,7 @@ import threading
 import random
 import datetime as dt
 from datetime import datetime, timedelta
+from collections import defaultdict, deque
 from functools import wraps
 import urllib.request
 import urllib.error
@@ -65,6 +67,57 @@ except ImportError:
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect, g
 
 app = Flask(__name__)
+
+AD_DAILY_LIMIT = 20
+AD_COOLDOWN_SECONDS = 300
+AD_MIN_DURATION_SECONDS = 25
+AD_COMPLETION_WINDOW_SECONDS = 300
+AD_IP_COMPLETION_LIMIT = 5
+AD_IP_COMPLETION_WINDOW_SECONDS = 3600
+AD_TOKEN_SECRET = os.environ.get("HC_AD_TOKEN_SECRET", "hellcore-ad-token-secret")
+AD_PROOF_SECRET = os.environ.get("HC_AD_PROOF_SECRET", "hellcore-mock-ad-proof-v1")
+AD_IP_COMPLETIONS = defaultdict(deque)
+AD_IP_COMPLETIONS_LOCK = threading.Lock()
+STORE_RANK_SEEDS = [
+    {
+        "name": "Bronze",
+        "xp_cost": 100,
+        "tier_order": 1,
+        "perks": [
+            "Bronze chat badge",
+            "Starter profile flair",
+            "Unlocks Bronze-only showcase frame",
+        ],
+    },
+    {
+        "name": "Silver",
+        "xp_cost": 250,
+        "tier_order": 2,
+        "perks": [
+            "Silver chat badge",
+            "Profile card accent upgrade",
+            "Priority access to seasonal badge drops",
+        ],
+    },
+    {
+        "name": "Gold",
+        "xp_cost": 500,
+        "tier_order": 3,
+        "perks": [
+            "Gold chat badge",
+            "Animated profile shine",
+            "Exclusive Gold lobby cosmetics pack",
+        ],
+    },
+]
+MOCK_AD_PAYLOAD = {
+    "id": "mock-rewarded-video",
+    "title": "Hellcore Rewarded Break",
+    "description": "Stay on this tab while the mock rewarded ad finishes to earn XP.",
+    "duration_seconds": AD_MIN_DURATION_SECONDS,
+    "reward_range": {"min": 10, "max": 50},
+    "creative_type": "progress",
+}
 
 @app.after_request
 def add_header(r):
@@ -295,6 +348,260 @@ def ts(v): return str(v) if v else ""
 def hp(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
 
+def utcnow():
+    return datetime.utcnow()
+
+
+def parse_db_datetime(value):
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, dt.date):
+        return datetime.combine(value, datetime.min.time())
+    raw = str(value).strip()
+    if not raw:
+        return None
+    cleaned = raw.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(cleaned)
+        if parsed.tzinfo:
+            return parsed.astimezone(dt.timezone.utc).replace(tzinfo=None)
+        return parsed
+    except Exception:
+        pass
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S.%f",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S.%f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.strptime(raw, fmt)
+        except Exception:
+            continue
+    return None
+
+
+def isoformat_utc(value):
+    parsed = parse_db_datetime(value)
+    return parsed.strftime("%Y-%m-%dT%H:%M:%SZ") if parsed else None
+
+
+def utc_day_bounds(now=None):
+    now = now or utcnow()
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return start, start + timedelta(days=1)
+
+
+def get_client_ip():
+    forwarded = request.headers.get("X-Forwarded-For", "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return (request.remote_addr or "unknown").strip() or "unknown"
+
+
+def sign_ad_token(token_uuid):
+    signature = hmac.new(
+        AD_TOKEN_SECRET.encode("utf-8"),
+        token_uuid.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{token_uuid}.{signature}"
+
+
+def verify_ad_token_signature(token):
+    if "." not in str(token):
+        return False
+    token_uuid, provided = str(token).split(".", 1)
+    expected = sign_ad_token(token_uuid).split(".", 1)[1]
+    return hmac.compare_digest(provided, expected)
+
+
+def build_completion_proof(token):
+    return hashlib.sha256(f"{token}{AD_PROOF_SECRET}".encode("utf-8")).hexdigest()
+
+
+def prune_ip_completion_window(ip_address, now=None):
+    now = now or utcnow()
+    window_start = now - timedelta(seconds=AD_IP_COMPLETION_WINDOW_SECONDS)
+    with AD_IP_COMPLETIONS_LOCK:
+        bucket = AD_IP_COMPLETIONS[ip_address]
+        while bucket and bucket[0] < window_start:
+            bucket.popleft()
+        return bucket
+
+
+def is_ip_completion_limited(ip_address, now=None):
+    bucket = prune_ip_completion_window(ip_address, now=now)
+    return len(bucket) >= AD_IP_COMPLETION_LIMIT
+
+
+def record_ip_completion(ip_address, now=None):
+    bucket = prune_ip_completion_window(ip_address, now=now)
+    with AD_IP_COMPLETIONS_LOCK:
+        bucket.append(now or utcnow())
+
+
+def parse_rank_perks(value):
+    if isinstance(value, list):
+        return value
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, list) else []
+    except Exception:
+        return []
+
+
+def serialize_store_rank(row):
+    data = to_dict(row)
+    if not data:
+        return None
+    return {
+        "id": data["id"],
+        "name": data["name"],
+        "xp_cost": int(data.get("xp_cost") or 0),
+        "tier_order": int(data.get("tier_order") or 0),
+        "perks": parse_rank_perks(data.get("perks")),
+    }
+
+
+def get_store_rank_by_id(cursor, rank_id):
+    if not rank_id:
+        return None
+    cursor.execute(f"SELECT * FROM hc_xp_ranks WHERE id={ph()}", (rank_id,))
+    return serialize_store_rank(cursor.fetchone())
+
+
+def get_all_store_ranks(cursor):
+    cursor.execute("SELECT * FROM hc_xp_ranks ORDER BY tier_order ASC, xp_cost ASC, id ASC")
+    return [serialize_store_rank(row) for row in to_list(cursor.fetchall())]
+
+
+def log_xp_transaction(cursor, user_id, amount, balance_after, reason, reference_type="", reference_id=0, metadata=None):
+    cursor.execute(
+        f"""INSERT INTO hc_xp_transactions
+            (user_id, amount, balance_after, reason, reference_type, reference_id, metadata, created_at)
+            VALUES ({ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()})""",
+        (
+            user_id,
+            int(amount),
+            int(balance_after),
+            reason,
+            reference_type,
+            int(reference_id or 0),
+            json.dumps(metadata or {}),
+            utcnow(),
+        ),
+    )
+
+
+def get_current_store_rank(cursor, user_id):
+    cursor.execute(f"SELECT current_xp, rank_id FROM hc_users WHERE id={ph()}", (user_id,))
+    user_row = to_dict(cursor.fetchone()) or {}
+    rank = get_store_rank_by_id(cursor, user_row.get("rank_id"))
+    return {
+        "current_xp": int(user_row.get("current_xp") or 0),
+        "rank": rank,
+    }
+
+
+def get_latest_completed_ad(cursor, user_id):
+    cursor.execute(
+        f"""SELECT completed_at FROM hc_ad_watches
+            WHERE user_id={ph()} AND completed_at IS NOT NULL
+            ORDER BY completed_at DESC LIMIT 1""",
+        (user_id,),
+    )
+    row = to_dict(cursor.fetchone())
+    return parse_db_datetime(row.get("completed_at")) if row else None
+
+
+def get_active_ad_watch(cursor, user_id, now=None):
+    now = now or utcnow()
+    lower_bound = now - timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
+    cursor.execute(
+        f"""SELECT * FROM hc_ad_watches
+            WHERE user_id={ph()} AND completed_at IS NULL AND started_at >= {ph()}
+            ORDER BY started_at DESC LIMIT 1""",
+        (user_id, lower_bound),
+    )
+    return to_dict(cursor.fetchone())
+
+
+def get_daily_ad_watch_count(cursor, user_id, now=None):
+    day_start, day_end = utc_day_bounds(now=now)
+    cursor.execute(
+        f"""SELECT COUNT(*) AS count FROM hc_ad_watches
+            WHERE user_id={ph()} AND started_at >= {ph()} AND started_at < {ph()}""",
+        (user_id, day_start, day_end),
+    )
+    row = to_dict(cursor.fetchone()) or {}
+    return int(row.get("count") or row.get("COUNT(*)") or 0)
+
+
+def get_next_ad_available_at(cursor, user_id, now=None):
+    now = now or utcnow()
+    last_completed = get_latest_completed_ad(cursor, user_id)
+    if not last_completed:
+        return None
+    next_time = last_completed + timedelta(seconds=AD_COOLDOWN_SECONDS)
+    return next_time if next_time > now else None
+
+
+def get_reward_profile(cursor, user_id, now=None):
+    now = now or utcnow()
+    current = get_current_store_rank(cursor, user_id)
+    daily_ads_watched = get_daily_ad_watch_count(cursor, user_id, now=now)
+    next_available = get_next_ad_available_at(cursor, user_id, now=now)
+    active_watch = get_active_ad_watch(cursor, user_id, now=now)
+    if active_watch:
+        active_retry = (parse_db_datetime(active_watch.get("started_at")) or now) + timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
+        if not next_available or active_retry > next_available:
+            next_available = active_retry
+    return {
+        "current_xp": current["current_xp"],
+        "rank": current["rank"],
+        "daily_ads_watched": daily_ads_watched,
+        "ads_remaining_today": max(0, AD_DAILY_LIMIT - daily_ads_watched),
+        "next_ad_available_at": isoformat_utc(next_available),
+        "active_ad_in_progress": bool(active_watch),
+    }
+
+
+def seed_store_ranks(cursor):
+    for rank in STORE_RANK_SEEDS:
+        cursor.execute(f"SELECT id FROM hc_xp_ranks WHERE name={ph()}", (rank["name"],))
+        existing = to_dict(cursor.fetchone())
+        if existing:
+            cursor.execute(
+                f"""UPDATE hc_xp_ranks
+                    SET xp_cost={ph()}, tier_order={ph()}, perks={ph()}
+                    WHERE id={ph()}""",
+                (
+                    rank["xp_cost"],
+                    rank["tier_order"],
+                    json.dumps(rank["perks"]),
+                    existing["id"],
+                ),
+            )
+        else:
+            cursor.execute(
+                f"""INSERT INTO hc_xp_ranks(name, xp_cost, tier_order, perks, created_at)
+                    VALUES({ph()}, {ph()}, {ph()}, {ph()}, {ph()})""",
+                (
+                    rank["name"],
+                    rank["xp_cost"],
+                    rank["tier_order"],
+                    json.dumps(rank["perks"]),
+                    utcnow(),
+                ),
+            )
+
+
 MAIN_SPA_ROUTES = {
     "",
     "about",
@@ -508,6 +815,54 @@ f"""CREATE TABLE IF NOT EXISTS hc_ads(
   vip_expires DATETIME,
   created_at {DT})""",
 
+f"""CREATE TABLE IF NOT EXISTS hc_xp_ranks(
+  id INTEGER PRIMARY KEY {AI},
+  name VARCHAR(40) NOT NULL UNIQUE,
+  xp_cost INTEGER NOT NULL,
+  tier_order INTEGER NOT NULL UNIQUE,
+  perks TEXT,
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_xp_transactions(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  amount INTEGER NOT NULL,
+  balance_after INTEGER DEFAULT 0,
+  reason VARCHAR(50) NOT NULL,
+  reference_type VARCHAR(50) DEFAULT '',
+  reference_id INTEGER DEFAULT 0,
+  metadata TEXT,
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_rank_purchases(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  rank_id INTEGER NOT NULL,
+  previous_rank_id INTEGER DEFAULT 0,
+  xp_spent INTEGER NOT NULL,
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_ad_watches(
+  id INTEGER PRIMARY KEY {AI},
+  user_id INTEGER NOT NULL,
+  ad_token VARCHAR(255) NOT NULL UNIQUE,
+  token_uuid VARCHAR(64) NOT NULL UNIQUE,
+  token_signature VARCHAR(128) NOT NULL,
+  session_fingerprint VARCHAR(255) DEFAULT '',
+  started_at DATETIME NOT NULL,
+  completed_at DATETIME,
+  completion_proof VARCHAR(128) DEFAULT '',
+  xp_awarded INTEGER DEFAULT 0,
+  duration_seconds INTEGER DEFAULT 0,
+  failure_count INTEGER DEFAULT 0,
+  failure_reason VARCHAR(50) DEFAULT '',
+  last_attempt_at DATETIME,
+  ip_address VARCHAR(64) DEFAULT '',
+  completion_ip VARCHAR(64) DEFAULT '',
+  status VARCHAR(20) DEFAULT 'started',
+  ad_payload TEXT,
+  created_at {DT})""",
+
 f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
   id INTEGER PRIMARY KEY {AI},
   command VARCHAR(255) NOT NULL,
@@ -618,8 +973,16 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         c.execute("ALTER TABLE hc_users ADD COLUMN last_seen DATETIME")
     except: 
         pass
-    try:
+    try: 
         c.execute("ALTER TABLE hc_users ADD COLUMN is_verified INTEGER DEFAULT 0")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN current_xp INTEGER DEFAULT 0")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN rank_id INTEGER DEFAULT NULL")
     except:
         pass
     try:
@@ -667,6 +1030,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
             print(f"  [DB WARN] Bootstrap failed (ignoring): {e}")
 
     bootstrap_events(c)
+    seed_store_ranks(c)
     db.commit() # Final commit for bootstrap
     c.close()
     db.close()
@@ -818,7 +1182,7 @@ def is_known_main_spa_path(path):
 
 
 def build_main_spa_response():
-    return render_template("index.html"), 200
+    return render_template("index.html", ad_completion_secret=AD_PROOF_SECRET), 200
 
 
 def pusher_trigger(channel, event_name, payload):
@@ -1006,7 +1370,7 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 # Serves index.html for the root path
 @app.route("/")
-def index(): return render_template("index.html")
+def index(): return render_template("index.html", ad_completion_secret=AD_PROOF_SECRET)
 
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
@@ -2672,9 +3036,371 @@ def tebex():
     return jsonify({"ok":True})
 
 # ═══════════════════════════════════════════════════════
+# XP STORE & REWARDED ADS
+# ═══════════════════════════════════════════════════════
+@app.route("/api/user/xp")
+@auth_required
+def user_xp():
+    db = get_db(); c = db_cursor(db)
+    return jsonify(get_reward_profile(c, request.cu["id"]))
+
+
+@app.route("/api/store/ranks")
+@auth_required
+def store_ranks():
+    db = get_db(); c = db_cursor(db)
+    current = get_current_store_rank(c, request.cu["id"])
+    current_rank = current["rank"]
+    current_tier = int(current_rank["tier_order"]) if current_rank else 0
+    current_rank_id = current_rank["id"] if current_rank else None
+    ranks = []
+    for rank in get_all_store_ranks(c):
+        ranks.append({
+            **rank,
+            "already_purchased": current_tier >= int(rank["tier_order"]),
+            "is_current": current_rank_id == rank["id"],
+            "affordable": current["current_xp"] >= int(rank["xp_cost"]),
+        })
+    return jsonify(ranks)
+
+
+@app.route("/api/store/purchase", methods=["POST"])
+@auth_required
+def store_purchase():
+    d = request.get_json(force=True) or {}
+    rank_id = int(d.get("rank_id") or 0)
+    if not rank_id:
+        return jsonify({"error": "Choose a valid rank to purchase.", "code": "invalid_rank"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    user_id = request.cu["id"]
+    target_rank = get_store_rank_by_id(c, rank_id)
+    if not target_rank:
+        return jsonify({"error": "That rank no longer exists.", "code": "invalid_rank"}), 404
+
+    current = get_current_store_rank(c, user_id)
+    current_rank = current["rank"]
+    current_xp = int(current["current_xp"])
+
+    if current_rank:
+        if int(current_rank["id"]) == int(target_rank["id"]):
+            return jsonify({"error": "You already own this rank.", "code": "already_owned"}), 400
+        if int(current_rank["tier_order"]) > int(target_rank["tier_order"]):
+            return jsonify({"error": "You already own a higher tier rank.", "code": "lower_tier_owned"}), 400
+
+    if current_xp < int(target_rank["xp_cost"]):
+        needed = int(target_rank["xp_cost"]) - current_xp
+        return jsonify({
+            "error": f"You need {needed} more XP to buy {target_rank['name']}.",
+            "code": "insufficient_xp",
+            "needed_xp": needed,
+        }), 400
+
+    new_balance = current_xp - int(target_rank["xp_cost"])
+    previous_rank_id = current_rank["id"] if current_rank else 0
+    c.execute(
+        f"UPDATE hc_users SET current_xp={ph()}, rank_id={ph()} WHERE id={ph()}",
+        (new_balance, target_rank["id"], user_id),
+    )
+    c.execute(
+        f"""INSERT INTO hc_rank_purchases(user_id, rank_id, previous_rank_id, xp_spent, created_at)
+            VALUES ({ph()}, {ph()}, {ph()}, {ph()}, {ph()})""",
+        (user_id, target_rank["id"], previous_rank_id, target_rank["xp_cost"], utcnow()),
+    )
+    purchase_id = c.lastrowid
+    log_xp_transaction(
+        c,
+        user_id,
+        -int(target_rank["xp_cost"]),
+        new_balance,
+        "rank_purchase",
+        "rank_purchase",
+        purchase_id,
+        {
+            "rank_id": target_rank["id"],
+            "rank_name": target_rank["name"],
+            "previous_rank_id": previous_rank_id,
+        },
+    )
+    db.commit()
+    return jsonify({
+        "success": True,
+        "current_xp": new_balance,
+        "rank": target_rank,
+    })
+
+
+@app.route("/api/ads/request", methods=["POST"])
+@auth_required
+def ads_request():
+    d = request.get_json(force=True) or {}
+    session_fingerprint = str(d.get("session_fingerprint") or "").strip()
+    if not session_fingerprint:
+        return jsonify({"error": "A valid ad session fingerprint is required.", "code": "missing_fingerprint"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    now = utcnow()
+    user_id = request.cu["id"]
+
+    daily_count = get_daily_ad_watch_count(c, user_id, now=now)
+    if daily_count >= AD_DAILY_LIMIT:
+        _, next_day = utc_day_bounds(now=now)
+        return jsonify({
+            "error": "You have reached today's ad limit. Come back after the UTC reset.",
+            "code": "daily_limit_reached",
+            "retry_after": isoformat_utc(next_day),
+        }), 429
+
+    next_available = get_next_ad_available_at(c, user_id, now=now)
+    if next_available:
+        return jsonify({
+            "error": "Your ad cooldown is still active.",
+            "code": "cooldown_active",
+            "retry_after": isoformat_utc(next_available),
+        }), 429
+
+    active_watch = get_active_ad_watch(c, user_id, now=now)
+    if active_watch:
+        active_started = parse_db_datetime(active_watch.get("started_at")) or now
+        retry_after = active_started + timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
+        error_code = "active_tab_conflict" if active_watch.get("session_fingerprint") != session_fingerprint else "ad_already_active"
+        error_message = (
+            "Another active ad session is already open in a different tab."
+            if error_code == "active_tab_conflict"
+            else "Finish or wait out your current ad session before starting another."
+        )
+        return jsonify({
+            "error": error_message,
+            "code": error_code,
+            "retry_after": isoformat_utc(retry_after),
+        }), 409
+
+    token_uuid = str(uuid.uuid4())
+    ad_token = sign_ad_token(token_uuid)
+    _, token_signature = ad_token.split(".", 1)
+    ad_payload = dict(MOCK_AD_PAYLOAD)
+    ad_payload["requested_at"] = isoformat_utc(now)
+
+    c.execute(
+        f"""INSERT INTO hc_ad_watches
+            (user_id, ad_token, token_uuid, token_signature, session_fingerprint, started_at, ip_address, status, ad_payload, created_at)
+            VALUES ({ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()}, {ph()})""",
+        (
+            user_id,
+            ad_token,
+            token_uuid,
+            token_signature,
+            session_fingerprint,
+            now,
+            get_client_ip(),
+            "started",
+            json.dumps(ad_payload),
+            now,
+        ),
+    )
+    db.commit()
+    return jsonify({
+        "ad_token": ad_token,
+        "ad": ad_payload,
+    })
+
+
+@app.route("/api/ads/complete", methods=["POST"])
+@auth_required
+def ads_complete():
+    d = request.get_json(force=True) or {}
+    ad_token = str(d.get("ad_token") or "").strip()
+    completion_proof = str(d.get("completion_proof") or "").strip()
+    if not ad_token or not completion_proof:
+        return jsonify({"error": "Both ad_token and completion_proof are required.", "code": "missing_fields"}), 400
+    if not verify_ad_token_signature(ad_token):
+        return jsonify({"error": "The ad token signature is invalid.", "code": "invalid_token"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_ad_watches WHERE ad_token={ph()} AND user_id={ph()}", (ad_token, request.cu["id"]))
+    watch = to_dict(c.fetchone())
+    if not watch:
+        return jsonify({"error": "This ad session could not be found.", "code": "invalid_token"}), 400
+    if watch.get("completed_at"):
+        return jsonify({"error": "This ad token has already been completed.", "code": "token_replayed"}), 409
+
+    now = utcnow()
+    started_at = parse_db_datetime(watch.get("started_at"))
+    if not started_at:
+        return jsonify({"error": "The ad session is missing a valid start time.", "code": "invalid_state"}), 400
+
+    elapsed = int((now - started_at).total_seconds())
+    next_failure_count = int(watch.get("failure_count") or 0) + 1
+    if elapsed > AD_COMPLETION_WINDOW_SECONDS:
+        c.execute(
+            f"""UPDATE hc_ad_watches
+                SET status={ph()}, failure_reason={ph()}, failure_count={ph()}, last_attempt_at={ph()}
+                WHERE id={ph()}""",
+            ("expired", "expired", next_failure_count, now, watch["id"]),
+        )
+        db.commit()
+        return jsonify({"error": "This ad token expired before completion.", "code": "token_expired"}), 400
+
+    if completion_proof != build_completion_proof(ad_token):
+        c.execute(
+            f"""UPDATE hc_ad_watches
+                SET failure_reason={ph()}, failure_count={ph()}, last_attempt_at={ph()}
+                WHERE id={ph()}""",
+            ("invalid_proof", next_failure_count, now, watch["id"]),
+        )
+        db.commit()
+        return jsonify({"error": "The completion proof was invalid.", "code": "invalid_proof"}), 400
+
+    if elapsed < AD_MIN_DURATION_SECONDS:
+        c.execute(
+            f"""UPDATE hc_ad_watches
+                SET failure_reason={ph()}, failure_count={ph()}, last_attempt_at={ph()}
+                WHERE id={ph()}""",
+            ("too_fast", next_failure_count, now, watch["id"]),
+        )
+        db.commit()
+        return jsonify({"error": "The ad finished too quickly to be valid.", "code": "too_fast"}), 400
+
+    completion_ip = get_client_ip()
+    if is_ip_completion_limited(completion_ip, now=now):
+        c.execute(
+            f"""UPDATE hc_ad_watches
+                SET failure_reason={ph()}, failure_count={ph()}, last_attempt_at={ph()}
+                WHERE id={ph()}""",
+            ("ip_rate_limited", next_failure_count, now, watch["id"]),
+        )
+        db.commit()
+        return jsonify({"error": "Too many ad completions came from this IP in the last hour.", "code": "ip_rate_limited"}), 429
+
+    current = get_current_store_rank(c, request.cu["id"])
+    awarded_xp = random.randint(10, 50)
+    new_balance = current["current_xp"] + awarded_xp
+    c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_balance, request.cu["id"]))
+    c.execute(
+        f"""UPDATE hc_ad_watches
+            SET completed_at={ph()}, completion_proof={ph()}, xp_awarded={ph()}, duration_seconds={ph()},
+                completion_ip={ph()}, status={ph()}, failure_reason={ph()}, last_attempt_at={ph()}
+            WHERE id={ph()}""",
+        (
+            now,
+            completion_proof,
+            awarded_xp,
+            elapsed,
+            completion_ip,
+            "completed",
+            "",
+            now,
+            watch["id"],
+        ),
+    )
+    log_xp_transaction(
+        c,
+        request.cu["id"],
+        awarded_xp,
+        new_balance,
+        "ad_reward",
+        "ad_watch",
+        watch["id"],
+        {
+            "ad_token": ad_token,
+            "duration_seconds": elapsed,
+        },
+    )
+    db.commit()
+    record_ip_completion(completion_ip, now=now)
+    return jsonify({
+        "success": True,
+        "xp_earned": awarded_xp,
+        "current_xp": new_balance,
+    })
+
+
+@app.route("/api/admin/reward-logs")
+@admin_required
+def admin_reward_logs():
+    user_filter = str(request.args.get("user") or "").strip()
+    date_filter = str(request.args.get("date") or "").strip()
+    db = get_db(); c = db_cursor(db)
+
+    purchases_sql = (
+        "SELECT rp.id, rp.xp_spent, rp.created_at, u.username, xr.name AS rank_name "
+        "FROM hc_rank_purchases rp "
+        "LEFT JOIN hc_users u ON rp.user_id = u.id "
+        "LEFT JOIN hc_xp_ranks xr ON rp.rank_id = xr.id "
+        "WHERE 1=1"
+    )
+    ads_sql = (
+        "SELECT aw.id, aw.started_at, aw.completed_at, aw.duration_seconds, aw.xp_awarded, aw.status, "
+        "aw.failure_reason, aw.session_fingerprint, aw.ip_address, aw.completion_ip, aw.failure_count, "
+        "u.username FROM hc_ad_watches aw "
+        "LEFT JOIN hc_users u ON aw.user_id = u.id "
+        "WHERE 1=1"
+    )
+    params_purchases = []
+    params_ads = []
+
+    if user_filter:
+        purchases_sql += f" AND u.username LIKE {ph()}"
+        ads_sql += f" AND u.username LIKE {ph()}"
+        like_value = f"%{user_filter}%"
+        params_purchases.append(like_value)
+        params_ads.append(like_value)
+    if date_filter:
+        try:
+            day_start = datetime.strptime(date_filter, "%Y-%m-%d")
+            day_end = day_start + timedelta(days=1)
+            purchases_sql += f" AND rp.created_at >= {ph()} AND rp.created_at < {ph()}"
+            ads_sql += f" AND aw.started_at >= {ph()} AND aw.started_at < {ph()}"
+            params_purchases.extend([day_start, day_end])
+            params_ads.extend([day_start, day_end])
+        except Exception:
+            return jsonify({"error": "Use YYYY-MM-DD for the date filter."}), 400
+
+    purchases_sql += " ORDER BY rp.created_at DESC LIMIT 50"
+    ads_sql += " ORDER BY aw.started_at DESC LIMIT 50"
+
+    c.execute(purchases_sql, tuple(params_purchases))
+    purchases = [
+        {
+            "id": row["id"],
+            "username": row.get("username") or "Unknown",
+            "rank_name": row.get("rank_name") or "Unknown",
+            "xp_spent": int(row.get("xp_spent") or 0),
+            "created_at": isoformat_utc(row.get("created_at")),
+        }
+        for row in to_list(c.fetchall())
+    ]
+
+    c.execute(ads_sql, tuple(params_ads))
+    ad_watches = []
+    for row in to_list(c.fetchall()):
+        suspicious = bool(
+            (row.get("status") == "completed" and int(row.get("duration_seconds") or 0) < AD_MIN_DURATION_SECONDS)
+            or row.get("failure_reason") in {"too_fast", "invalid_proof", "ip_rate_limited"}
+            or int(row.get("failure_count") or 0) > 0
+        )
+        ad_watches.append({
+            "id": row["id"],
+            "username": row.get("username") or "Unknown",
+            "started_at": isoformat_utc(row.get("started_at")),
+            "completed_at": isoformat_utc(row.get("completed_at")),
+            "duration_seconds": int(row.get("duration_seconds") or 0),
+            "xp_awarded": int(row.get("xp_awarded") or 0),
+            "status": row.get("status") or "started",
+            "failure_reason": row.get("failure_reason") or "",
+            "session_fingerprint": row.get("session_fingerprint") or "",
+            "ip_address": row.get("completion_ip") or row.get("ip_address") or "",
+            "suspicious": suspicious,
+        })
+
+    return jsonify({
+        "rank_purchases": purchases,
+        "ad_watches": ad_watches,
+    })
+
+# ═══════════════════════════════════════════════════════
 # ADS & REWARDS
 # ═══════════════════════════════════════════════════════
-import datetime as dt
 
 @app.route("/api/ads/status")
 @auth_required
