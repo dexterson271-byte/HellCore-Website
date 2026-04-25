@@ -320,19 +320,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
     count = row['cnt'] if isinstance(row, dict) else row[0]
     if count == 0:
         seed_products(c, db)
-    else:
-        # Check if Bronze, Silver, Gold exist, add them if missing
-        c.execute("SELECT slug FROM hc_store_products WHERE slug IN ('rank-bronze', 'rank-silver', 'rank-gold')")
-        existing_rows = c.fetchall()
-        existing = [r['slug'] if isinstance(r, dict) else r[0] for r in existing_rows]
-        if 'rank-bronze' not in existing:
-            c.execute("INSERT INTO hc_store_products (name, slug, category, subcategory, price, description, perks, icon, color, is_featured, sort_order) VALUES ('Bronze', 'rank-bronze', 'rank', 'global', 0.50, 'Permanent Bronze rank upgrade. Chat badge and profile flair.', '[\"Bronze Chat Badge\",\"Starter Profile Flair\",\"Bronze Showcase Frame\"]', 'ic-award', '#CD7F32', 1, 6)")
-        if 'rank-silver' not in existing:
-            c.execute("INSERT INTO hc_store_products (name, slug, category, subcategory, price, description, perks, icon, color, is_featured, sort_order) VALUES ('Silver', 'rank-silver', 'rank', 'global', 1.25, 'Permanent Silver rank upgrade. Silver badge and accent upgrade.', '[\"Silver Chat Badge\",\"Profile Card Accent\",\"Priority Badge Drops\"]', 'ic-award', '#C0C0C0', 1, 7) ")
-        if 'rank-gold' not in existing:
-            c.execute("INSERT INTO hc_store_products (name, slug, category, subcategory, price, description, perks, icon, color, is_featured, sort_order) VALUES ('Gold', 'rank-gold', 'rank', 'global', 2.50, 'Permanent Gold rank upgrade. Gold badge and animated shine.', '[\"Gold Chat Badge\",\"Animated Profile Shine\",\"Exclusive Lobby Cosmetics\"]', 'ic-award', '#FFD700', 1, 8)")
-        db.commit()
-
+    c.execute("DELETE FROM hc_store_products WHERE slug IN ('rank-bronze', 'rank-silver', 'rank-gold')")
+    db.commit()
     c.close(); db.close()
     print("[STORE] Tables ready")
 
@@ -360,19 +349,6 @@ def seed_products(c, db):
          "The ultimate rank. Pink prestige, host private games, and exclusive everything.",
          '["[MVP++] Pink Tag","MVP++ Kit","25% Store Discount","All MVP+ Perks","Host Private Games","Exclusive Cosmetics","Monthly Crate"]',
          "ic-bolt", "#d946ef", 1, 5),
-        # ── XP RANKS ──
-        ("Bronze", "rank-bronze", "rank", "global", 0.50, 2.00,
-         "Permanent Bronze rank upgrade. Chat badge and profile flair.",
-         '["Bronze Chat Badge","Starter Profile Flair","Bronze Showcase Frame"]',
-         "ic-award", "#CD7F32", 1, 6),
-        ("Silver", "rank-silver", "rank", "global", 1.25, 5.00,
-         "Permanent Silver rank upgrade. Silver badge and accent upgrade.",
-         '["Silver Chat Badge","Profile Card Accent","Priority Badge Drops"]',
-         "ic-award", "#C0C0C0", 1, 7),
-        ("Gold", "rank-gold", "rank", "global", 2.50, 10.00,
-         "Permanent Gold rank upgrade. Gold badge and animated shine.",
-         '["Gold Chat Badge","Animated Profile Shine","Exclusive Lobby Cosmetics"]',
-         "ic-award", "#FFD700", 1, 8),
     ]
 
     for p in products:
@@ -660,97 +636,48 @@ def cart_clear():
 @auth_required
 def create_checkout():
     """Create a manual UPI ticket for the checkout."""
+    d = request.get_json(force=True) or {}
     db = get_db(); c = db_cursor(db)
-    
-    # Get cart items
-    c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
-    cart_items = to_list(c.fetchall())
-    if not cart_items:
-        c.close(); db.close()
-        return jsonify({"error": "Cart is empty"}), 400
-    # Get user's current XP
-    c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (request.cu["id"],))
-    u_row = c.fetchone()
-    current_xp = int(u_row["current_xp"] or 0) if u_row else 0
-
-    pay_method = d.get("payment_method", "upi")
-    
-    total_usd = sum(float(i["item_price"]) for i in cart_items)
-    total_xp = int(total_usd * XP_PER_DOLLAR)
-
-    if pay_method == "xp":
-        if current_xp < total_xp:
+    try:
+        # Get cart items
+        c.execute(f"SELECT * FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
+        cart_items = to_list(c.fetchall())
+        if not cart_items:
             c.close(); db.close()
-            return jsonify({"error": f"Insufficient XP. You need {total_xp} XP but only have {current_xp}."}), 400
+            return jsonify({"error": "Cart is empty"}), 400
         
-        # Deduct XP
-        new_xp = current_xp - total_xp
-        c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_xp, request.cu["id"]))
-        
-        # Create order with 'completed' status since XP is instant
-        result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
-    else:
-        result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+        # Get user's current XP
+        c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (request.cu["id"],))
+        u_row = c.fetchone()
+        current_xp = int(u_row["current_xp"] or 0) if u_row else 0
 
-    c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
-    db.commit(); c.close(); db.close()
-    track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
-    return jsonify(result)
-    return jsonify(result)
+        pay_method = d.get("payment_method", "upi")
+        
+        total_usd = sum(float(i["item_price"]) for i in cart_items)
+        total_xp = int(total_usd * XP_PER_DOLLAR)
 
-# ═══════════════════════════════════════════════════════
-        
-        # 1. Create a ticket on the main site (shared DB)
-        ticket_title = f"Order #{secrets.token_hex(3).upper()} - {request.cu['username']}"
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        ticket_desc = (
-            f"🛒 **New Store Order**\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 **User**: {request.cu['username']}\n"
-            f"📅 **Date**: {now_str}\n"
-            f"📦 **Items**: {items_desc}\n"
-            f"💰 **Total**: ${total_usd:.2f} (₹{total_inr})\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"Status: PENDING PAYMENT PROOF"
-        )
-        
-        c.execute(f"INSERT INTO hc_tickets(title,description,author_id,category,priority) VALUES({phs(5)})",
-                  (ticket_title, ticket_desc, request.cu["id"], "purchase", "high"))
-        ticket_id = c.lastrowid
-        
-        # 2. Create an auto-reply systematically (from System ID: 1)
-        instructions = (
-            f"Hello **{request.cu['username']}**! Thank you for your order.\n\n"
-            f"To complete your purchase, please follow these instructions:\n\n"
-            f"1️⃣ **Payment Amount**: ₹{total_inr}\n"
-            f"2️⃣ **UPI ID**: `{UPI_ID}`\n"
-            f"3️⃣ **Proof**: Reply to this ticket with a **screenshot** of your successful payment.\n\n"
-            f"Once received, our staff will verify the transaction and grant your rewards. 🚀"
-        )
-        c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type) VALUES({phs(4)})",
-                  (ticket_id, 1, instructions, "system"))
-        
-        # Add Activity
-        c.execute(f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
-                  (ticket_id, request.cu["id"], "order_created", f"Created order for {items_desc}"))
-        
-        # 3. Create store order record
-        items_json = json.dumps([{"name": i["item_name"], "price": float(i["item_price"]), "gamemode": i.get("gamemode","")} for i in cart_items])
-        c.execute(f"""INSERT INTO hc_store_orders
-            (user_id, ticket_id, items, total, status, mc_username)
-            VALUES({phs(6)})""",
-            (request.cu["id"], ticket_id, items_json, total_usd, "pending", request.cu.get("mc_username", "")))
-        
-        # 4. Clear cart
+        if pay_method == "xp":
+            if current_xp < total_xp:
+                c.close(); db.close()
+                return jsonify({"error": f"Insufficient XP. You need {total_xp} XP but only have {current_xp}."}), 400
+            
+            # Deduct XP
+            new_xp = current_xp - total_xp
+            c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_xp, request.cu["id"]))
+            
+            # Create order with 'completed' status since XP is instant
+            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
+        else:
+            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+
         c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
-        
         db.commit(); c.close(); db.close()
-        return jsonify({"ok": True, "ticket_id": ticket_id})
+        track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
+        return jsonify(result)
 
     except Exception as e:
         traceback.print_exc()
-        db.close()
+        if 'db' in locals(): db.close()
         return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
 
 
