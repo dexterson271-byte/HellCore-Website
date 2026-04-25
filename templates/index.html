@@ -5221,7 +5221,7 @@
           <div class="xp-progress-wrap">
             <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; font-weight:600">
               <span style="color:var(--tx2)">DAILY AD PROGRESS</span>
-              <span id="XP-PROGRESS-TEXT">0 / 10 ADS</span>
+              <span id="XP-PROGRESS-TEXT">0 / 60 ADS</span>
             </div>
             <div class="xp-bar-bg">
               <div id="XP-BAR-FILL" class="xp-bar-fill"></div>
@@ -5233,7 +5233,7 @@
           </button>
           
           <div id="XP-TIMER" style="margin-top:15px; font-size:0.85rem; font-weight:700; color:var(--g); display:none">
-            RECHARGING: 5:00
+            RECHARGING: 1:30
           </div>
         </div>
 
@@ -6010,7 +6010,7 @@
     let PENDING_ROUTE = null, PENDING_TICKET_ID = null, NEXT_AFTER_AUTH = null;
     let STAFF_PUSH_READY = false, TIX_TYPING_TIMER = null, TIX_TYPING_HIDE = null;
     let isCheckingSession = false;
-    let XP_STATE = { current_xp: 0, rank: null, daily_ads_watched: 0, ads_remaining_today: 20, next_ad_available_at: null };
+    let XP_STATE = { current_xp: 0, rank: null, ads_today: 0, ads_remaining: 60, next_ad: null };
     let STORE_RANKS_CACHE = [];
     let DASHBOARD_TIMER = null;
     let ACTIVE_AD_SESSION = null;
@@ -6373,7 +6373,7 @@
       I('A-OUT').style.display = li ? 'none' : 'flex';
       I('A-IN').style.display = li ? 'flex' : 'none';
       if (!li) {
-        XP_STATE = { current_xp: 0, rank: null, daily_ads_watched: 0, ads_remaining_today: 20, next_ad_available_at: null };
+        XP_STATE = { current_xp: 0, rank: null, ads_today: 0, ads_remaining: 60, next_ad: null };
         STORE_RANKS_CACHE = [];
         if (DASHBOARD_TIMER) { clearInterval(DASHBOARD_TIMER); DASHBOARD_TIMER = null; }
         if (ACTIVE_AD_INTERVAL) { clearInterval(ACTIVE_AD_INTERVAL); ACTIVE_AD_INTERVAL = null; }
@@ -8657,8 +8657,8 @@
       if (!ME) return;
       API('/api/reward-profile').then(d => {
         I('XP-VAL').textContent = d.current_xp.toLocaleString();
-        I('XP-PROGRESS-TEXT').textContent = `${d.ads_today} / 10 ADS`;
-        I('XP-BAR-FILL').style.width = `${(d.ads_today / 10) * 100}%`;
+        I('XP-PROGRESS-TEXT').textContent = `${d.ads_today} / 60 ADS`;
+        I('XP-BAR-FILL').style.width = `${(d.ads_today / 60) * 100}%`;
         
         if (d.next_ad) {
           const diff = Math.ceil((new Date(d.next_ad).getTime() - new Date().getTime()) / 1000);
@@ -8756,7 +8756,7 @@
           method: 'POST', 
           body: JSON.stringify({ token }) 
         });
-        toast('success', `Earned ${d.xp_reward} XP!`);
+        toast('success', `Earned ${d.xp_earned} XP!`);
         updateXpUI();
       } catch (e) { 
         toast('err', e.message); 

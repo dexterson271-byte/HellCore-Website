@@ -68,8 +68,8 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 
 app = Flask(__name__)
 
-AD_DAILY_LIMIT = 20
-AD_COOLDOWN_SECONDS = 300
+AD_DAILY_LIMIT = 60
+AD_COOLDOWN_SECONDS = 90
 AD_MIN_DURATION_SECONDS = 25
 AD_COMPLETION_WINDOW_SECONDS = 300
 AD_IP_COMPLETION_LIMIT = 5
@@ -565,9 +565,9 @@ def get_reward_profile(cursor, user_id, now=None):
     return {
         "current_xp": current["current_xp"],
         "rank": current["rank"],
-        "daily_ads_watched": daily_ads_watched,
-        "ads_remaining_today": max(0, AD_DAILY_LIMIT - daily_ads_watched),
-        "next_ad_available_at": isoformat_utc(next_available),
+        "ads_today": daily_ads_watched,
+        "ads_remaining": max(0, AD_DAILY_LIMIT - daily_ads_watched),
+        "next_ad": isoformat_utc(next_available),
         "active_ad_in_progress": bool(active_watch),
     }
 
@@ -3273,7 +3273,7 @@ def ads_complete():
         return jsonify({"error": "Too many ad completions came from this IP in the last hour.", "code": "ip_rate_limited"}), 429
 
     current = get_current_store_rank(c, request.cu["id"])
-    awarded_xp = random.randint(10, 50)
+    awarded_xp = 10
     new_balance = current["current_xp"] + awarded_xp
     c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_balance, request.cu["id"]))
     c.execute(
