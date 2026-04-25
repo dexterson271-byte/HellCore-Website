@@ -5245,11 +5245,7 @@
             <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
             
             <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
-              <!-- Monetag MultiTag / Social Bar Fallback -->
-              <div id="container-10922915"></div>
-              <script>
-                (function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);
-              </script>
+              <iframe id="AD-IFRAME" style="width:100%; height:100%; min-height:250px; border:none; display:none;" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>
             </div>
 
             <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
@@ -9194,8 +9190,23 @@
         
         ACTIVE_AD_SESSION = res.ad_token;
         
-        // Trigger Vignette (if the script allows manual re-trigger, otherwise it handles itself)
-        try { if(window.showVignetteAd) window.showVignetteAd(); } catch(e){}
+        // Trigger Ads dynamically inside iframe to ensure they load while visible
+        const iframe = I('AD-IFRAME');
+        iframe.style.display = 'block';
+        iframe.srcdoc = `
+          <!DOCTYPE html>
+          <html>
+          <head><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+          <body style="margin:0;padding:0;display:flex;align-items:center;justify-content:center;height:100vh;background:transparent;">
+            <!-- Vignette Banner -->
+            <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))<\/script>
+            
+            <!-- Social Bar / In-Page Push -->
+            <div id="container-10922915"></div>
+            <script>(function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);<\/script>
+          </body>
+          </html>
+        `;
 
         // Show Ad UI
         I('AD-CLAIM-BTN').style.display = 'none';
@@ -9238,6 +9249,8 @@
           body: { ad_token: token, completion_proof }
         });
         closeM('AD-OVERLAY');
+        I('AD-IFRAME').srcdoc = ''; // clear iframe
+        I('AD-IFRAME').style.display = 'none';
         toast('success', `Earned 10 XP!`);
         ACTIVE_AD_SESSION = null;
         updateXpUI();
