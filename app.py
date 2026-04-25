@@ -607,7 +607,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         "ALTER TABLE hc_ticket_msgs ADD COLUMN is_internal INTEGER DEFAULT 0",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN message_type VARCHAR(20) DEFAULT 'user'",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT",
-        "ALTER TABLE hc_stats ADD COLUMN xp INTEGER DEFAULT 0"
+        "ALTER TABLE hc_stats ADD COLUMN xp INTEGER DEFAULT 0",
+        "ALTER TABLE hc_ads ADD COLUMN last_ad_time DATETIME"
     ]:
         try: c.execute(sql)
         except: pass
@@ -3035,6 +3036,28 @@ def staff_messages_post(cid):
 # -------------------------------------------------------
 # STATIC FILES (ads.txt, robots.txt)
 # -------------------------------------------------------
+@app.route("/ad-banner")
+def ad_banner():
+    return """
+    <html>
+    <head><style>body { margin: 0; padding: 0; background: transparent; }</style></head>
+    <body>
+      <script>
+      (function(izx){
+      var d = document,
+          s = d.createElement('script'),
+          l = d.scripts[d.scripts.length - 1];
+      s.settings = izx || {};
+      s.src = "\/\/animatedlook.com\/b.XwV\/sAdjGela0\/YPWmcD\/neUm\/9YuAZ-UXlskiP\/T\/YM5AOdDBco3zN\/TPcMt\/NJj-kD4tNhznc-2RMyQs";
+      s.async = true;
+      s.referrerPolicy = 'no-referrer-when-downgrade';
+      l.parentNode.insertBefore(s, l);
+      })({})
+      </script>
+    </body>
+    </html>
+    """
+
 @app.route("/ads.txt")
 def ads_txt():
     # Verification for publisher ID provided by user
