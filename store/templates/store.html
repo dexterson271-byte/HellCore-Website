@@ -1444,12 +1444,28 @@
       </div>
     </div>
 
-    <!-- ═══ RANKS PAGE ═══ -->
+    <!-- ═══ STORE PAGE ═══ -->
     <div class="pg" id="pg-ranks">
       <div class="W">
         <div class="stitle" style="font-size:2rem; margin-bottom:4px">⭐ Server Ranks</div>
         <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
         <div class="g5" id="RANKS-GRID"></div>
+
+        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">⚡ Network Boosters</div>
+        <p class="ssub">Multiply your coin earnings globally across the entire network.</p>
+        <div class="g5" id="BOOSTERS-GRID"></div>
+
+        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">🎁 Mystery Boxes</div>
+        <p class="ssub">Unlock epic cosmetics, gadgets, and pets.</p>
+        <div class="g5" id="MYSTERY-BOXES-GRID"></div>
+
+        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">🪙 Coins</div>
+        <p class="ssub">Instantly receive coins to spend in your favorite gamemodes.</p>
+        <div class="g5" id="COINS-GRID"></div>
+
+        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">✨ Mystery Dust</div>
+        <p class="ssub">Craft the exact cosmetics you want directly.</p>
+        <div class="g5" id="MYSTERY-DUST-GRID"></div>
       </div>
     </div>
 
@@ -1849,8 +1865,8 @@
       return `<div class="rank-card ${isFeatured ? 'featured' : ''}" style="--cc:${p.color}">
     <span class="rank-icon"><svg class="ic" style="width:2.5rem;height:2.5rem;color:${p.color}"><use href="#${p.icon}"/></svg></span>
     <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
-    ${p.original_price > p.price ? `<div class="rank-original">was $${p.original_price.toFixed(2)}</div>` : ''}
-    <div class="rank-price"><span class="currency">$</span>${p.price.toFixed(2)}</div>
+    ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
+    <div class="rank-price"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
     <div style="font-size:0.85rem;color:var(--tx2);font-weight:600;margin-top:-5px;margin-bottom:10px">OR ${p.xp_price.toLocaleString()} XP</div>
     ${savings > 0 ? `<div class="rank-save">SAVE ${savings}%</div>` : ''}
     <ul class="rank-perks">${perks}</ul>
@@ -1875,8 +1891,20 @@
     // RANKS PAGE
     // ════════════════════════════════════════════════════════
     function loadRanks() {
-      const ranks = getRanks();
-      I('RANKS-GRID').innerHTML = ranks.map(r => renderRankCard(r)).join('');
+      const ranks = PRODUCTS.filter(p => p.category === 'rank').sort((a, b) => a.sort_order - b.sort_order);
+      if(I('RANKS-GRID')) I('RANKS-GRID').innerHTML = ranks.map(r => renderRankCard(r)).join('');
+
+      const boosters = PRODUCTS.filter(p => p.category === 'booster').sort((a, b) => a.sort_order - b.sort_order);
+      if(I('BOOSTERS-GRID')) I('BOOSTERS-GRID').innerHTML = boosters.map(r => renderRankCard(r)).join('');
+
+      const mystery_boxes = PRODUCTS.filter(p => p.category === 'mystery_box').sort((a, b) => a.sort_order - b.sort_order);
+      if(I('MYSTERY-BOXES-GRID')) I('MYSTERY-BOXES-GRID').innerHTML = mystery_boxes.map(r => renderRankCard(r)).join('');
+
+      const coins = PRODUCTS.filter(p => p.category === 'coins').sort((a, b) => a.sort_order - b.sort_order);
+      if(I('COINS-GRID')) I('COINS-GRID').innerHTML = coins.map(r => renderRankCard(r)).join('');
+
+      const mystery_dust = PRODUCTS.filter(p => p.category === 'mystery_dust').sort((a, b) => a.sort_order - b.sort_order);
+      if(I('MYSTERY-DUST-GRID')) I('MYSTERY-DUST-GRID').innerHTML = mystery_dust.map(r => renderRankCard(r)).join('');
     }
 
     // ════════════════════════════════════════════════════════
@@ -1945,7 +1973,7 @@
         I('CART-LIST').innerHTML = CART.map(it => `<div class="cart-item">
       <div class="cart-item-info"><h4>${esc(it.item_name)}</h4><small>${it.gamemode || 'Global'}</small></div>
       <div class="cart-item-right">
-        <span class="cart-item-price">$${parseFloat(it.item_price).toFixed(2)}</span>
+        <span class="cart-item-price">₹${parseFloat(it.item_price).toFixed(0)}</span>
         <button class="btn bred bxs" onclick="removeFromCart(${it.id})"><svg class="ic"><use href="#ic-x"/></svg></button>
       </div>
     </div>`).join('');
@@ -1955,7 +1983,7 @@
       <div class="cart-total">
         <span class="cart-total-label">Total</span>
         <div style="text-align:right">
-          <span class="cart-total-price">$${total.toFixed(2)}</span>
+          <span class="cart-total-price">₹${total.toFixed(0)}</span>
           <div style="font-size:0.8rem;color:var(--tx2);font-weight:600">OR ${(total * 200).toLocaleString()} XP</div>
         </div>
       </div>
@@ -2039,7 +2067,7 @@
         </div>
         <div class="g2" style="margin-bottom:24px">
           <div class="stat-card"><div class="stat-label">Completed Orders</div><div class="stat-value" style="color:var(--grn)">${o.completed_orders}</div></div>
-          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" style="color:#fbbf24">$${o.total_revenue.toFixed(2)}</div><div class="stat-sub">Pending: ${o.pending_orders} orders</div></div>
+          <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" style="color:#fbbf24">₹${o.total_revenue.toFixed(0)}</div><div class="stat-sub">Pending: ${o.pending_orders} orders</div></div>
         </div>
         <div class="stitle" style="text-align:left;font-size:1.1rem;margin-top:32px">🔥 Top Products</div>
         <div style="background:var(--p1);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-top:12px">
@@ -2060,7 +2088,7 @@
             ${products.map(p => `<tr>
               <td><strong>${esc(p.name)}</strong></td>
               <td><span class="tag ${p.category === 'rank' ? 'tag-paid' : 'tag-free'}">${p.category}</span></td>
-              <td style="font-weight:700">${p.price <= 0 ? 'Free' : '$' + p.price.toFixed(2)}</td>
+              <td style="font-weight:700">${p.price <= 0 ? 'Free' : '₹' + p.price.toFixed(0)}</td>
               <td>${p.status === 'active' ? '🟢' : '⚪'} ${p.status}</td>
               <td style="text-align:right">
                 <button class="bto bxs" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "\\'")})'>Edit</button>
@@ -2079,7 +2107,7 @@
               <td>#${o.id}</td>
               <td>${esc(o.username || 'Unknown')}<br><small style="color:var(--tx3)">${esc(o.mc_name || '')}</small></td>
               <td>${(Array.isArray(o.items) ? o.items : []).map(i => esc(i.name)).join(', ') || '—'}</td>
-              <td style="font-weight:700;color:var(--g)">$${(o.total || 0).toFixed(2)}</td>
+              <td style="font-weight:700;color:var(--g)">₹${(o.total || 0).toFixed(0)}</td>
               <td>${o.status === 'completed' ? '✅' : o.status === 'pending' ? '⏳' : '❌'} ${o.status}</td>
               <td style="color:var(--tx3);font-size:0.8rem">${o.created_at}</td>
             </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--tx3);padding:20px">No orders yet</td></tr>'}

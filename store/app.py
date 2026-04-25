@@ -314,14 +314,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
 
     db.commit()
 
-    # Seed products if empty
-    c.execute("SELECT COUNT(*) as cnt FROM hc_store_products")
-    row = c.fetchone()
-    count = row['cnt'] if isinstance(row, dict) else row[0]
-    if count == 0:
-        seed_products(c, db)
-    c.execute("DELETE FROM hc_store_products WHERE slug IN ('rank-bronze', 'rank-silver', 'rank-gold')")
+    # Always re-seed to apply latest updates
+    c.execute("DELETE FROM hc_store_products")
     db.commit()
+    seed_products(c, db)
     c.close(); db.close()
     print("[STORE] Tables ready")
 
@@ -329,26 +325,66 @@ def seed_products(c, db):
     """Seed the store with initial products."""
     products = [
         # ── RANKS ──
-        ("VIP", "vip", "rank", "global", 2.00, 4.99,
+        ("VIP", "vip", "rank", "global", 299, 399,
          "Start your journey with VIP status. Green tag, exclusive kit, and lobby perks.",
          '["[VIP] Green Tag","VIP Kit","5% Store Discount","Global Chat Access","Lobby Furniture"]',
          "ic-star", "#4ade80", 1, 1),
-        ("VIP+", "vip-plus", "rank", "global", 4.00, 9.99,
+        ("VIP+", "vip-plus", "rank", "global", 699, 799,
          "Enhanced VIP with cyan flair. Everything in VIP plus fly and more.",
          '["[VIP+] Cyan Tag","VIP+ Kit","10% Store Discount","All VIP Perks","Fly in Lobby","Join Full Servers"]',
          "ic-layers", "#06b6d4", 1, 2),
-        ("MVP", "mvp", "rank", "global", 8.00, 19.99,
+        ("MVP", "mvp", "rank", "global", 1299, 1699,
          "The gold standard. Color nicknames, premium kits, and priority access.",
          '["[MVP] Gold Tag","MVP Kit","15% Store Discount","All VIP+ Perks","Color Nickname","Priority Queue"]',
          "ic-shield", "#f59e0b", 1, 3),
-        ("MVP+", "mvp-plus", "rank", "global", 12.00, 39.99,
+        ("MVP+", "mvp-plus", "rank", "global", 2799, 3399,
          "Red-tier elite. Private games, best kits, and maximum perks.",
          '["[MVP+] Red Tag","MVP+ Kit","20% Store Discount","All MVP Perks","Private Games","Nick Command"]',
          "ic-heart", "#f43f5e", 1, 4),
-        ("MVP++", "mvp-plus-plus", "rank", "global", 15.00, 45.00,
-         "The ultimate rank. Pink prestige, host private games, and exclusive everything.",
-         '["[MVP++] Pink Tag","MVP++ Kit","25% Store Discount","All MVP+ Perks","Host Private Games","Exclusive Cosmetics","Monthly Crate"]',
+        ("Booster", "booster", "rank", "global", 3499, 3999,
+         "The ultimate rank replacement for MVP++. Pink prestige, host private games, and exclusive everything.",
+         '["[Booster] Pink Tag","Booster Kit","25% Store Discount","All MVP+ Perks","Host Private Games","Exclusive Cosmetics","Monthly Crate"]',
          "ic-bolt", "#d946ef", 1, 5),
+
+        # ── BOOSTERS (CONSUMABLES) ──
+        ("1 Hour Global Coin Booster", "1h-coin-booster", "booster", "global", 299, 399,
+         "Multiply all coins earned globally by 2x for 1 hour.",
+         '["2x Global Coins","1 Hour Duration","Works in all modes","Stacks with events"]',
+         "ic-zap", "#facc15", 0, 6),
+        ("3 Hour Global Coin Booster", "3h-coin-booster", "booster", "global", 699, 899,
+         "Multiply all coins earned globally by 2x for 3 hours.",
+         '["2x Global Coins","3 Hour Duration","Works in all modes","Stacks with events"]',
+         "ic-zap", "#eab308", 1, 7),
+
+        # ── MYSTERY BOXES ──
+        ("5x Mystery Box Bundle", "5x-mystery-box", "mystery_box", "global", 399, 499,
+         "Open 5 Mystery Boxes to unlock epic cosmetics, gadgets, and pets.",
+         '["5x Mystery Boxes","Chance for Legendary Items","Cosmetics & Gadgets"]',
+         "ic-package", "#a855f7", 0, 8),
+        ("10x Mystery Box Bundle", "10x-mystery-box", "mystery_box", "global", 699, 899,
+         "Open 10 Mystery Boxes to unlock epic cosmetics, gadgets, and pets.",
+         '["10x Mystery Boxes","Chance for Legendary Items","Cosmetics & Gadgets"]',
+         "ic-package", "#c084fc", 1, 9),
+
+        # ── COINS ──
+        ("10,000 Bedwars Coins", "10k-bw-coins", "coins", "bedwars", 199, 299,
+         "Instantly receive 10,000 Bedwars coins to spend on in-game cosmetics.",
+         '["10,000 Coins","Instant Delivery","Use in Bedwars Shop"]',
+         "ic-coins", "#fbbf24", 0, 10),
+        ("50,000 Bedwars Coins", "50k-bw-coins", "coins", "bedwars", 799, 999,
+         "Instantly receive 50,000 Bedwars coins to spend on in-game cosmetics.",
+         '["50,000 Coins","Instant Delivery","Use in Bedwars Shop"]',
+         "ic-coins", "#f59e0b", 1, 11),
+
+        # ── MYSTERY DUST ──
+        ("1,000 Mystery Dust", "1k-mystery-dust", "mystery_dust", "global", 299, 399,
+         "Craft specific cosmetics directly using Mystery Dust.",
+         '["1,000 Mystery Dust","Craft Cosmetics","Bypass RNG"]',
+         "ic-sparkles", "#2dd4bf", 0, 12),
+        ("5,000 Mystery Dust", "5k-mystery-dust", "mystery_dust", "global", 999, 1299,
+         "Craft specific cosmetics directly using Mystery Dust.",
+         '["5,000 Mystery Dust","Craft Cosmetics","Bypass RNG"]',
+         "ic-sparkles", "#14b8a6", 1, 13),
     ]
 
     for p in products:
