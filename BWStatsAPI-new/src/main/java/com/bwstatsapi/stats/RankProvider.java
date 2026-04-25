@@ -10,10 +10,25 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class RankProvider {
 
     private static boolean available = false;
+
+    private static final long CACHE_TTL_MS = 60_000L;
+    private static final ConcurrentHashMap<UUID, CachedRank> CACHE = new ConcurrentHashMap<>();
+
+    private static final class CachedRank {
+        final long expiresAt;
+        final Map<String, Object> data;
+        CachedRank(Map<String, Object> data) {
+            this.data = data;
+            this.expiresAt = System.currentTimeMillis() + CACHE_TTL_MS;
+        }
+    }
 
     public static void init() {
         available = Bukkit.getPluginManager().getPlugin("LuckPerms") != null;
@@ -23,16 +38,25 @@ public class RankProvider {
 
     public Map<String, Object> getRankInfo(UUID uuid) {
         if (!available) return null;
+
+        CachedRank cached = CACHE.get(uuid);
+        if (cached != null && cached.expiresAt > System.currentTimeMillis()) {
+            return cached.data;
+        }
+
         try {
             LuckPerms lp = LuckPermsProvider.get();
 
             // Try in-memory cache first (online players)
             User user = lp.getUserManager().getUser(uuid);
 
-            // If not loaded (offline player), load from storage
             if (user == null) {
                 CompletableFuture<User> future = lp.getUserManager().loadUser(uuid);
-                user = future.get(); // blocking but we're on a worker thread via HTTP
+                try {
+                    user = future.get(2, TimeUnit.SECONDS);
+                } catch (TimeoutException te) {
+                    return null;
+                }
             }
 
             if (user == null) return null;
@@ -46,6 +70,7 @@ public class RankProvider {
             rank.put("suffix",       meta.getSuffix() != null  ? stripColor(meta.getSuffix())  : "");
             rank.put("suffixRaw",    meta.getSuffix() != null  ? meta.getSuffix()  : "");
 
+            CACHE.put(uuid, new CachedRank(rank));
             return rank;
         } catch (Exception e) {
             return null;
