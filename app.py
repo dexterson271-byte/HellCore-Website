@@ -3773,9 +3773,11 @@ def staff_messages_post(cid):
 def ad_banner():
     return """
     <html>
-    <head><style>body { margin: 0; padding: 0; background: transparent; }</style></head>
+    <head><style>body { margin: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }</style></head>
     <body>
-      <!-- PropellerAds Banner Will Go Here -->
+      <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+      <div id="container-10922915"></div>
+      <script>(function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);</script>
     </body>
     </html>
     """

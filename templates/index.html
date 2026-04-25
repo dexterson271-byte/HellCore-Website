@@ -9190,23 +9190,10 @@
         
         ACTIVE_AD_SESSION = res.ad_token;
         
-        // Trigger Ads dynamically inside iframe to ensure they load while visible
+        // Trigger Ads dynamically using the server route to ensure domain verification passes
         const iframe = I('AD-IFRAME');
         iframe.style.display = 'block';
-        iframe.srcdoc = `
-          <!DOCTYPE html>
-          <html>
-          <head><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-          <body style="margin:0;padding:0;display:flex;align-items:center;justify-content:center;height:100vh;background:transparent;">
-            <!-- Vignette Banner -->
-            <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))<\/script>
-            
-            <!-- Social Bar / In-Page Push -->
-            <div id="container-10922915"></div>
-            <script>(function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);<\/script>
-          </body>
-          </html>
-        `;
+        iframe.src = '/ad-banner?t=' + Date.now(); // Cache busting to force reload
 
         // Show Ad UI
         I('AD-CLAIM-BTN').style.display = 'none';
@@ -9249,7 +9236,7 @@
           body: { ad_token: token, completion_proof }
         });
         closeM('AD-OVERLAY');
-        I('AD-IFRAME').srcdoc = ''; // clear iframe
+        I('AD-IFRAME').src = ''; // clear iframe
         I('AD-IFRAME').style.display = 'none';
         toast('success', `Earned 10 XP!`);
         ACTIVE_AD_SESSION = null;
