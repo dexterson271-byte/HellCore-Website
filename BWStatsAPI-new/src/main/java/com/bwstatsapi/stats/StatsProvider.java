@@ -3,18 +3,24 @@ package com.bwstatsapi.stats;
 import com.andrei1058.bedwars.api.BedWars;
 import com.andrei1058.bedwars.api.arena.IArena;
 import com.andrei1058.bedwars.stats.StatsAPI;
+import com.bwstatsapi.BWStatsAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class StatsProvider {
 
     private static final String SHOP_DB_PATH = "plugins/BedWars1058/Cache/shop.db";
 
     private final RankProvider rankProvider = new RankProvider();
+
+    private static volatile Connection shopConn;
+    private static final Object SHOP_LOCK = new Object();
 
     public StatsProvider() {}
 
@@ -72,22 +78,14 @@ public class StatsProvider {
         data.put("isOnline", isOnline);
         data.put("lastSeen", lastPlay);
 
-        if (isOnline) {
-            try {
-                BedWars bwApi = (BedWars) Bukkit.getServicesManager()
-                    .getRegistration(BedWars.class).getProvider();
-                IArena arena = bwApi.getArenaUtil().getArenaByPlayer(onlinePlayer);
-                if (arena != null) {
-                    Map<String, Object> gameInfo = new LinkedHashMap<>();
-                    gameInfo.put("arenaName",  arena.getArenaName());
-                    gameInfo.put("group",      arena.getGroup());
-                    gameInfo.put("state",      arena.getStatus().name());
-                    gameInfo.put("players",    arena.getPlayers().size());
-                    gameInfo.put("maxPlayers", arena.getMaxPlayers());
-                    data.put("currentGame", gameInfo);
-                } else data.put("currentGame", null);
-            } catch (Exception ignored) { data.put("currentGame", null); }
-        } else data.put("currentGame", null);
+        if (isOnline && !Bukkit.isPrimaryThread()) {
+            Map<String, Object> gameInfo = fetchCurrentGameSync(onlinePlayer);
+            data.put("currentGame", gameInfo);
+        } else if (isOnline) {
+            data.put("currentGame", fetchCurrentGameUnchecked(onlinePlayer));
+        } else {
+            data.put("currentGame", null);
+        }
 
         // Rank from LuckPerms
         if (RankProvider.isAvailable()) {
@@ -103,17 +101,68 @@ public class StatsProvider {
     }
 
     private long[] readXpLevel(UUID uuid) throws SQLException {
-        File dbFile = new File(SHOP_DB_PATH);
-        if (!dbFile.exists()) return new long[]{0, 1};
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
-             PreparedStatement ps = conn.prepareStatement(
-                 "SELECT xp, level FROM player_levels WHERE uuid = ?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return new long[]{rs.getLong("xp"), rs.getLong("level")};
+        Connection c = openShop();
+        if (c == null) return new long[]{0, 1};
+        synchronized (SHOP_LOCK) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "SELECT xp, level FROM player_levels WHERE uuid = ?")) {
+                ps.setString(1, uuid.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) return new long[]{rs.getLong("xp"), rs.getLong("level")};
+                }
+            } catch (SQLException e) {
+                try { c.close(); } catch (SQLException ignored) {}
+                shopConn = null;
+                throw e;
             }
         }
         return new long[]{0, 1};
+    }
+
+    private static Connection openShop() {
+        Connection c = shopConn;
+        if (c != null) return c;
+        synchronized (SHOP_LOCK) {
+            if (shopConn != null) return shopConn;
+            File dbFile = new File(SHOP_DB_PATH);
+            if (!dbFile.exists()) return null;
+            try {
+                shopConn = DriverManager.getConnection(
+                    "jdbc:sqlite:" + dbFile.getAbsolutePath()
+                        + "?journal_mode=WAL&busy_timeout=2000");
+                return shopConn;
+            } catch (SQLException e) {
+                return null;
+            }
+        }
+    }
+
+    private Map<String, Object> fetchCurrentGameSync(Player onlinePlayer) {
+        try {
+            Future<Map<String, Object>> f = Bukkit.getScheduler().callSyncMethod(
+                BWStatsAPI.getInstance(), () -> fetchCurrentGameUnchecked(onlinePlayer));
+            return f.get(250, TimeUnit.MILLISECONDS);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static Map<String, Object> fetchCurrentGameUnchecked(Player onlinePlayer) {
+        try {
+            BedWars bwApi = (BedWars) Bukkit.getServicesManager()
+                .getRegistration(BedWars.class).getProvider();
+            IArena arena = bwApi.getArenaUtil().getArenaByPlayer(onlinePlayer);
+            if (arena == null) return null;
+            Map<String, Object> gameInfo = new LinkedHashMap<>();
+            gameInfo.put("arenaName",  arena.getArenaName());
+            gameInfo.put("group",      arena.getGroup());
+            gameInfo.put("state",      arena.getStatus().name());
+            gameInfo.put("players",    arena.getPlayers().size());
+            gameInfo.put("maxPlayers", arena.getMaxPlayers());
+            return gameInfo;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private static double round(double v) { return Math.round(v * 100.0) / 100.0; }
