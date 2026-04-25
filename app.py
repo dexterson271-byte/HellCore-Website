@@ -536,7 +536,7 @@ def get_daily_ad_watch_count(cursor, user_id, now=None):
     day_start, day_end = utc_day_bounds(now=now)
     cursor.execute(
         f"""SELECT COUNT(*) AS count FROM hc_ad_watches
-            WHERE user_id={ph()} AND started_at >= {ph()} AND started_at < {ph()}""",
+            WHERE user_id={ph()} AND started_at >= {ph()} AND started_at < {ph()} AND status='completed'""",
         (user_id, day_start, day_end),
     )
     row = to_dict(cursor.fetchone()) or {}
@@ -3134,9 +3134,7 @@ def store_purchase():
 @auth_required
 def ads_request():
     d = request.get_json(force=True) or {}
-    session_fingerprint = str(d.get("session_fingerprint") or "").strip()
-    if not session_fingerprint:
-        return jsonify({"error": "A valid ad session fingerprint is required.", "code": "missing_fingerprint"}), 400
+    session_fingerprint = str(d.get("session_fingerprint") or "default_session").strip()
 
     db = get_db(); c = db_cursor(db)
     now = utcnow()
