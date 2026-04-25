@@ -4708,9 +4708,9 @@
         <button class="nb on" onclick="GO('home')"><svg class="ic">
             <use href="#ic-home" />
           </svg> Home</button>
-        <button class="nb" onclick="GO('store')"><svg class="ic">
+        <a class="nb" href="https://store.hellcore.net" target="_blank"><svg class="ic">
             <use href="#ic-cart" />
-          </svg> Store</button>
+          </svg> Store</a>
         <button class="nb" onclick="GO('players')"><svg class="ic">
             <use href="#ic-user" />
           </svg> Players</button>
@@ -4773,10 +4773,9 @@
         <button class="nb" onclick="GO('home'); toggleMobileMenu(false)"><svg class="ic">
             <use href="#ic-earth" />
           </svg> Home</button>
-        <button class="nb" onclick="GO('store'); toggleMobileMenu(false)"><svg
-            class="ic">
+        <a class="nb" href="https://store.hellcore.net" target="_blank"><svg class="ic">
             <use href="#ic-cart" />
-          </svg> Store</button>
+          </svg> Store</a>
         <button class="nb" onclick="GO('players'); toggleMobileMenu(false)"><svg class="ic">
             <use href="#ic-user" />
           </svg> Players</button>
@@ -5204,23 +5203,7 @@
       </div><!-- /adm-shell -->
     </div><!-- /pg-admin -->
 
-    <!-- ════════════ STORE HUB ════════════ -->
-    <div class="pg" id="pg-store">
-      <div class="W reward-store-page">
-        <div class="reward-store-head">
-          <div>
-            <div class="ptitle"><svg class="ic"><use href="#ic-star" /></svg> Rank Store</div>
-            <p class="psub">Spend earned XP on permanent Bronze, Silver, and Gold rank upgrades.</p>
-          </div>
-          <div class="store-summary-chip">
-            <span>Balance</span>
-            <strong id="STORE-XP-BALANCE">0 XP</strong>
-          </div>
-        </div>
-        <div id="STORE-EMPTY" class="reward-empty" style="display:none">Watch ads to earn XP and unlock ranks!</div>
-        <div id="STORE-RANKS" class="rank-store-grid"></div>
-      </div>
-    </div>
+
 
 
 
@@ -6010,16 +5993,6 @@
           Home</button>
       </div>
     </div>
-    <div class="ov" id="MRANKBUY">
-      <div class="mdl" style="max-width:420px">
-        <div class="mhd">Confirm Rank Purchase <button class="mcl" onclick="closeM('MRANKBUY')"><svg class="ic"><use href="#ic-x" /></svg></button></div>
-        <div id="RANK-BUY-BODY" style="color:var(--tx2);font-size:.92rem;line-height:1.6">Loading purchase details...</div>
-        <div style="display:flex;gap:10px;margin-top:18px">
-          <button class="bto" style="flex:1" onclick="closeM('MRANKBUY')">Cancel</button>
-          <button class="btn" style="flex:1" id="RANK-BUY-CONFIRM" onclick="confirmRankPurchase()">Buy Rank</button>
-        </div>
-      </div>
-    </div>
     <div id="CONFETTI"></div>
   </div><!-- #APP -->
 
@@ -6344,13 +6317,8 @@
         admin: () => { admT('node'); },
         cart: renderCart,
         about: loadAbout,
-        store: () => { if (ME) loadRewardStore(); else { rememberAuthIntent('store'); openM('ML'); } },
-        'store-gl': () => showStore('gl'),
-        'store-bw': () => showStore('bw'),
-        'store-sw': () => showStore('sw'),
-        'store-ls': () => showStore('ls'),
-        'store-sv': () => showStore('sv'),
-        'store-pr': () => showStore('pr'),
+        about: loadAbout,
+        store: () => window.open('https://store.hellcore.net', '_blank'),
         'store-free': () => {
           if (ME) {
             // Inject PropellerAds only once when entering Free Store
@@ -9163,84 +9131,7 @@
       }
     }
 
-    function renderRewardStore() {
-      const grid = I('STORE-RANKS');
-      if (!grid) return;
-      I('STORE-XP-BALANCE').textContent = `${Number(XP_STATE.current_xp || 0).toLocaleString()} XP`;
-      I('STORE-EMPTY').style.display = XP_STATE.current_xp > 0 ? 'none' : '';
-      grid.innerHTML = STORE_RANKS_CACHE.map(rank => {
-        const needed = Math.max(0, rank.xp_cost - XP_STATE.current_xp);
-        const tierClass = rewardTierClass(rank.name);
-        const locked = !rank.affordable && !rank.already_purchased;
-        const stateLabel = rank.is_current ? 'Current Rank' : rank.already_purchased ? 'Owned' : locked ? 'Locked' : 'Unlocked';
-        const buttonText = rank.is_current
-          ? 'Equipped'
-          : rank.already_purchased
-            ? 'Already Owned'
-            : rank.affordable
-              ? `Buy for ${rank.xp_cost} XP`
-              : `Need ${needed} More XP`;
-        return `
-          <div class="rank-tier-card ${tierClass} ${rank.affordable ? 'affordable' : ''} ${rank.is_current ? 'current' : ''} ${locked ? 'locked' : ''}">
-            <div class="rank-tier-top">
-              <div>
-                <div class="rank-tier-name">${esc(rank.name)}</div>
-                <div class="rank-tier-cost">${rank.xp_cost.toLocaleString()} XP</div>
-              </div>
-              <div class="rank-state">${stateLabel}</div>
-            </div>
-            <ul class="rank-perks">
-              ${rank.perks.map(perk => `<li>${esc(perk)}</li>`).join('')}
-            </ul>
-            <button class="btn" ${rank.is_current || rank.already_purchased || !rank.affordable ? 'disabled' : ''} onclick="openRankPurchaseModal(${rank.id})">${buttonText}</button>
-          </div>
-        `;
-      }).join('');
-    }
 
-    async function loadRewardStore() {
-      const grid = I('STORE-RANKS');
-      if (!grid || !ME) return;
-      grid.innerHTML = rewardStoreSkeleton();
-      try {
-        await refreshRewardState();
-        renderRewardStore();
-      } catch (e) {
-        grid.innerHTML = `<div class="reward-empty">${esc(rewardErrorMessage(e, 'We could not load the rank store right now.'))}</div>`;
-      }
-    }
-
-    function openRankPurchaseModal(rankId) {
-      const rank = STORE_RANKS_CACHE.find(item => Number(item.id) === Number(rankId));
-      if (!rank) return;
-      PENDING_RANK_PURCHASE = rank;
-      I('RANK-BUY-BODY').innerHTML = `
-        <div style="font-size:1.15rem;font-weight:700;color:var(--tx);margin-bottom:6px">${esc(rank.name)}</div>
-        <div style="margin-bottom:10px">Spend <strong>${rank.xp_cost} XP</strong> to unlock this tier. Your remaining XP carries over after the purchase.</div>
-        <div style="color:var(--tx3);font-size:.82rem">Perks: ${esc(rank.perks.join(' • '))}</div>
-      `;
-      I('RANK-BUY-CONFIRM').disabled = false;
-      openM('MRANKBUY');
-    }
-
-    async function confirmRankPurchase() {
-      if (!PENDING_RANK_PURCHASE) return;
-      const previousXp = XP_STATE.current_xp;
-      I('RANK-BUY-CONFIRM').disabled = true;
-      try {
-        await API('/api/store/purchase', { method: 'POST', body: { rank_id: PENDING_RANK_PURCHASE.id } });
-        closeM('MRANKBUY');
-        toast('ok', `${PENDING_RANK_PURCHASE.name} unlocked!`);
-        fireConfetti();
-        PENDING_RANK_PURCHASE = null;
-        await refreshRewardState();
-        renderRewardStore();
-        renderRewardDashboard(previousXp);
-      } catch (e) {
-        I('RANK-BUY-CONFIRM').disabled = false;
-        toast('err', rewardErrorMessage(e, 'We could not complete that purchase.'));
-      }
-    }
 
     function fireConfetti() {
       const root = I('CONFETTI');
