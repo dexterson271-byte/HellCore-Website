@@ -95,6 +95,7 @@ public class HellcoreLink extends JavaPlugin implements CommandExecutor {
 
         // Run HTTP request asynchronously to prevent server lag
         CompletableFuture.runAsync(() -> {
+            String resultMessage;
             try {
                 String requestUrl = apiUrl + "?code=" + code + "&uuid=" + player.getUniqueId().toString() + "&username=" + player.getName();
                 URL url = new URL(requestUrl);
@@ -105,15 +106,19 @@ public class HellcoreLink extends JavaPlugin implements CommandExecutor {
 
                 int responseCode = conn.getResponseCode();
                 if (responseCode == 200) {
-                    player.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.success")));
+                    resultMessage = prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.success"));
                 } else {
-                    player.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.error")));
+                    resultMessage = prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages.error"));
                 }
                 conn.disconnect();
             } catch (Exception e) {
-                player.sendMessage(prefix + ChatColor.RED + "An error occurred while connecting to the website.");
-                e.printStackTrace();
+                resultMessage = prefix + ChatColor.RED + "An error occurred while connecting to the website.";
+                getLogger().warning("Verify request failed: " + e.getMessage());
             }
+            final String finalMessage = resultMessage;
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (player.isOnline()) player.sendMessage(finalMessage);
+            });
         });
 
         return true;
