@@ -371,6 +371,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_stats(
   wins INTEGER DEFAULT 0,
   losses INTEGER DEFAULT 0,
   coins INTEGER DEFAULT 0,
+  xp INTEGER DEFAULT 0,
   {UNQ}(user_id,gamemode))""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_inventory(
@@ -605,7 +606,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         "ALTER TABLE hc_tickets ADD COLUMN last_message_at TIMESTAMP",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN is_internal INTEGER DEFAULT 0",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN message_type VARCHAR(20) DEFAULT 'user'",
-        "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT"
+        "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT",
+        "ALTER TABLE hc_stats ADD COLUMN xp INTEGER DEFAULT 0"
     ]:
         try: c.execute(sql)
         except: pass
@@ -2767,32 +2769,29 @@ def ads_watch():
     elif roll < 10: rarity = "epic"
     elif roll < 35: rarity = "rare"
 
-    reward = {"xp": 0, "coins": 0, "vip_hours": 0}
+    reward = {"xp": 500, "coins": 0, "vip_hours": 0}
     label = ""
     icon = ""
 
     if rarity == "common":
         amt = random.randint(100, 300)
-        if random.random() > 0.5:
-            reward["coins"] = amt; label = f"{amt} Global Coins"; icon = "ic-cart"
-        else:
-            reward["xp"] = amt; label = f"{amt} Global XP"; icon = "ic-bolt"
+        reward["coins"] = amt; label = f"{amt} Coins & 500 XP"; icon = "ic-cart"
     elif rarity == "rare":
         if random.random() > 0.7:
-            reward["vip_hours"] = 1; label = "1H VIP Rank"; icon = "ic-shield"
+            reward["vip_hours"] = 1; label = "1H VIP Rank & 500 XP"; icon = "ic-shield"
         else:
             amt = random.randint(500, 1000)
-            reward["coins"] = amt; label = f"{amt} Global Coins"; icon = "ic-cart"
+            reward["coins"] = amt; label = f"{amt} Coins & 500 XP"; icon = "ic-cart"
     elif rarity == "epic":
         if random.random() > 0.5:
-            reward["vip_hours"] = 6; label = "6H VIP Rank"; icon = "ic-shield"
+            reward["vip_hours"] = 6; label = "6H VIP Rank & 500 XP"; icon = "ic-shield"
         else:
-            reward["coins"] = 2500; label = "2,500 Global Coins"; icon = "ic-cart"
+            reward["coins"] = 2500; label = "2,500 Coins & 500 XP"; icon = "ic-cart"
     elif rarity == "legendary":
         if random.random() > 0.5:
-            reward["vip_hours"] = 24; label = "24H MVP+ Rank"; icon = "ic-crown"
+            reward["vip_hours"] = 24; label = "24H MVP+ Rank & 500 XP"; icon = "ic-crown"
         else:
-            reward["coins"] = 10000; label = "10,000 Global Coins"; icon = "ic-cart"
+            reward["coins"] = 10000; label = "10,000 Coins & 500 XP"; icon = "ic-cart"
 
     last_str = today.strftime("%Y-%m-%d")
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -2800,12 +2799,12 @@ def ads_watch():
              (ads_today, last_str, now_str, ad_streak, u["id"]))
 
     c.execute(f"INSERT INTO hc_inventory(user_id,item_type,item_name,gamemode,status) VALUES({phs(5)})",
-             (u["id"], "reward", f"Daily Ad Reward #{ads_today}", "global", "claimed"))
+             (u["id"], "reward", label, "global", "claimed"))
     
     # Actually grant stats and rewards
-    c.execute(f"UPDATE hc_stats SET coins = coins + {ph()} WHERE user_id={ph()} AND gamemode='global'", (reward["coins"], u["id"]))
-    if c.rowcount == 0 and reward["coins"] > 0:
-         c.execute(f"INSERT IGNORE INTO hc_stats(user_id, gamemode, coins) VALUES({phs(3)})", (u["id"], "global", reward["coins"]))
+    c.execute(f"UPDATE hc_stats SET coins = coins + {ph()}, xp = xp + {ph()} WHERE user_id={ph()} AND gamemode='global'", (reward["coins"], reward["xp"], u["id"]))
+    if c.rowcount == 0 and (reward["coins"] > 0 or reward["xp"] > 0):
+         c.execute(f"INSERT IGNORE INTO hc_stats(user_id, gamemode, coins, xp) VALUES({phs(4)})", (u["id"], "global", reward["coins"], reward["xp"]))
 
     if reward["vip_hours"] > 0 and u["mc_username"]:
         cmd = f"lpv user {u['mc_username']} parent addtemp vip {reward['vip_hours']}h"
