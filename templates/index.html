@@ -5210,14 +5210,9 @@
     <!-- FREE STORE -->
     <!-- FREE STORE -->
     <div class="pg" id="pg-store-free">
-      <div style="text-align:center; margin-bottom:20px; min-height:100px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02)">
-         <div id="container-10922910-top"></div>
-         <script src="https://n6wxm.com/v1/71/84/10922910/tag.min.js" data-cfasync="false" async></script>
-      </div>
+      <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
       <div class="W">
         <button class="bto bsm" onclick="GO('store')" style="margin-bottom:20px">← Back to Store</button>
-        <!-- Ad Trigger -->
-        <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
         <div class="xp-card">
           <div class="xp-label">Your Current Balance</div>
@@ -5249,18 +5244,12 @@
             <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
             <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
             
-            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px solid var(--bd2); overflow:hidden; position:relative">
-              <!-- Monetag Scripts -->
-              <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
-              <script src="https://n6wxm.com/v1/71/84/10922910/tag.min.js" data-cfasync="false" async></script>
-              
-              <!-- Native Fallback (Shows if script ads are blocked) -->
-              <div class="native-fallback" style="padding:20px; text-align:center">
-                 <div style="font-size:0.7rem; color:var(--g); font-weight:800; margin-bottom:10px; text-transform:uppercase">Sponsored Offer</div>
-                 <h4 style="margin-bottom:10px">Win Premium Ranks & More!</h4>
-                 <p style="font-size:0.8rem; color:var(--tx2); margin-bottom:15px">Support the network by checking out our sponsors.</p>
-                 <a href="https://store.hellcore.net" target="_blank" class="btn bsm">VIEW OFFER</a>
-              </div>
+            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
+              <!-- Monetag MultiTag / Social Bar Fallback -->
+              <div id="container-10922915"></div>
+              <script>
+                (function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);
+              </script>
             </div>
 
             <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
@@ -5269,31 +5258,12 @@
         </div>
 
         <div class="store-promo">
+          <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
           <div class="store-promo-text">
             <h3>Spend your XP!</h3>
             <p>You can use your earned XP to buy Ranks, Kits, and Cosmetics at <b>store.hellcore.net</b>.</p>
           </div>
           <a href="https://store.hellcore.net" target="_blank" class="bto">Visit Store</a>
-        </div>
-
-        <!-- Inline Ad Content (Card Style) -->
-        <div style="margin-top:20px; border:1px solid var(--bd); border-radius:15px; padding:20px; background:var(--p2); text-align:center; position:relative; min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center">
-           <div style="position:absolute; top:10px; right:10px; font-size:0.6rem; color:var(--tx3); font-weight:700">SPONSORED</div>
-           <div id="container-10922910-mid"></div>
-           <script src="https://n6wxm.com/v1/71/84/10922910/tag.min.js" data-cfasync="false" async></script>
-           <p style="font-size:0.75rem; color:var(--tx2); margin-top:15px">Check out our partners for exclusive rewards!</p>
-        </div>
-
-        <!-- Additional Banners -->
-        <div style="margin-top:20px; display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:15px">
-           <div style="height:120px; background:rgba(255,255,255,0.02); border:1px solid var(--bd); border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden">
-              <div id="container-10922915-left"></div>
-              <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
-           </div>
-           <div style="height:120px; background:rgba(255,255,255,0.02); border:1px solid var(--bd); border-radius:12px; display:flex; align-items:center; justify-content:center; overflow:hidden">
-              <div id="container-10922915-right"></div>
-              <script src="https://n6wxm.com/v1/71/84/10922910/tag.min.js" data-cfasync="false" async></script>
-           </div>
         </div>
 
         <div style="margin-top:40px; text-align:left">
@@ -9224,10 +9194,7 @@
         
         ACTIVE_AD_SESSION = res.ad_token;
         
-        // 1. Trigger Pop-under (Open ad in new tab)
-        window.open('https://store.hellcore.net/?ad_session=' + ACTIVE_AD_SESSION, '_blank');
-        
-        // 2. Trigger Vignette/Interstitial
+        // Trigger Vignette (if the script allows manual re-trigger, otherwise it handles itself)
         try { if(window.showVignetteAd) window.showVignetteAd(); } catch(e){}
 
         // Show Ad UI
