@@ -3548,14 +3548,17 @@ def ads_watch():
 def ads_recent():
     try:
         db = get_db(); c = db_cursor(db)
-        c.execute("SELECT u.username, i.item_name, i.created_at FROM hc_inventory i "
-                  "JOIN hc_users u ON i.user_id = u.id "
-                  "WHERE i.item_type='reward' ORDER BY i.created_at DESC LIMIT 5")
+        c.execute("SELECT u.username, x.amount, x.created_at FROM hc_xp_transactions x "
+                  "JOIN hc_users u ON x.user_id = u.id "
+                  "WHERE x.reason='ad_reward' ORDER BY x.created_at DESC LIMIT 10")
         rows = to_list(c.fetchall())
         
-        for r in rows: r["created_at"] = ts(r["created_at"])
+        for r in rows: 
+            r["created_at"] = ts(r["created_at"])
+            r["item_name"] = f"Earned {r['amount']} XP"
         return jsonify(rows)
     except Exception as e:
+        traceback.print_exc()
         return jsonify([])
 
 @app.route("/api/ads/streak-rewards")

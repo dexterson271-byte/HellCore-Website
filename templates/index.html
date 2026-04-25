@@ -5237,6 +5237,16 @@
           </div>
         </div>
 
+        <div id="AD-OVERLAY" class="ov" style="z-index:9999">
+          <div class="mdl" style="max-width:320px; text-align:center">
+            <div id="AD-STATUS-ICON" style="font-size:3rem; margin-bottom:15px">📺</div>
+            <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
+            <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
+            <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">4s</div>
+            <button id="AD-CLAIM-BTN" class="btn" style="width:100%; display:none" onclick="finishAdClaim()">CLAIM REWARD</button>
+          </div>
+        </div>
+
         <div class="store-promo">
           <div class="store-promo-text">
             <h3>Spend your XP!</h3>
@@ -6321,16 +6331,6 @@
         store: () => window.open('https://store.hellcore.net', '_blank'),
         'store-free': () => {
           if (ME) {
-            // Inject PropellerAds only once when entering Free Store
-            if (!document.getElementById('propeller-ads-script')) {
-              const _s = document.createElement('script');
-              _s.id = 'propeller-ads-script';
-              _s.src = 'https://quge5.com/88/tag.min.js';
-              _s.setAttribute('data-zone', '233299');
-              _s.async = true;
-              _s.setAttribute('data-cfasync', 'false');
-              document.body.appendChild(_s);
-            }
             updateXpUI();
           } else { rememberAuthIntent('store-free'); openM('ML'); }
         },
@@ -9180,47 +9180,60 @@
           method: 'POST',
           body: { session_fingerprint: getAdSessionFingerprint() }
         });
-        ACTIVE_AD_SESSION = {
-          token: res.ad_token,
-          totalSeconds: Number(res.ad?.duration_seconds || 25),
-          remainingSeconds: Number(res.ad?.duration_seconds || 25),
-        };
-        renderRewardDashboard(XP_STATE.current_xp);
-        ACTIVE_AD_INTERVAL = setInterval(async () => {
-          if (!ACTIVE_AD_SESSION) return;
-          ACTIVE_AD_SESSION.remainingSeconds -= 1;
-          renderRewardDashboard(XP_STATE.current_xp);
-          if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
-            clearInterval(ACTIVE_AD_INTERVAL);
-            ACTIVE_AD_INTERVAL = null;
-            await finalizeRewardAd();
+        
+        ACTIVE_AD_SESSION = res.token;
+        
+        // Inject Vignette Script
+        (function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
+
+        // Show Ad UI
+        I('AD-CLAIM-BTN').style.display = 'none';
+        I('AD-TIMER-BOX').style.display = 'block';
+        I('AD-STATUS-TITLE').textContent = 'Ad in Progress...';
+        I('AD-TIMER-BOX').textContent = '4s';
+        openM('AD-OVERLAY');
+
+        let left = 4;
+        const iv = setInterval(() => {
+          left--;
+          I('AD-TIMER-BOX').textContent = left + 's';
+          if (left <= 0) {
+            clearInterval(iv);
+            I('AD-TIMER-BOX').style.display = 'none';
+            I('AD-STATUS-TITLE').textContent = 'Ad Complete!';
+            I('AD-CLAIM-BTN').style.display = 'block';
           }
         }, 1000);
+
       } catch (e) {
-        toast('err', rewardErrorMessage(e, 'We could not start an ad right now.'));
-        await loadRewardDashboard(XP_STATE.current_xp);
+        toast('err', e.message);
       }
     }
 
-    async function finalizeRewardAd() {
+    async function finishAdClaim() {
       if (!ACTIVE_AD_SESSION) return;
-      const token = ACTIVE_AD_SESSION.token;
-      const previousXp = XP_STATE.current_xp;
+      const btn = I('AD-CLAIM-BTN');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
       try {
-        const completion_proof = await sha256Hex(token + AD_COMPLETION_SECRET);
-        const res = await API('/api/ads/complete', {
+        // The backend expects a proof based on 'hellcore-mock-ad-proof-v1'
+        const token = ACTIVE_AD_SESSION;
+        const secret = 'hellcore-mock-ad-proof-v1';
+        const completion_proof = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token + secret))
+          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+        const d = await API('/api/ads/complete', {
           method: 'POST',
           body: { ad_token: token, completion_proof }
         });
+        closeM('AD-OVERLAY');
+        toast('success', `Earned 10 XP!`);
         ACTIVE_AD_SESSION = null;
-        toast('ok', `+${res.xp_earned} XP earned!`);
-        await refreshRewardState();
-        renderRewardDashboard(previousXp);
-        if (I('STORE-RANKS')?.closest('.pg')?.classList.contains('ON')) renderRewardStore();
+        updateXpUI();
       } catch (e) {
-        ACTIVE_AD_SESSION = null;
-        toast('err', rewardErrorMessage(e, 'The ad could not be verified.'));
-        await loadRewardDashboard(previousXp);
+        btn.disabled = false;
+        btn.textContent = 'CLAIM REWARD';
+        toast('err', e.message);
       }
     }
 
