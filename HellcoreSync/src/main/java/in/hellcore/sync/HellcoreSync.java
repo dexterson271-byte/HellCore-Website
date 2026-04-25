@@ -50,9 +50,8 @@ public class HellcoreSync {
                 .repeat(5L, TimeUnit.SECONDS)
                 .schedule();
 
-        // Push Dashboard Heartbeat every 3 seconds (Fast Live Updates)
         server.getScheduler().buildTask(this, this::pushLiveStats)
-                .repeat(3L, TimeUnit.SECONDS)
+                .repeat(10L, TimeUnit.SECONDS)
                 .schedule();
 
         // Push graph history snapshot every 3 minutes (Granular Graph Data)
@@ -120,13 +119,20 @@ public class HellcoreSync {
 
             HikariConfig config = new HikariConfig();
             // Use SSL=false for Railway to avoid trustStore issues, keep it for others
-            String sslParam = host.contains("rlwy.net") ? "useSSL=false" : "useSSL=true"; 
+            String sslParam = host.contains("rlwy.net") ? "useSSL=false" : "useSSL=true";
             config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?" + sslParam + "&autoReconnect=true&allowPublicKeyRetrieval=true");
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             config.setUsername(props.getProperty("mysql.user"));
             config.setPassword(props.getProperty("mysql.password"));
             config.setMaximumPoolSize(5);
-            config.setConnectionTimeout(30000);
+            config.setMinimumIdle(1);
+            config.setConnectionTimeout(5000);
+            config.setValidationTimeout(2000);
+            config.setIdleTimeout(60_000);
+            config.setMaxLifetime(600_000);
+            config.setKeepaliveTime(120_000);
+            config.setLeakDetectionThreshold(10_000);
+            config.setPoolName("hellcoresync-hikari");
 
             dataSource = new HikariDataSource(config);
             
