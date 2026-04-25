@@ -1851,6 +1851,7 @@
     <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
     ${p.original_price > p.price ? `<div class="rank-original">was $${p.original_price.toFixed(2)}</div>` : ''}
     <div class="rank-price"><span class="currency">$</span>${p.price.toFixed(2)}</div>
+    <div style="font-size:0.85rem;color:var(--tx2);font-weight:600;margin-top:-5px;margin-bottom:10px">OR ${p.xp_price.toLocaleString()} XP</div>
     ${savings > 0 ? `<div class="rank-save">SAVE ${savings}%</div>` : ''}
     <ul class="rank-perks">${perks}</ul>
     <button class="btn" style="width:100%;margin-top:auto" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
@@ -1899,7 +1900,10 @@
         </div>
         <div class="plugin-desc">${esc(p.description)}</div>
         <div class="plugin-footer">
-          <div class="plugin-price">${p.price <= 0 ? 'Free' : '$' + p.price.toFixed(2)}</div>
+          <div class="plugin-price">
+            ${p.price <= 0 ? 'Free' : '$' + p.price.toFixed(2)}
+            ${p.price > 0 ? `<div style="font-size:0.7rem;color:var(--tx2)">OR ${p.xp_price.toLocaleString()} XP</div>` : ''}
+          </div>
           <button class="btn bsm" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">Get Now</button>
         </div>
       </div>`;
@@ -1950,11 +1954,19 @@
         I('CART-SUMMARY').innerHTML = `<div class="cart-summary">
       <div class="cart-total">
         <span class="cart-total-label">Total</span>
-        <span class="cart-total-price">$${total.toFixed(2)}</span>
+        <div style="text-align:right">
+          <span class="cart-total-price">$${total.toFixed(2)}</span>
+          <div style="font-size:0.8rem;color:var(--tx2);font-weight:600">OR ${(total * 200).toLocaleString()} XP</div>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="bto bsm" onclick="clearCart()">🗑 Clear Cart</button>
-        <button class="btn" style="flex:1" onclick="checkout()"><svg class="ic"><use href="#ic-check"/></svg> Secure Checkout (UPI)</button>
+      <div style="display:flex;gap:8px;flex-direction:column;width:100%">
+        <button class="btn" style="width:100%" onclick="checkout('upi')">
+          <svg class="ic"><use href="#ic-cart"/></svg> Secure Checkout (UPI)
+        </button>
+        <button class="btn bgrn" style="width:100%" onclick="checkout('xp')">
+          <svg class="ic"><use href="#ic-bolt"/></svg> Pay with Earned XP
+        </button>
+        <button class="bto bsm" style="width:100%;margin-top:10px" onclick="clearCart()">🗑 Clear Cart</button>
       </div>
     </div>`;
         updateCartCount();
@@ -1972,13 +1984,21 @@
       catch (e) { toast('err', e.message); }
     }
 
-    async function checkout() {
+    async function checkout(method = 'upi') {
       if (CART.length === 0) { toast('err', 'Your cart is empty.'); return; }
       if (!ME) { redirectToMainLogin(); return; }
-      toast('info', 'Creating payment ticket...');
+      toast('info', method === 'xp' ? 'Processing XP payment...' : 'Creating payment ticket...');
       try {
-        const d = await API('/api/checkout', { method: 'POST' });
-        if (d.ticket_id) {
+        const d = await API('/api/checkout', { 
+          method: 'POST',
+          body: { payment_method: method }
+        });
+        
+        if (method === 'xp') {
+          toast('ok', '✓ Purchase successful! Your rewards are being applied.');
+          updateCartCount();
+          GO('home');
+        } else if (d.ticket_id) {
           toast('ok', 'Order ticket created!');
           setTimeout(() => {
             const target = d.redirect_url ? `${MAIN_SITE}${d.redirect_url}` : `${MAIN_SITE}/tickets?id=${d.ticket_id}`;

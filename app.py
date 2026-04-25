@@ -46,6 +46,7 @@ app = Flask(__name__)
 # ═══════════════════════════════════════════════════════
 UPI_ID = "lakshitdhirani@fam"
 USD_TO_INR = 83.0
+XP_PER_DOLLAR = 200
 STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
 
 # ═══════════════════════════════════════════════════════
@@ -305,6 +306,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
         "ALTER TABLE hc_ticket_msgs ADD COLUMN message_type VARCHAR(20) DEFAULT 'user'",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN meta_json TEXT",
         "ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''",
+        "ALTER TABLE hc_store_products ADD COLUMN xp_price INTEGER DEFAULT 0",
+        "ALTER TABLE hc_users ADD COLUMN current_xp INTEGER DEFAULT 0",
     ]:
         try: c.execute(sql)
         except: pass
@@ -566,6 +569,11 @@ def products_list():
         # Parse perks JSON
         try: r["perks"] = json.loads(r.get("perks","[]"))
         except: r["perks"] = []
+        
+        # Calculate XP price if not set manually
+        if not r.get("xp_price"):
+            r["xp_price"] = int(float(r["price"]) * XP_PER_DOLLAR)
+            
     return jsonify(rows)
 
 @app.route("/api/products/<slug>")
@@ -635,20 +643,37 @@ def create_checkout():
     if not cart_items:
         c.close(); db.close()
         return jsonify({"error": "Cart is empty"}), 400
-    result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+    # Get user's current XP
+    c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (request.cu["id"],))
+    u_row = c.fetchone()
+    current_xp = int(u_row["current_xp"] or 0) if u_row else 0
+
+    pay_method = d.get("payment_method", "upi")
+    
+    total_usd = sum(float(i["item_price"]) for i in cart_items)
+    total_xp = int(total_usd * XP_PER_DOLLAR)
+
+    if pay_method == "xp":
+        if current_xp < total_xp:
+            c.close(); db.close()
+            return jsonify({"error": f"Insufficient XP. You need {total_xp} XP but only have {current_xp}."}), 400
+        
+        # Deduct XP
+        new_xp = current_xp - total_xp
+        c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_xp, request.cu["id"]))
+        
+        # Create order with 'completed' status since XP is instant
+        result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
+    else:
+        result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+
     c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
     db.commit(); c.close(); db.close()
-    track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"]}))
+    track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
     return jsonify(result)
-    
-    if not cart_items:
-        c.close(); db.close()
-        return jsonify({"error": "Cart is empty"}), 400
+    return jsonify(result)
 
-    try:
-        total_usd = sum(float(i["item_price"]) for i in cart_items)
-        total_inr = round(total_usd * USD_TO_INR, 2)
-        items_desc = ", ".join([i["item_name"] for i in cart_items])
+# ═══════════════════════════════════════════════════════
         
         # 1. Create a ticket on the main site (shared DB)
         ticket_title = f"Order #{secrets.token_hex(3).upper()} - {request.cu['username']}"
