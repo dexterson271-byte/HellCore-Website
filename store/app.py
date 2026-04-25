@@ -46,7 +46,7 @@ app = Flask(__name__)
 # ═══════════════════════════════════════════════════════
 UPI_ID = "lakshitdhirani@fam"
 USD_TO_INR = 83.0
-XP_PER_DOLLAR = 200
+XP_PER_INR = 2.5
 STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
 
 # ═══════════════════════════════════════════════════════
@@ -609,7 +609,7 @@ def products_list():
         
         # Calculate XP price if not set manually
         if not r.get("xp_price"):
-            r["xp_price"] = int(float(r["price"]) * XP_PER_DOLLAR)
+            r["xp_price"] = int(float(r["price"]) * XP_PER_INR)
             
     return jsonify(rows)
 
@@ -690,7 +690,7 @@ def create_checkout():
         pay_method = d.get("payment_method", "upi")
         
         total_usd = sum(float(i["item_price"]) for i in cart_items)
-        total_xp = int(total_usd * XP_PER_DOLLAR)
+        total_xp = int(total_usd * XP_PER_INR)
 
         if pay_method == "xp":
             if current_xp < total_xp:
