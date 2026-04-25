@@ -10,12 +10,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * GET /api/v1/leaderboard/{stat}?apikey=...&limit=10
  * Returns top players for the given stat.
  */
 public class LeaderboardEndpoint implements HttpHandler {
+
+    private static final long CACHE_TTL_MS = 30_000L;
+    private static final ConcurrentHashMap<String, CachedBoard> CACHE = new ConcurrentHashMap<>();
+
+    private static final class CachedBoard {
+        final long expiresAt;
+        final List<Map<String, Object>> entries;
+        CachedBoard(List<Map<String, Object>> entries) {
+            this.entries = entries;
+            this.expiresAt = System.currentTimeMillis() + CACHE_TTL_MS;
+        }
+    }
 
     private final BWStatsAPI plugin;
     private final LeaderboardProvider provider;
@@ -56,8 +69,16 @@ public class LeaderboardEndpoint implements HttpHandler {
         try { limit = Math.min(100, Math.max(1, Integer.parseInt(params.getOrDefault("limit", "10")))); }
         catch (NumberFormatException ignored) {}
 
-        List<Map<String, Object>> board = provider.getLeaderboard(stat, limit,
-            plugin.getApiKeyManager().getAllKeyOwners());
+        String cacheKey = stat + ":" + limit;
+        CachedBoard cached = CACHE.get(cacheKey);
+        List<Map<String, Object>> board;
+        if (cached != null && cached.expiresAt > System.currentTimeMillis()) {
+            board = cached.entries;
+        } else {
+            board = provider.getLeaderboard(stat, limit,
+                plugin.getApiKeyManager().getAllKeyOwners());
+            CACHE.put(cacheKey, new CachedBoard(board));
+        }
 
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("success", true);
