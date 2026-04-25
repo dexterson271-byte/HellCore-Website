@@ -1,5 +1,8 @@
 import json
 import secrets
+import os
+import requests
+import threading
 from datetime import datetime
 
 
@@ -86,13 +89,27 @@ def build_purchase_metadata(user, items, rank_info, payment_method, payment_stat
         f"Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"Payment Details:\n" + "\n".join(payment_lines)
     )
-    system_message = (
-        f"Hello **{user['username']}**. Your order `{order_code}` has been created.\n\n"
-        f"Please complete payment using **{payment_method.upper()}** and reply here with proof once paid.\n\n"
-        f"Items:\n" +
-        "\n".join(f"- {row['name']} ({row['gamemode']}) - ${row['price']:.2f}" for row in item_rows) +
-        f"\n\nCurrent rank snapshot: **{primary_rank.upper()}**"
-    )
+    if payment_method.lower() == "upi":
+        amount_inr = payment_details.get("amount_inr", "0.00")
+        upi_id = payment_details.get("upi_id", "lakshitdhirani@fam")
+        rank_names = ", ".join(r['name'] for r in item_rows) or "Items"
+        
+        system_message = (
+            f"Hello **{user['username']}**!\n\n"
+            f"To complete your purchase of **{rank_names}**, please follow these steps:\n\n"
+            f"1. **Pay via UPI**: Send **₹{amount_inr}** to UPI ID: `{upi_id}`\n"
+            f"2. **Attach Screenshot**: Once paid, reply to this ticket with a screenshot of the transaction.\n\n"
+            f"An administrator will verify your payment and grant your rank manually. Thank you!"
+        )
+    else:
+        system_message = (
+            f"Hello **{user['username']}**. Your order `{order_code}` has been created.\n\n"
+            f"Please complete payment using **{payment_method.upper()}** and reply here with proof once paid.\n\n"
+            f"Items:\n" +
+            "\n".join(f"- {row['name']} ({row['gamemode']}) - ${row['price']:.2f}" for row in item_rows) +
+            f"\n\nCurrent rank snapshot: **{primary_rank.upper()}**"
+        )
+
 
     return {
         "order_code": order_code,
@@ -109,3 +126,38 @@ def build_purchase_metadata(user, items, rank_info, payment_method, payment_stat
         "payment_status": payment_status,
     }
 
+
+def notify_discord_ticket(ticket_id, title, description, author_name, category="general", order_code=None):
+    """Sends a Discord notification via webhook for a new ticket."""
+    webhook_url = os.environ.get("STAFF_WEBHOOK", "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj")
+    
+    def run():
+        try:
+            color = 0x3498db # Blue (General)
+            if category == "purchase": color = 0x2ecc71 # Green (Purchase)
+            elif category == "bug": color = 0xe74c3c # Red (Bug)
+            
+            content = f"🎫 **New Ticket #{ticket_id}** created by **{author_name}**"
+            if category == "purchase":
+                content = f"🛒 **New Order Ticket #{ticket_id}** by **{author_name}**"
+            
+            embed = {
+                "title": title,
+                "description": description[:1000],
+                "color": color,
+                "fields": [
+                    {"name": "Category", "value": category.capitalize(), "inline": True},
+                    {"name": "Author", "value": author_name, "inline": True}
+                ],
+                "footer": {"text": f"Hellcore Ticket System • ID: {ticket_id}"},
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            if order_code:
+                embed["fields"].append({"name": "Order Code", "value": f"`{order_code}`", "inline": True})
+                
+            requests.post(webhook_url, json={"content": content, "embeds": [embed]}, timeout=5)
+        except:
+            pass
+            
+    threading.Thread(target=run, daemon=True).start()

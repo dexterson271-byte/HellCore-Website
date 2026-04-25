@@ -1539,6 +1539,9 @@
           <button class="cat-btn" onclick="switchCategory('mystery_box')">🎁 Mystery Boxes</button>
           <button class="cat-btn" onclick="switchCategory('coins')">🪙 Coins</button>
           <button class="cat-btn" onclick="switchCategory('mystery_dust')">✨ Mystery Dust</button>
+          <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--bd)">
+            <button class="cat-btn" onclick="GO('history')">📜 Purchase History</button>
+          </div>
         </aside>
 
         <div class="store-content">
@@ -1649,6 +1652,17 @@
           <div class="ld">
             <div class="sp"></div>
           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ═══ HISTORY PAGE ═══ -->
+    <div class="pg" id="pg-history">
+      <div class="W" style="max-width:900px">
+        <div class="stitle" style="font-size:2rem; margin-bottom:4px">📜 Purchase History</div>
+        <p class="ssub">All your past orders and rank upgrades across the network</p>
+        <div id="HISTORY-LIST">
+          <div class="ld"><div class="sp"></div></div>
         </div>
       </div>
     </div>
@@ -1895,10 +1909,65 @@
         home: loadHome,
         ranks: loadRanks,
         cart: renderCart,
+        history: loadHistory,
         tickets: loadTickets,
         admin: () => loadAdmin('overview'),
       })[id]?.();
       if (push) history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
+    }
+
+    async function loadHistory() {
+      if (!ME) { GO('home'); return; }
+      const el = I('HISTORY-LIST');
+      el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
+      try {
+        const orders = await API('/api/store/orders/history');
+        if (!orders.length) {
+          el.innerHTML = '<div class="empty">You haven\'t made any purchases yet.</div>';
+          return;
+        }
+        el.innerHTML = `
+          <div class="adm-table-wrap" style="background:var(--p1); border:1px solid var(--bd); border-radius:16px; overflow:hidden">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order Code</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orders.map(o => `
+                  <tr>
+                    <td style="font-family:monospace; color:var(--g); font-weight:700">${esc(o.order_code || '#' + o.id)}</td>
+                    <td>
+                      <div style="font-weight:600">${(o.items || []).map(i => esc(i.name)).join(', ')}</div>
+                      <div style="font-size:0.7rem; color:var(--tx3)">Method: ${esc(o.payment_method).toUpperCase()}</div>
+                    </td>
+                    <td style="font-weight:700">₹${(o.total || 0).toFixed(0)}</td>
+                    <td>
+                      <span class="tix-status status-${o.status === 'completed' ? 'open' : o.status === 'pending' ? 'pending' : 'closed'}">
+                        ${o.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style="font-size:0.8rem; color:var(--tx3)">${fmtD(o.created_at)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) { el.innerHTML = `<div class="empty" style="color:var(--r2)">Error loading history: ${e.message}</div>`; }
+    }
+
+    function fmtD(ds) {
+      if (!ds) return '—';
+      try {
+        const d = new Date(ds);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) { return ds; }
     }
     window.onpopstate = (e) => { if (e.state?.pg) GO(e.state.pg, false); };
 

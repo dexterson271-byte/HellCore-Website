@@ -55,7 +55,7 @@ store_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "store")
 if store_dir not in sys.path:
     sys.path.append(store_dir)
 
-from shared_store import build_purchase_metadata, rank_payload
+from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket
 
 # Load environment variables for local testing
 try:
@@ -1318,6 +1318,9 @@ def create_purchase_order_record(c, user, cart_items, source_app="main", payment
         (ticket_id, 1, meta["system_message"], "system", meta["details_json"]),
     )
     add_ticket_activity(c, ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}")
+    
+    # Discord Notification
+    notify_discord_ticket(ticket_id, meta["ticket_title"], meta["ticket_desc"], user["username"], "purchase", meta["order_code"])
     c.execute(
         f"""INSERT INTO hc_store_orders
             (user_id, ticket_id, order_code, items, total, status, payment_method, payment_status, source_app, details_json, rank_snapshot, mc_username)
@@ -2034,15 +2037,8 @@ def ticket_create():
         "url": f"/tickets?id={tid}",
     })
 
-    if category == "purchase":
-        try:
-            import requests
-            wh = globals().get("STAFF_WEBHOOK", "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj")
-            requests.post(wh, json={
-                "content": f"🚨 **New Payment Ticket** created by **{uname}** (Ticket #{tid})",
-                "embeds": [{"title": title, "description": description[:500], "color": 0xFF512F}]
-            }, timeout=3)
-        except: pass
+    # Discord Webhook Notification
+    notify_discord_ticket(tid, title, description, uname, category)
 
     # Browser push to all staff
     try:
@@ -2781,9 +2777,9 @@ def admin_users():
     q = request.args.get("q", "").strip()
     db = get_db(); c = db_cursor(db)
     if q:
-        c.execute(f"SELECT id,email,username,mc_username,role,created_at FROM hc_users WHERE username LIKE {ph()} OR email LIKE {ph()}", (f"%{q}%", f"%{q}%"))
+        c.execute(f"SELECT id,email,username,mc_username,role,created_at,current_xp FROM hc_users WHERE username LIKE {ph()} OR email LIKE {ph()}", (f"%{q}%", f"%{q}%"))
     else:
-        c.execute("SELECT id,email,username,mc_username,role,created_at FROM hc_users ORDER BY created_at DESC LIMIT 50")
+        c.execute("SELECT id,email,username,mc_username,role,created_at,current_xp FROM hc_users ORDER BY created_at DESC LIMIT 50")
     
     rows = to_list(c.fetchall())
     
@@ -2857,6 +2853,63 @@ def admin_role(uid):
     log_audit(request.cu["id"], "UPDATE_ROLE", uid, f"Role set to {role}")
     db.commit()
     return jsonify({"ok":True})
+
+@app.route("/api/admin/users/<int:uid>/xp", methods=["POST"])
+@admin_required
+def admin_user_xp(uid):
+    d = request.get_json(force=True) or {}
+    amount = d.get("xp")
+    if amount is None:
+        return jsonify({"error": "XP amount required"}), 400
+    
+    db = get_db(); c = db_cursor(db)
+    # Check if user exists
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+        
+    c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (amount, uid))
+    
+    # Audit log
+    log_audit(request.cu["id"], "CHANGE_XP", uid, f"Changed XP for {user['username']} to {amount}")
+    
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/logs")
+@admin_required
+def admin_user_logs(uid):
+    db = get_db(); c = db_cursor(db)
+    # Fetch audit logs where this user was the target
+    c.execute(f"SELECT a.*, u.username as admin_name FROM hc_audit_logs a LEFT JOIN hc_users u ON a.admin_id = u.id WHERE a.target_id={ph()} ORDER BY a.created_at DESC LIMIT 100", (uid,))
+    audit_rows = to_list(c.fetchall())
+    for r in audit_rows: r["created_at"] = ts(r["created_at"])
+    
+    # Fetch store events for this user
+    c.execute(f"SELECT * FROM hc_store_events WHERE user_id={ph()} ORDER BY created_at DESC LIMIT 100", (uid,))
+    store_rows = to_list(c.fetchall())
+    for r in store_rows: r["created_at"] = ts(r["created_at"])
+    
+    return jsonify({
+        "audit_logs": audit_rows,
+        "store_events": store_rows
+    })
+
+@app.route("/api/store/orders/history")
+@auth_required
+def store_order_history():
+    uid = request.cu["id"]
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_store_orders WHERE user_id={ph()} ORDER BY created_at DESC", (uid,))
+    rows = to_list(c.fetchall())
+    for r in rows:
+        r["created_at"] = ts(r["created_at"])
+        try:
+            r["items"] = json.loads(r.get("items") or "[]")
+        except:
+            r["items"] = []
+    return jsonify(rows)
 
 @app.route("/api/admin/setstats", methods=["POST"])
 @admin_required

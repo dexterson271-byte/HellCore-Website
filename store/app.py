@@ -23,7 +23,7 @@ import secrets
 import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
-from shared_store import build_purchase_metadata, rank_payload
+from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket
 
 # Load environment variables
 try:
@@ -510,6 +510,9 @@ def create_purchase_order_record(c, user, cart_items, source_app="store", paymen
         f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
         (ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}"),
     )
+
+    # Discord Notification
+    notify_discord_ticket(ticket_id, meta["ticket_title"], meta["ticket_desc"], user["username"], "purchase", meta["order_code"])
     c.execute(
         f"""INSERT INTO hc_store_orders
             (user_id, ticket_id, order_code, items, total, status, payment_method, payment_status, source_app, details_json, rank_snapshot, mc_username)
