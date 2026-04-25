@@ -1918,6 +1918,14 @@
 
     async function loadHistory() {
       if (!ME) { GO('home'); return; }
+      
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('success')) {
+        toast('ok', 'Payment successful! Your order is being processed.');
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       const el = I('HISTORY-LIST');
       el.innerHTML = '<div class="ld"><div class="sp"></div></div>';
       try {
@@ -2187,8 +2195,8 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-direction:column;width:100%">
-        <button class="btn" style="width:100%" onclick="checkout('upi')">
-          <svg class="ic"><use href="#ic-cart"/></svg> Secure Checkout (UPI)
+        <button class="btn" style="width:100%" onclick="checkout('stripe')">
+          <svg class="ic"><use href="#ic-cart"/></svg> Secure Checkout (Card/Stripe)
         </button>
         <button class="btn bgrn" style="width:100%" onclick="checkout('xp')">
           <svg class="ic"><use href="#ic-bolt"/></svg> Pay with Earned XP
@@ -2211,10 +2219,10 @@
       catch (e) { toast('err', e.message); }
     }
 
-    async function checkout(method = 'upi') {
+    async function checkout(method = 'stripe') {
       if (CART.length === 0) { toast('err', 'Your cart is empty.'); return; }
       if (!ME) { redirectToMainLogin(); return; }
-      toast('info', method === 'xp' ? 'Processing XP payment...' : 'Creating payment ticket...');
+      toast('info', method === 'xp' ? 'Processing XP payment...' : 'Redirecting to secure payment...');
       try {
         const d = await API('/api/checkout', { 
           method: 'POST',
@@ -2224,7 +2232,9 @@
         if (method === 'xp') {
           toast('ok', '✓ Purchase successful! Your rewards are being applied.');
           updateCartCount();
-          GO('home');
+          GO('history');
+        } else if (d.stripe_url) {
+          window.location.href = d.stripe_url;
         } else if (d.ticket_id) {
           toast('ok', 'Order ticket created!');
           setTimeout(() => {
@@ -2232,7 +2242,7 @@
             window.location.href = target;
           }, 1000);
         } else {
-          toast('err', d.error || 'Could not create payment ticket');
+          toast('err', d.error || 'Could not create payment session');
         }
       } catch (e) { toast('err', e.message); }
     }

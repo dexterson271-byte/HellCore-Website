@@ -24,6 +24,7 @@ import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
 from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket
+import stripe
 
 # Load environment variables
 try:
@@ -48,6 +49,9 @@ UPI_ID = "lakshitdhirani@fam"
 USD_TO_INR = 83.0
 XP_PER_INR = 2.5
 STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
+MAIN_DOMAIN    = os.environ.get("MAIN_DOMAIN", "http://localhost:5000")
+stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION (shared with main site)
@@ -674,7 +678,7 @@ def cart_clear():
 @app.route("/api/checkout", methods=["POST"])
 @auth_required
 def create_checkout():
-    """Create a manual UPI ticket for the checkout."""
+    """Create a checkout session (Stripe, XP, or UPI ticket)."""
     d = request.get_json(force=True) or {}
     db = get_db(); c = db_cursor(db)
     try:
@@ -706,18 +710,106 @@ def create_checkout():
             
             # Create order with 'completed' status since XP is instant
             result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
-        else:
-            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+            c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
+            db.commit(); c.close(); db.close()
+            track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
+            return jsonify(result)
 
-        c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
-        db.commit(); c.close(); db.close()
-        track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
-        return jsonify(result)
+        elif pay_method == "stripe":
+            # Create Stripe Checkout Session
+            line_items = []
+            for item in cart_items:
+                line_items.append({
+                    'price_data': {
+                        'currency': 'inr',
+                        'product_data': {
+                            'name': item['item_name'],
+                            'description': f"Fulfillment for Minecraft User: {request.cu['username']}",
+                        },
+                        'unit_amount': int(float(item['item_price']) * 100), # Stripe uses paisa
+                    },
+                    'quantity': 1,
+                })
+
+            # Create a pending order record first
+            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="stripe", payment_status="pending")
+            
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'], # 'upi' can be added if enabled in dashboard
+                line_items=line_items,
+                mode='payment',
+                success_url=STORE_DOMAIN + '/history?success=true&session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=STORE_DOMAIN + '/cart?canceled=true',
+                client_reference_id=str(result["order_id"]),
+                customer_email=request.cu["email"],
+                metadata={
+                    "order_id": str(result["order_id"]),
+                    "order_code": result["order_code"],
+                    "user_id": str(request.cu["id"]),
+                    "username": request.cu["username"]
+                }
+            )
+            
+            # Update order with stripe session ID
+            c.execute(f"UPDATE hc_store_orders SET details_json={ph()} WHERE id={ph()}", 
+                      (json.dumps({"stripe_session_id": checkout_session.id}), result["order_id"]))
+            
+            db.commit(); c.close(); db.close()
+            return jsonify({"stripe_url": checkout_session.url})
+
+        else:
+            # Default to UPI (Ticket System)
+            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+            c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
+            db.commit(); c.close(); db.close()
+            track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
+            return jsonify(result)
 
     except Exception as e:
         traceback.print_exc()
-        if 'db' in locals(): db.close()
+        if 'db' in locals(): 
+            try: db.close()
+            except: pass
         return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
+
+
+@app.route("/api/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        else:
+            # Fallback if secret not configured (caution!)
+            event = json.loads(payload)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        order_id = session.get('client_reference_id')
+        
+        if order_id:
+            db = get_db(); c = db_cursor(db)
+            try:
+                c.execute(f"UPDATE hc_store_orders SET payment_status='completed', status='completed' WHERE id={ph()}", (order_id,))
+                c.execute(f"SELECT * FROM hc_store_orders WHERE id={ph()}", (order_id,))
+                order = to_dict(c.fetchone())
+                if order:
+                    notify_discord_ticket(
+                        title=f"💰 Stripe Payment Received — #{order['order_code']}",
+                        message=f"**User:** {order['mc_username']}\n**Total:** ₹{order['total']}\n**Items:** {order['items']}\n\nPayment verified via Stripe.",
+                        color=0x22c55e
+                    )
+                db.commit()
+            except Exception as e:
+                print(f"[STRIPE WEBHOOK ERROR] {e}")
+            finally:
+                c.close(); db.close()
+
+    return jsonify({"success": True})
 
 
 
