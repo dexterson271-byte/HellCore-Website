@@ -665,6 +665,90 @@
       flex-shrink: 0;
     }
 
+    /* ═══ STORE LAYOUT ═══ */
+    .store-layout {
+      display: flex;
+      gap: 32px;
+      margin-top: 24px;
+      align-items: flex-start;
+    }
+
+    .store-sidebar {
+      width: 250px;
+      flex-shrink: 0;
+      background: var(--p1);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      padding: 16px;
+      position: sticky;
+      top: 100px;
+    }
+
+    .store-sidebar h3 {
+      font-size: 0.9rem;
+      color: var(--tx2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+      padding-left: 8px;
+    }
+
+    .cat-btn {
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      background: transparent;
+      border: none;
+      color: var(--tx);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+    }
+
+    .cat-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .cat-btn.active {
+      background: rgba(255, 81, 47, 0.1);
+      color: var(--g);
+    }
+
+    .store-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cat-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .cat-section.active {
+      display: block;
+    }
+
+    /* ═══ GENERIC PRODUCT CARDS ═══ */
+    .product-card {
+      background: var(--p1);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     /* ═══ PLUGIN CARDS ═══ */
     .plugin-card {
       background: var(--p1);
@@ -1446,26 +1530,49 @@
 
     <!-- ═══ STORE PAGE ═══ -->
     <div class="pg" id="pg-ranks">
-      <div class="W">
-        <div class="stitle" style="font-size:2rem; margin-bottom:4px">⭐ Server Ranks</div>
-        <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
-        <div class="g5" id="RANKS-GRID"></div>
+      <div class="W store-layout">
+        
+        <aside class="store-sidebar">
+          <h3>Categories</h3>
+          <button class="cat-btn active" onclick="switchCategory('rank')">🌟 Ranks</button>
+          <button class="cat-btn" onclick="switchCategory('booster')">⚡ Network Boosters</button>
+          <button class="cat-btn" onclick="switchCategory('mystery_box')">🎁 Mystery Boxes</button>
+          <button class="cat-btn" onclick="switchCategory('coins')">🪙 Coins</button>
+          <button class="cat-btn" onclick="switchCategory('mystery_dust')">✨ Mystery Dust</button>
+        </aside>
 
-        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">⚡ Network Boosters</div>
-        <p class="ssub">Multiply your coin earnings globally across the entire network.</p>
-        <div class="g5" id="BOOSTERS-GRID"></div>
+        <div class="store-content">
+          <div id="CAT-rank" class="cat-section active">
+            <div class="stitle">🌟 Server Ranks</div>
+            <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
+            <div class="g3" id="RANKS-GRID"></div>
+          </div>
 
-        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">🎁 Mystery Boxes</div>
-        <p class="ssub">Unlock epic cosmetics, gadgets, and pets.</p>
-        <div class="g5" id="MYSTERY-BOXES-GRID"></div>
+          <div id="CAT-booster" class="cat-section">
+            <div class="stitle">⚡ Network Boosters</div>
+            <p class="ssub">Multiply your coin earnings globally across the entire network.</p>
+            <div class="g3" id="BOOSTERS-GRID"></div>
+          </div>
 
-        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">🪙 Coins</div>
-        <p class="ssub">Instantly receive coins to spend in your favorite gamemodes.</p>
-        <div class="g5" id="COINS-GRID"></div>
+          <div id="CAT-mystery_box" class="cat-section">
+            <div class="stitle">🎁 Mystery Boxes</div>
+            <p class="ssub">Unlock epic cosmetics, gadgets, and pets.</p>
+            <div class="g3" id="MYSTERY-BOXES-GRID"></div>
+          </div>
 
-        <div class="stitle" style="font-size:2rem; margin-top:60px; margin-bottom:4px">✨ Mystery Dust</div>
-        <p class="ssub">Craft the exact cosmetics you want directly.</p>
-        <div class="g5" id="MYSTERY-DUST-GRID"></div>
+          <div id="CAT-coins" class="cat-section">
+            <div class="stitle">🪙 Coins</div>
+            <p class="ssub">Instantly receive coins to spend in your favorite gamemodes.</p>
+            <div class="g3" id="COINS-GRID"></div>
+          </div>
+
+          <div id="CAT-mystery_dust" class="cat-section">
+            <div class="stitle">✨ Mystery Dust</div>
+            <p class="ssub">Craft the exact cosmetics you want directly.</p>
+            <div class="g3" id="MYSTERY-DUST-GRID"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1887,6 +1994,29 @@
 
     }
 
+    function renderProductCard(p) {
+      return `<div class="product-card">
+    <span class="rank-icon" style="color:${p.color};font-size:3rem;margin-bottom:16px"><svg class="ic" style="width:3rem;height:3rem"><use href="#${p.icon}"/></svg></span>
+    <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
+    ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
+    <div class="rank-price"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
+    <div style="font-size:0.85rem;color:var(--tx2);font-weight:600;margin-top:-5px;margin-bottom:15px">OR ${p.xp_price.toLocaleString()} XP</div>
+    <p style="color:var(--tx2);font-size:0.9rem;margin-bottom:20px;flex:1">${esc(p.description)}</p>
+    <button class="btn" style="width:100%" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
+      <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
+    </button>
+  </div>`;
+    }
+
+    function switchCategory(cat) {
+      document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      document.querySelectorAll('.cat-section').forEach(sec => sec.classList.remove('active'));
+      const activeSec = I('CAT-' + cat);
+      if(activeSec) activeSec.classList.add('active');
+    }
+
     // ════════════════════════════════════════════════════════
     // RANKS PAGE
     // ════════════════════════════════════════════════════════
@@ -1895,16 +2025,16 @@
       if(I('RANKS-GRID')) I('RANKS-GRID').innerHTML = ranks.map(r => renderRankCard(r)).join('');
 
       const boosters = PRODUCTS.filter(p => p.category === 'booster').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('BOOSTERS-GRID')) I('BOOSTERS-GRID').innerHTML = boosters.map(r => renderRankCard(r)).join('');
+      if(I('BOOSTERS-GRID')) I('BOOSTERS-GRID').innerHTML = boosters.map(r => renderProductCard(r)).join('');
 
       const mystery_boxes = PRODUCTS.filter(p => p.category === 'mystery_box').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('MYSTERY-BOXES-GRID')) I('MYSTERY-BOXES-GRID').innerHTML = mystery_boxes.map(r => renderRankCard(r)).join('');
+      if(I('MYSTERY-BOXES-GRID')) I('MYSTERY-BOXES-GRID').innerHTML = mystery_boxes.map(r => renderProductCard(r)).join('');
 
       const coins = PRODUCTS.filter(p => p.category === 'coins').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('COINS-GRID')) I('COINS-GRID').innerHTML = coins.map(r => renderRankCard(r)).join('');
+      if(I('COINS-GRID')) I('COINS-GRID').innerHTML = coins.map(r => renderProductCard(r)).join('');
 
       const mystery_dust = PRODUCTS.filter(p => p.category === 'mystery_dust').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('MYSTERY-DUST-GRID')) I('MYSTERY-DUST-GRID').innerHTML = mystery_dust.map(r => renderRankCard(r)).join('');
+      if(I('MYSTERY-DUST-GRID')) I('MYSTERY-DUST-GRID').innerHTML = mystery_dust.map(r => renderProductCard(r)).join('');
     }
 
     // ════════════════════════════════════════════════════════
