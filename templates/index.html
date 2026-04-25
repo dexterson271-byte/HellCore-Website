@@ -5249,12 +5249,18 @@
             <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
             <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
             
-            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
-              <!-- Monetag MultiTag / Social Bar Fallback -->
-              <div id="container-10922915"></div>
-              <script>
-                (function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);
-              </script>
+            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px solid var(--bd2); overflow:hidden; position:relative">
+              <!-- Monetag Scripts -->
+              <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
+              <script src="https://n6wxm.com/v1/71/84/10922910/tag.min.js" data-cfasync="false" async></script>
+              
+              <!-- Native Fallback (Shows if script ads are blocked) -->
+              <div class="native-fallback" style="padding:20px; text-align:center">
+                 <div style="font-size:0.7rem; color:var(--g); font-weight:800; margin-bottom:10px; text-transform:uppercase">Sponsored Offer</div>
+                 <h4 style="margin-bottom:10px">Win Premium Ranks & More!</h4>
+                 <p style="font-size:0.8rem; color:var(--tx2); margin-bottom:15px">Support the network by checking out our sponsors.</p>
+                 <a href="https://store.hellcore.net" target="_blank" class="btn bsm">VIEW OFFER</a>
+              </div>
             </div>
 
             <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
@@ -9218,7 +9224,10 @@
         
         ACTIVE_AD_SESSION = res.ad_token;
         
-        // Trigger Vignette (if the script allows manual re-trigger, otherwise it handles itself)
+        // 1. Trigger Pop-under (Open ad in new tab)
+        window.open('https://store.hellcore.net/?ad_session=' + ACTIVE_AD_SESSION, '_blank');
+        
+        // 2. Trigger Vignette/Interstitial
         try { if(window.showVignetteAd) window.showVignetteAd(); } catch(e){}
 
         // Show Ad UI
