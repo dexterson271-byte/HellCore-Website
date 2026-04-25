@@ -3443,6 +3443,12 @@ def ads_status():
         "vip_expires": vip_expires if isinstance(vip_expires, str) else ""
     })
 
+@app.route("/api/reward-profile")
+@auth_required
+def reward_profile():
+    db = get_db(); c = db_cursor(db)
+    return jsonify(get_reward_profile(c, request.cu["id"]))
+
 @app.route("/api/ads/watch", methods=["POST"])
 @auth_required
 def ads_watch():
