@@ -19,6 +19,10 @@
 
   <meta name="654e811153a19abf74f32b4d37f07f28813a457c" content="654e811153a19abf74f32b4d37f07f28813a457c" />
 
+  <!-- Monetag Scripts -->
+  <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
+
 
   <!-- Embed / Social Meta Tags -->
   <meta name="description"
@@ -5242,7 +5246,13 @@
             <div id="AD-STATUS-ICON" style="font-size:3rem; margin-bottom:15px">📺</div>
             <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
             <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
-            <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">4s</div>
+            
+            <div id="AD-PLACEMENT" style="min-height:200px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd)">
+              <!-- Fallback/Additional Banner will load here -->
+              <div id="container-10922915"></div> 
+            </div>
+
+            <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
             <button id="AD-CLAIM-BTN" class="btn" style="width:100%; display:none" onclick="finishAdClaim()">CLAIM REWARD</button>
           </div>
         </div>
@@ -9183,14 +9193,8 @@
         
         ACTIVE_AD_SESSION = res.ad_token;
         
-        // 1. Inject Vignette Script
-        (function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));
-
-        // 2. Inject Social Bar Script
-        const _sb = document.createElement('script');
-        _sb.src = 'https://n6wxm.com/v1/71/84/10922915/tag.min.js';
-        _sb.async = true;
-        document.body.appendChild(_sb);
+        // Trigger Vignette (if the script allows manual re-trigger, otherwise it handles itself)
+        try { if(window.showVignetteAd) window.showVignetteAd(); } catch(e){}
 
         // Show Ad UI
         I('AD-CLAIM-BTN').style.display = 'none';
