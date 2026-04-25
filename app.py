@@ -3042,18 +3042,7 @@ def ad_banner():
     <html>
     <head><style>body { margin: 0; padding: 0; background: transparent; }</style></head>
     <body>
-      <script>
-      (function(izx){
-      var d = document,
-          s = d.createElement('script'),
-          l = d.scripts[d.scripts.length - 1];
-      s.settings = izx || {};
-      s.src = "\/\/animatedlook.com\/b.XwV\/sAdjGela0\/YPWmcD\/neUm\/9YuAZ-UXlskiP\/T\/YM5AOdDBco3zN\/TPcMt\/NJj-kD4tNhznc-2RMyQs";
-      s.async = true;
-      s.referrerPolicy = 'no-referrer-when-downgrade';
-      l.parentNode.insertBefore(s, l);
-      })({})
-      </script>
+      <!-- PropellerAds Banner Will Go Here -->
     </body>
     </html>
     """
