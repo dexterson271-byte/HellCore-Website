@@ -36,6 +36,15 @@ public class AdminGui {
     // ── Open player list ───────────────────────────────────────────────────
 
     public static void openList(Player admin, int page) {
+        final BWStatsAPI api = BWStatsAPI.getInstance();
+        final ApiKeyManager mgr = api.getApiKeyManager();
+        Bukkit.getScheduler().runTaskAsynchronously(api, () -> {
+            Map<UUID, long[]> snapshot = mgr.loadAllUsageSnapshot();
+            Bukkit.getScheduler().runTask(api, () -> openListSync(admin, page, snapshot));
+        });
+    }
+
+    private static void openListSync(Player admin, int page, Map<UUID, long[]> snapshot) {
         ApiKeyManager mgr = BWStatsAPI.getInstance().getApiKeyManager();
         List<UUID> owners = new ArrayList<>(mgr.getAllKeyOwners());
 
@@ -59,9 +68,11 @@ public class AdminGui {
             meta.setDisplayName((online ? ChatColor.GREEN : ChatColor.GRAY) + name
                 + (online ? " ●" : " ○"));
             List<String> lore = new ArrayList<>();
+            long[] usage = snapshot.getOrDefault(uuid, new long[]{0L, 0L});
+            long totalRequests = usage[0];
+            long lastUsed      = usage[1];
             lore.add(ChatColor.GRAY + "Status: " + (online ? ChatColor.GREEN + "Online" : ChatColor.RED + "Offline"));
-            lore.add(ChatColor.GRAY + "Total requests: " + ChatColor.WHITE + mgr.getTotalRequests(uuid));
-            long lastUsed = mgr.getLastUsed(uuid);
+            lore.add(ChatColor.GRAY + "Total requests: " + ChatColor.WHITE + totalRequests);
             lore.add(ChatColor.GRAY + "Last used: " + ChatColor.WHITE + (lastUsed == 0 ? "Never" : SDF.format(new Date(lastUsed))));
             lore.add(ChatColor.GRAY + "Rate limit: " + ChatColor.WHITE + rateLimitLabel(mgr, uuid));
             lore.add("");
