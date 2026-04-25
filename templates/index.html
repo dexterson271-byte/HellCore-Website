@@ -19,10 +19,6 @@
 
   <meta name="654e811153a19abf74f32b4d37f07f28813a457c" content="654e811153a19abf74f32b4d37f07f28813a457c" />
 
-  <!-- Monetag Scripts -->
-  <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-  <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
-
 
   <!-- Embed / Social Meta Tags -->
   <meta name="description"
@@ -5216,6 +5212,8 @@
     <div class="pg" id="pg-store-free">
       <div class="W">
         <button class="bto bsm" onclick="GO('store')" style="margin-bottom:20px">← Back to Store</button>
+        <!-- Ad Trigger -->
+        <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
         <div class="xp-card">
           <div class="xp-label">Your Current Balance</div>
@@ -5247,9 +5245,12 @@
             <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
             <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
             
-            <div id="AD-PLACEMENT" style="min-height:200px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd)">
-              <!-- Fallback/Additional Banner will load here -->
-              <div id="container-10922915"></div> 
+            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
+              <!-- Monetag MultiTag / Social Bar Fallback -->
+              <div id="container-10922915"></div>
+              <script>
+                (function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);
+              </script>
             </div>
 
             <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
@@ -5263,6 +5264,15 @@
             <p>You can use your earned XP to buy Ranks, Kits, and Cosmetics at <b>store.hellcore.net</b>.</p>
           </div>
           <a href="https://store.hellcore.net" target="_blank" class="bto">Visit Store</a>
+        </div>
+
+        <!-- Inline Ad Content -->
+        <div style="margin-top:20px; border:1px solid var(--bd); border-radius:15px; padding:20px; background:var(--p2); text-align:center">
+           <div id="container-10922915-inline"></div>
+           <script>
+              (function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915-inline").appendChild(s)})(document);
+           </script>
+           <p style="font-size:0.7rem; color:var(--tx3); margin-top:10px">SPONSORED CONTENT</p>
         </div>
 
         <div style="margin-top:40px; text-align:left">
@@ -9697,6 +9707,10 @@
     }
   </script>
   <div id="TOASTS"></div>
+
+  <!-- Monetag Scripts (Bottom) -->
+  <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <script src="https://n6wxm.com/v1/71/84/10922915/tag.min.js" data-cfasync="false" async></script>
 </body>
 
 </html>
