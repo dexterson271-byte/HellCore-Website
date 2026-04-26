@@ -4941,6 +4941,9 @@
             <button id="ADM-TAB-PLAYERS" class="adm-nav-btn" onclick="admT('players')"><svg class="ic">
                 <use href="#ic-users" />
               </svg><span>Users</span></button>
+            <button id="ADM-TAB-REWARDS" class="adm-nav-btn" onclick="admT('rewards')"><svg class="ic">
+                <use href="#ic-gift" />
+              </svg><span>Rewards</span></button>
             <button id="ADM-TAB-STAFF" class="adm-nav-btn" onclick="admT('staff')"><svg class="ic">
                 <use href="#ic-shield" />
               </svg><span>Staff</span></button>
@@ -5031,10 +5034,26 @@
             <div class="p">
               <div class="stitle">User Search</div>
               <div class="fg" style="display:flex;gap:7px"><input id="ADM-P-SEARCH" class="inp"
-                  placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP()"><button class="btn"
-                  onclick="admSearchP()">Search</button></div>
+                  placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP('P')"><button class="btn"
+                  onclick="admSearchP('P')">Search</button></div>
               <div class="dv"></div>
               <div id="ADM-P-RES"></div>
+            </div>
+          </div>
+
+          <div id="ADM-REWARDS" style="display:none">
+            <div class="p">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                <div>
+                  <div class="stitle" style="margin:0">Reward Controls</div>
+                  <p style="color:var(--tx2);font-size:.8rem;margin:6px 0 0 0">XP balances, ad access, account resets, and reward-side moderation.</p>
+                </div>
+              </div>
+              <div class="fg" style="display:flex;gap:7px"><input id="ADM-R-SEARCH" class="inp"
+                  placeholder="Username or Email" onkeydown="if(event.key==='Enter')admSearchP('R')"><button class="btn"
+                  onclick="admSearchP('R')">Search</button></div>
+              <div class="dv"></div>
+              <div id="ADM-R-RES"></div>
             </div>
           </div>
 
@@ -7445,7 +7464,7 @@
     // HELLCORE NEXUS (ADMIN SETTINGS)
     // ════════════════════════════════════════════════════
     function admT(t) {
-      ['NODE', 'PLAYERS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'TRIALS', 'MGMT'].forEach(k => {
+      ['NODE', 'PLAYERS', 'REWARDS', 'STAFF', 'LOGS', 'FORUMS', 'TICKETS', 'CHAT', 'EVENTS', 'TRIALS', 'MGMT'].forEach(k => {
         const el = I('ADM-' + k); if (el) el.style.display = k === t.toUpperCase() ? 'block' : 'none';
         const tab = I('ADM-TAB-' + k); if (tab) tab.className = 'adm-nav-btn' + (k === t.toUpperCase() ? ' ON' : '');
       });
@@ -7977,8 +7996,16 @@
       inp.focus();
     }
 
-    async function admSearchP() {
-      const q = (V('ADM-P-SEARCH') || '').trim(), el = I('ADM-P-RES');
+    function admRefreshUserSearch() {
+      const rewardsOpen = I('ADM-REWARDS') && I('ADM-REWARDS').style.display !== 'none';
+      if (rewardsOpen) return admSearchP('R');
+      return admSearchP('P');
+    }
+
+    async function admSearchP(mode = 'P') {
+      const searchId = mode === 'R' ? 'ADM-R-SEARCH' : 'ADM-P-SEARCH';
+      const resultId = mode === 'R' ? 'ADM-R-RES' : 'ADM-P-RES';
+      const q = (V(searchId) || '').trim(), el = I(resultId);
       if (!q) { el.innerHTML = ''; return; }
       try {
         const users = await API(`/api/admin/users?q=${enc(q)}`);
@@ -8110,7 +8137,7 @@
       try {
         await API(`/api/admin/users/${uid}/role`, { method: 'POST', body: { role: next } });
         toast('ok', `User role updated to ${next.toUpperCase()}`);
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8118,7 +8145,7 @@
       try {
         await API(`/api/admin/users/${uid}/verify`, { method: 'POST', body: { verified: next } });
         toast('ok', `Verification status updated.`);
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8128,7 +8155,7 @@
       try {
         await API(`/api/admin/users/${uid}/xp`, { method: 'POST', body: { xp } });
         toast('ok', 'User XP updated successfully');
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8137,7 +8164,7 @@
         const res = await API(`/api/admin/users/${uid}/xp-adjust`, { method: 'POST', body: { delta } });
         if (I(`ADM-XP-INP-${uid}`)) I(`ADM-XP-INP-${uid}`).value = res.current_xp;
         toast('ok', `XP ${delta >= 0 ? 'added' : 'removed'} successfully`);
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8145,7 +8172,7 @@
       try {
         await API(`/api/admin/users/${uid}/xp`, { method: 'POST', body: { xp: 0 } });
         toast('ok', 'XP reset to 0');
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8158,7 +8185,7 @@
           body: { blocked: true, reason, hours: hoursRaw ? parseInt(hoursRaw, 10) : null }
         });
         toast('ok', 'Ad access blocked');
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8166,7 +8193,7 @@
       try {
         await API(`/api/admin/users/${uid}/ads-block`, { method: 'POST', body: { blocked: false, reason: '', hours: null } });
         toast('ok', 'Ad access restored');
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
@@ -8189,7 +8216,7 @@
       try {
         await API(`/api/admin/users/${uid}/unlink`, { method: 'POST' });
         toast('ok', 'Minecraft account unlinked');
-        admSearchP();
+        admRefreshUserSearch();
       } catch (e) { toast('err', e.message); }
     }
 
