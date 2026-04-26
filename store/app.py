@@ -20,6 +20,7 @@ import uuid
 import hashlib
 import traceback
 import secrets
+import re
 import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
@@ -285,6 +286,12 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
   details_json TEXT,
   rank_snapshot TEXT,
   mc_username VARCHAR(50) DEFAULT '',
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
+  id INTEGER PRIMARY KEY {AI},
+  command VARCHAR(255) NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
   created_at {DT})""",
     ]
 
@@ -562,6 +569,67 @@ def track_event(event_type, product_id=None, product_name="", user_id=None, meta
     except Exception as e:
         print(f"[STORE] Event tracking error: {e}")
 
+
+def resolve_purchase_username(user):
+    username = str(user.get("mc_username") or user.get("username") or "").strip()
+    if not re.match(r"^[a-zA-Z0-9_]{3,16}$", username):
+        raise ValueError("Set a valid Minecraft username on your account before buying ranks with XP.")
+    return username
+
+
+def get_products_for_cart(c, cart_items):
+    product_ids = []
+    for item in cart_items:
+        item_id = str(item.get("item_id") or "").strip()
+        if item_id.isdigit():
+            product_ids.append(int(item_id))
+    if not product_ids:
+        return {}
+    c.execute(
+        f"SELECT id, name, slug, category, subcategory FROM hc_store_products WHERE id IN ({phs(len(product_ids))})",
+        tuple(product_ids),
+    )
+    return {int(row["id"]): to_dict(row) for row in to_list(c.fetchall())}
+
+
+def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
+    username = resolve_purchase_username(user)
+    products = get_products_for_cart(c, cart_items)
+    queued_commands = []
+
+    for item in cart_items:
+        item_id = str(item.get("item_id") or "").strip()
+        product = products.get(int(item_id)) if item_id.isdigit() else None
+        if not product or product.get("category") != "rank":
+            continue
+
+        rank_name = str(product.get("slug") or item.get("item_name") or "").strip().lower()
+        gamemode = str(product.get("subcategory") or item.get("gamemode") or "global").strip().lower() or "global"
+        if not re.match(r"^[a-zA-Z0-9_+\-]{2,32}$", rank_name):
+            raise ValueError(f"Unsupported rank command value for {product.get('name') or 'item'}.")
+
+        c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()} AND gamemode={ph()}", (user["id"], gamemode))
+        c.execute(
+            f"INSERT INTO hc_ranks(user_id, gamemode, rank_name) VALUES({phs(3)})",
+            (user["id"], gamemode, rank_name),
+        )
+
+        cmd = f"lpv user {username} parent set {rank_name}"
+        c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+        queued_commands.append(cmd)
+
+        if ticket_id:
+            c.execute(
+                f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type) VALUES({phs(4)})",
+                (ticket_id, 1, f"Rank fulfillment queued: `{cmd}`", "system"),
+            )
+            c.execute(
+                f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
+                (ticket_id, user["id"], "rank_fulfillment_queued", cmd),
+            )
+
+    return queued_commands
+
 # ═══════════════════════════════════════════════════════
 # CORS & HEADERS
 # ═══════════════════════════════════════════════════════
@@ -735,9 +803,15 @@ def create_checkout():
             
             # Create order with 'completed' status since XP is instant
             result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
+            queued_commands = queue_store_fulfillment(c, request.cu, cart_items, result["ticket_id"])
+            c.execute(
+                f"UPDATE hc_store_orders SET status='completed', payment_status='completed' WHERE id={ph()}",
+                (result["order_id"],),
+            )
             c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
             db.commit(); c.close(); db.close()
             track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
+            result["queued_commands"] = queued_commands
             return jsonify(result)
 
         elif pay_method == "stripe":
