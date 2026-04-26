@@ -1378,6 +1378,10 @@ def index(): return render_template("index.html", ad_completion_secret=AD_PROOF_
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
 
+@app.route("/sw.js")
+def root_service_worker():
+    return send_from_directory(app.root_path, "sw.js")
+
 # ═══════════════════════════════════════════════════════
 # PROXY HELPERS — ALL external API calls go here
 # Browser never touches Mojang/mc-heads directly → no CORS
@@ -3828,9 +3832,7 @@ def ad_banner():
     <html>
     <head><style>body { margin: 0; padding: 0; background: transparent; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }</style></head>
     <body>
-      <script>(function(s){s.dataset.zone='10922910',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-      <div id="container-10922915"></div>
-      <script>(function(d,z,s){s=d.createElement("script");s.src="https://n6wxm.com/v1/71/84/10922915/tag.min.js";s.async=true;d.getElementById("container-10922915").appendChild(s)})(document);</script>
+      <script src="https://quge5.com/88/tag.min.js" data-zone="233677" async data-cfasync="false"></script>
     </body>
     </html>
     """
