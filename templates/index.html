@@ -7475,6 +7475,7 @@
       if (t === 'forums') loadNexusForums();
       if (t === 'tickets') loadNexusTickets();
       if (t === 'trials') loadNexusTrials();
+      if (t === 'rewards') admSearchP('R');
       if (t === 'chat') loadNexusChat();
       else stopChatPoll();
     }
@@ -8158,7 +8159,7 @@
       const searchId = mode === 'R' ? 'ADM-R-SEARCH' : 'ADM-P-SEARCH';
       const resultId = mode === 'R' ? 'ADM-R-RES' : 'ADM-P-RES';
       const q = (V(searchId) || '').trim(), el = I(resultId);
-      if (!q) { el.innerHTML = ''; return; }
+      if (!q && mode !== 'R') { el.innerHTML = ''; return; }
       try {
         const users = await API(`/api/admin/users?q=${enc(q)}`);
         if (!users.length) { el.innerHTML = '<div class="empty">No users found matching "' + esc(q) + '".</div>'; return; }

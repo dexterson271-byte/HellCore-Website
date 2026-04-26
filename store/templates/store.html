@@ -232,6 +232,28 @@
       margin-left: auto;
     }
 
+    .nav-xp {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.08);
+      color: #ecfdf5;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .nav-xp small {
+      color: rgba(236, 253, 245, 0.72);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
     .nav-cart {
       position: relative;
       background: rgba(255, 255, 255, 0.05);
@@ -721,6 +743,36 @@
     .store-content {
       flex: 1;
       min-width: 0;
+    }
+
+    .store-profile {
+      display: none;
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(255, 255, 255, 0.02));
+    }
+
+    .store-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      align-items: center;
+    }
+
+    .store-profile-stat .label {
+      color: var(--tx2);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .store-profile-stat .value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
     }
 
     .cat-section {
@@ -1491,6 +1543,10 @@
         </svg></button>
 
       <div class="nav-right">
+        <div class="nav-xp" id="NAV-XP">
+          <small>XP</small>
+          <span id="NAV-XP-VALUE">0</span>
+        </div>
         <button class="nav-cart" onclick="GO('cart')">
           <svg class="ic">
             <use href="#ic-cart" />
@@ -1545,6 +1601,22 @@
         </aside>
 
         <div class="store-content">
+          <div class="store-profile" id="STORE-PROFILE">
+            <div class="store-profile-grid">
+              <div class="store-profile-stat">
+                <div class="label">Available XP</div>
+                <div class="value" id="STORE-XP-VALUE">0 XP</div>
+              </div>
+              <div class="store-profile-stat">
+                <div class="label">Linked Account</div>
+                <div class="value" id="STORE-USER-VALUE">Guest</div>
+              </div>
+              <div class="store-profile-stat">
+                <div class="label">Current Rank</div>
+                <div class="value" id="STORE-RANK-VALUE">None</div>
+              </div>
+            </div>
+          </div>
           <div id="CAT-rank" class="cat-section active">
             <div class="stitle">🌟 Server Ranks</div>
             <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
@@ -1727,6 +1799,7 @@
     let ME = null;
     let PRODUCTS = [];
     let CART = [];
+    const STORE_XP_PER_INR = 2.5;
     const ADMIN_ROLES = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder'];
     const MAIN_SITE = 'https://hellcore.net';
 
@@ -1992,6 +2065,7 @@
           try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
           ME = null;
           updateAuthUI();
+          updateStoreProfile();
           toast('ok', 'Logged out');
           GO('home');
         }
@@ -2008,16 +2082,23 @@
       try {
         ME = await API('/api/auth/me');
         updateAuthUI();
+        updateStoreProfile();
         updateCartCount();
-      } catch { ME = null; updateAuthUI(); }
+      } catch { ME = null; updateAuthUI(); updateStoreProfile(); }
     }
 
     function updateAuthUI() {
       const btn = I('NAV-USER');
+      const xpEl = I('NAV-XP');
+      const xpValue = I('NAV-XP-VALUE');
       if (ME) {
         btn.textContent = ME.primary_rank ? `${ME.username} · ${String(ME.primary_rank).toUpperCase()}` : ME.username;
         btn.style.background = 'rgba(255,81,47,0.1)';
         btn.style.borderColor = 'rgba(255,81,47,0.3)';
+        if (xpEl && xpValue) {
+          xpEl.style.display = 'inline-flex';
+          xpValue.textContent = (ME.current_xp || 0).toLocaleString();
+        }
         if (ADMIN_ROLES.includes(ME.role)) {
           I('NB-ADMIN').style.display = '';
           if (I('MOB-ADMIN')) I('MOB-ADMIN').style.display = '';
@@ -2026,9 +2107,31 @@
         btn.textContent = 'Login';
         btn.style.background = '';
         btn.style.borderColor = '';
+        if (xpEl) xpEl.style.display = 'none';
         I('NB-ADMIN').style.display = 'none';
         if (I('MOB-ADMIN')) I('MOB-ADMIN').style.display = 'none';
       }
+    }
+
+    function updateStoreProfile() {
+      const wrap = I('STORE-PROFILE');
+      if (!wrap) return;
+      if (!ME) {
+        wrap.style.display = 'none';
+        return;
+      }
+      wrap.style.display = 'block';
+      I('STORE-XP-VALUE').textContent = `${(ME.current_xp || 0).toLocaleString()} XP`;
+      I('STORE-USER-VALUE').textContent = ME.mc_username || ME.username || 'Unknown';
+      I('STORE-RANK-VALUE').textContent = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : 'None';
+    }
+
+    function getCartXpTotal() {
+      return CART.reduce((sum, item) => {
+        const product = PRODUCTS.find(p => String(p.id) === String(item.item_id));
+        if (product && Number.isFinite(Number(product.xp_price))) return sum + Number(product.xp_price);
+        return sum + Math.round(parseFloat(item.item_price || 0) * STORE_XP_PER_INR);
+      }, 0);
     }
 
     // ════════════════════════════════════════════════════════
@@ -2186,12 +2289,14 @@
     </div>`).join('');
 
         const total = CART.reduce((s, i) => s + parseFloat(i.item_price), 0);
+        const totalXp = getCartXpTotal();
         I('CART-SUMMARY').innerHTML = `<div class="cart-summary">
       <div class="cart-total">
         <span class="cart-total-label">Total</span>
         <div style="text-align:right">
           <span class="cart-total-price">₹${total.toFixed(0)}</span>
-          <div style="font-size:0.8rem;color:var(--tx2);font-weight:600">OR ${(total * 200).toLocaleString()} XP</div>
+          <div style="font-size:0.8rem;color:var(--tx2);font-weight:600">OR ${totalXp.toLocaleString()} XP</div>
+          ${ME ? `<div style="font-size:0.78rem;color:${(ME.current_xp || 0) >= totalXp ? 'var(--grn)' : 'var(--r2)'};font-weight:700;margin-top:6px">Your XP: ${(ME.current_xp || 0).toLocaleString()}</div>` : ''}
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-direction:column;width:100%">
@@ -2231,6 +2336,9 @@
         
         if (method === 'xp') {
           toast('ok', '✓ Purchase successful! Your rewards are being applied.');
+          ME = await API('/api/auth/me');
+          updateAuthUI();
+          updateStoreProfile();
           updateCartCount();
           GO('history');
         } else if (d.stripe_url) {
