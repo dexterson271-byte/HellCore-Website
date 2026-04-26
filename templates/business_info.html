@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Information Form</title>
+    <link rel="stylesheet" href="../static/shared-ui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="url"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="url"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .helper-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .optional-badge {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #666;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+
+        .section {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #1565c0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Business Information</h1>
+            <p>Please provide information about your business to verify your account and ensure compliance with our Services Agreement.</p>
+        </div>
+
+        <form id="businessForm" method="POST" action="/submit-business-info">
+            <div class="info-box">
+                ℹ️ All fields marked with <span class="required">*</span> are required. This information is used to appropriately categorize your business in our payments ecosystem.
+            </div>
+
+            <!-- Business Details Section -->
+            <div class="section">
+                <div class="section-title">Business Details</div>
+
+                <div class="form-group">
+                    <label for="businessName">
+                        Business Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="businessName" name="businessName" required placeholder="e.g., ABC Corporation">
+                    <div class="helper-text">Legal name of your business</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="businessType">
+                        Business Type / Industry <span class="required">*</span>
+                    </label>
+                    <input type="text" id="businessType" name="businessType" required placeholder="e.g., E-commerce, SaaS, Retail">
+                    <div class="helper-text">What does your business do?</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="businessDescription">
+                        Business Description <span class="required">*</span>
+                    </label>
+                    <textarea id="businessDescription" name="businessDescription" required placeholder="Provide a detailed description of what your business sells or offers"></textarea>
+                    <div class="helper-text">Include the products/services you sell and your target customers</div>
+                </div>
+            </div>
+
+            <!-- Regulatory Compliance Section -->
+            <div class="section">
+                <div class="section-title">Regulatory Compliance</div>
+
+                <div class="form-group">
+                    <label for="commercialTransactionsUrl">
+                        Specified Commercial Transactions Act Information URL <span class="required">*</span>
+                    </label>
+                    <input type="url" id="commercialTransactionsUrl" name="commercialTransactionsUrl" required placeholder="https://example.com/business-info">
+                    <div class="helper-text">Please provide the URL to the page that states your business information per the Specified Commercial Transactions Act</div>
+                </div>
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="form-group">
+                <label for="additionalDetails">
+                    Additional Details <span class="optional-badge">Optional</span>
+                </label>
+                <textarea id="additionalDetails" name="additionalDetails" placeholder="Is there anything else you'd like us to know about your business? (Optional)"></textarea>
+                <div class="helper-text">Any additional context or information you'd like to share</div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button type="reset" class="btn-reset">Clear Form</button>
+                <button type="submit" class="btn-submit">Submit Information</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('businessForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            const formData = {
+                businessName: document.getElementById('businessName').value,
+                businessType: document.getElementById('businessType').value,
+                businessDescription: document.getElementById('businessDescription').value,
+                commercialTransactionsUrl: document.getElementById('commercialTransactionsUrl').value,
+                additionalDetails: document.getElementById('additionalDetails').value,
+                submittedAt: new Date().toISOString()
+            };
+
+            // Log to console (you can replace this with actual API call)
+            console.log('Form submitted:', formData);
+
+            // Show success message
+            alert('Thank you! Your business information has been submitted for review.');
+            
+            // Optional: Reset form
+            this.reset();
+        });
+    </script>
+</body>
+</html>
