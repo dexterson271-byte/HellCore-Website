@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.log
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Env files
+.env
+*.env.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,0 +1,16 @@
+{
+  "name": "minecraft-stats-backend",
+  "version": "1.0.0",
+  "description": "Express API for Minecraft player stats",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "mongodb": "^6.20.0"
+  }
+}

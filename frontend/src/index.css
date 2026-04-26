@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.1), transparent 22%),
+    linear-gradient(180deg, #06101b 0%, #07111f 48%, #040914 100%);
+  color: #e2e8f0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent 75%);
+  pointer-events: none;
+  opacity: 0.18;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(2, 6, 23, 0.78));
+  backdrop-filter: blur(18px);
+  border-radius: 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 80px rgba(2, 8, 23, 0.45);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(103, 232, 249, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 30px 90px rgba(2, 8, 23, 0.52);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.55rem 0.85rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem 1.1rem;
+  color: white;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.quick-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.18);
+  transform: translateY(-1px);
+}
+
+.page-shell {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 2rem 1rem 4rem;
+}
+
+.page-center {
+  display: grid;
+  min-height: 40vh;
+  place-items: center;
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(100px);
+  animation: floatOrb 9s ease-in-out infinite;
+}
+
+.hero-orb-cyan {
+  top: 4rem;
+  left: -5rem;
+  height: 18rem;
+  width: 18rem;
+  background: rgba(34, 211, 238, 0.16);
+}
+
+.hero-orb-violet {
+  right: -6rem;
+  top: 16rem;
+  height: 20rem;
+  width: 20rem;
+  background: rgba(168, 85, 247, 0.16);
+  animation-delay: -3s;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(transparent 95%, rgba(34, 211, 238, 0.08) 100%),
+    linear-gradient(90deg, transparent 95%, rgba(34, 211, 238, 0.08) 100%);
+  background-size: 80px 80px;
+  opacity: 0.12;
+  transform: perspective(900px) rotateX(80deg) translateY(26%);
+  transform-origin: center bottom;
+}
+
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+}
