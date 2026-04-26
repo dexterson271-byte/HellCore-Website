@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { MongoClient } = require("mongodb");
+const crypto = require("crypto");
 
 dotenv.config();
 
@@ -104,7 +105,9 @@ app.use(express.json());
 let mongoClient = null;
 let playersCollection = null;
 let realtimeCollection = null;
+let analyticsCollection = null;
 const responseCache = new Map();
+let memoryVisitors = new Set();
 
 function rgbArrayToCss(rgb) {
   if (!Array.isArray(rgb) || rgb.length !== 3) {
@@ -271,6 +274,9 @@ async function connectToMongo() {
       realtimeCollection = mongoClient
         .db(REALTIME_DB_NAME)
         .collection(REALTIME_COLLECTION_NAME);
+      analyticsCollection = mongoClient
+        .db(REALTIME_DB_NAME)
+        .collection("site_visitors");
 
       await playersCollection.createIndex({ username: 1 }, { unique: true });
 
@@ -284,6 +290,7 @@ async function connectToMongo() {
     } catch (error) {
       lastError = error;
       playersCollection = null;
+      analyticsCollection = null;
 
       if (mongoClient) {
         try {
@@ -301,7 +308,81 @@ async function connectToMongo() {
     playersCollection = null;
   } catch (_error) {
     playersCollection = null;
+    analyticsCollection = null;
   }
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  const rawIp = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0];
+  return (rawIp || req.ip || req.socket?.remoteAddress || "unknown").trim();
+}
+
+function hashVisitor(ip) {
+  return crypto.createHash("sha256").update(ip).digest("hex");
+}
+
+async function getVisitorStats() {
+  const cacheKey = "site:stats";
+  const cached = getCached(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  let stats;
+
+  if (analyticsCollection) {
+    const uniqueVisitors = await analyticsCollection.countDocuments();
+    const aggregate = await analyticsCollection.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalVisits: { $sum: "$visits" }
+        }
+      }
+    ]).toArray();
+
+    stats = {
+      uniqueVisitors,
+      totalVisits: aggregate[0]?.totalVisits ?? uniqueVisitors
+    };
+  } else {
+    stats = {
+      uniqueVisitors: memoryVisitors.size,
+      totalVisits: memoryVisitors.size
+    };
+  }
+
+  setCached(cacheKey, stats);
+  return stats;
+}
+
+async function registerVisit(req) {
+  const ip = getClientIp(req);
+  const visitorId = hashVisitor(ip);
+
+  if (analyticsCollection) {
+    await analyticsCollection.updateOne(
+      { _id: visitorId },
+      {
+        $setOnInsert: {
+          firstSeenAt: new Date()
+        },
+        $set: {
+          lastSeenAt: new Date()
+        },
+        $inc: {
+          visits: 1
+        }
+      },
+      { upsert: true }
+    );
+  } else {
+    memoryVisitors.add(visitorId);
+  }
+
+  responseCache.delete("site:stats");
+  return getVisitorStats();
 }
 
 async function getPlayerByUsername(username) {
@@ -472,6 +553,24 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     database: playersCollection ? "mongodb" : "memory"
   });
+});
+
+app.get("/api/site-stats", async (_req, res) => {
+  try {
+    const stats = await getVisitorStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load site stats" });
+  }
+});
+
+app.post("/api/visit", async (req, res) => {
+  try {
+    const stats = await registerVisit(req);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to record visit" });
+  }
 });
 
 app.get("/api/player/:username", async (req, res) => {

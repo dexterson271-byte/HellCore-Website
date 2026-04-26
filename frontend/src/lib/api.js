@@ -37,4 +37,14 @@ export async function searchPlayers(query, limit = 5, signal) {
   return response.data;
 }
 
+export async function fetchSiteStats() {
+  const response = await api.get("/api/site-stats");
+  return response.data;
+}
+
+export async function registerVisit() {
+  const response = await api.post("/api/visit");
+  return response.data;
+}
+
 export default api;

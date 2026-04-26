@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, Radar, Sparkles, Swords, Trophy } from "lucide-react";
+import { ArrowRight, Flame, Radar, Sparkles, Swords, Trophy, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import PlayerSearchForm from "../components/PlayerSearchForm";
-import { fetchLeaderboard } from "../lib/api";
+import { fetchLeaderboard, fetchSiteStats, registerVisit } from "../lib/api";
 import { avatarUrl, formatNumber, formatRatio, rankStyle } from "../lib/formatters";
 
 const features = [
@@ -27,12 +27,21 @@ const features = [
 function Home() {
   const [username, setUsername] = useState("");
   const [leaders, setLeaders] = useState([]);
+  const [siteStats, setSiteStats] = useState({ uniqueVisitors: 0, totalVisits: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchLeaderboard("final_kills", 5)
       .then(setLeaders)
       .catch(() => setLeaders([]));
+
+    registerVisit()
+      .then(setSiteStats)
+      .catch(() => {
+        fetchSiteStats()
+          .then(setSiteStats)
+          .catch(() => setSiteStats({ uniqueVisitors: 0, totalVisits: 0 }));
+      });
   }, []);
 
   function handleSubmit(event) {
@@ -172,6 +181,24 @@ function Home() {
           >
             <div className="mb-4 flex items-center justify-between">
               <div>
+                <div className="text-xs uppercase tracking-[0.25em] text-emerald-200/80">Site visitors</div>
+                <h2 className="mt-1 text-2xl font-bold text-white">{formatNumber(siteStats.uniqueVisitors)} people visited</h2>
+              </div>
+              <Users className="text-emerald-300" size={18} />
+            </div>
+            <p className="text-sm leading-6 text-slate-400">
+              Total tracked visits: {formatNumber(siteStats.totalVisits)}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.22 }}
+            className="glass-panel p-6"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div>
                 <div className="text-xs uppercase tracking-[0.25em] text-violet-200/80">Coming soon</div>
                 <h2 className="mt-1 text-2xl font-bold text-white">McFleet Season 3 stats</h2>
               </div>
@@ -185,7 +212,7 @@ function Home() {
           <motion.div
             initial={{ opacity: 0, x: 18 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.24 }}
+            transition={{ duration: 0.6, delay: 0.26 }}
             className="glass-panel p-6"
           >
             <div className="text-xs uppercase tracking-[0.25em] text-violet-200/80">Quick routes</div>
