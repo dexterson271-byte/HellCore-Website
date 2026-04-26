@@ -592,6 +592,44 @@ def get_products_for_cart(c, cart_items):
     return {int(row["id"]): to_dict(row) for row in to_list(c.fetchall())}
 
 
+def parse_numeric_prefix(value):
+    m = re.match(r"^\s*(\d+)", str(value or ""))
+    return int(m.group(1)) if m else 0
+
+
+def parse_compact_amount(value):
+    text = str(value or "").strip().lower().replace(",", "")
+    m = re.match(r"^(\d+)([kmb])?$", text)
+    if not m:
+        return 0
+    amount = int(m.group(1))
+    suffix = m.group(2) or ""
+    if suffix == "k":
+        amount *= 1000
+    elif suffix == "m":
+        amount *= 1000000
+    elif suffix == "b":
+        amount *= 1000000000
+    return amount
+
+
+def infer_product_grant(product, item):
+    slug = str(product.get("slug") or "").strip().lower()
+    name = str(product.get("name") or item.get("item_name") or "").strip()
+    category = str(product.get("category") or "").strip().lower()
+
+    if category == "mystery_box":
+        amount = parse_numeric_prefix(slug) or parse_numeric_prefix(name)
+        return max(1, amount), "COMMON"
+    if category == "mystery_dust":
+        amount = parse_compact_amount(slug.split("-")[0]) or parse_compact_amount(name.split(" ")[0])
+        return max(1, amount), None
+    if category == "coins":
+        amount = parse_compact_amount(slug.split("-")[0]) or parse_compact_amount(name.split(" ")[0])
+        return max(1, amount), None
+    return 0, None
+
+
 def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
     username = resolve_purchase_username(user)
     products = get_products_for_cart(c, cart_items)
@@ -600,32 +638,54 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
     for item in cart_items:
         item_id = str(item.get("item_id") or "").strip()
         product = products.get(int(item_id)) if item_id.isdigit() else None
-        if not product or product.get("category") != "rank":
+        if not product:
+            continue
+        category = str(product.get("category") or "").strip().lower()
+
+        if category == "rank":
+            rank_name = str(product.get("slug") or item.get("item_name") or "").strip().lower()
+            gamemode = str(product.get("subcategory") or item.get("gamemode") or "global").strip().lower() or "global"
+            if not re.match(r"^[a-zA-Z0-9_+\-]{2,32}$", rank_name):
+                raise ValueError(f"Unsupported rank command value for {product.get('name') or 'item'}.")
+
+            c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()} AND gamemode={ph()}", (user["id"], gamemode))
+            c.execute(
+                f"INSERT INTO hc_ranks(user_id, gamemode, rank_name) VALUES({phs(3)})",
+                (user["id"], gamemode, rank_name),
+            )
+
+            cmd = f"lpv user {username} parent set {rank_name}"
+            event_action = "rank_fulfillment_queued"
+            event_label = "Rank fulfillment queued"
+        elif category == "mystery_box":
+            amount, quality = infer_product_grant(product, item)
+            cmd = f"gmysteryboxes give {username} {amount} {quality or 'COMMON'} ex=false"
+            event_action = "mystery_box_fulfillment_queued"
+            event_label = "Mystery box fulfillment queued"
+        elif category == "mystery_dust":
+            amount, _ = infer_product_grant(product, item)
+            cmd = f"mysterydust add {username} {amount}"
+            event_action = "mystery_dust_fulfillment_queued"
+            event_label = "Mystery dust fulfillment queued"
+        elif category == "coins":
+            amount, _ = infer_product_grant(product, item)
+            cmd = f"mysterycoins add {username} {amount}"
+            event_action = "mystery_coin_fulfillment_queued"
+            event_label = "Mystery coin fulfillment queued"
+        else:
             continue
 
-        rank_name = str(product.get("slug") or item.get("item_name") or "").strip().lower()
-        gamemode = str(product.get("subcategory") or item.get("gamemode") or "global").strip().lower() or "global"
-        if not re.match(r"^[a-zA-Z0-9_+\-]{2,32}$", rank_name):
-            raise ValueError(f"Unsupported rank command value for {product.get('name') or 'item'}.")
-
-        c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()} AND gamemode={ph()}", (user["id"], gamemode))
-        c.execute(
-            f"INSERT INTO hc_ranks(user_id, gamemode, rank_name) VALUES({phs(3)})",
-            (user["id"], gamemode, rank_name),
-        )
-
-        cmd = f"lpv user {username} parent set {rank_name}"
         c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
         queued_commands.append(cmd)
 
         if ticket_id:
             c.execute(
                 f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type) VALUES({phs(4)})",
-                (ticket_id, 1, f"Rank fulfillment queued: `{cmd}`", "system"),
+                (ticket_id, 1, f"{event_label}: `{cmd}`", "system"),
             )
             c.execute(
                 f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
-                (ticket_id, user["id"], "rank_fulfillment_queued", cmd),
+                (ticket_id, user["id"], event_action, cmd),
             )
 
     return queued_commands

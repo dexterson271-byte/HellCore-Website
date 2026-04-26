@@ -1591,7 +1591,6 @@
         <aside class="store-sidebar">
           <h3>Categories</h3>
           <button class="cat-btn active" onclick="switchCategory('rank')">🌟 Ranks</button>
-          <button class="cat-btn" onclick="switchCategory('booster')">⚡ Network Boosters</button>
           <button class="cat-btn" onclick="switchCategory('mystery_box')">🎁 Mystery Boxes</button>
           <button class="cat-btn" onclick="switchCategory('coins')">🪙 Coins</button>
           <button class="cat-btn" onclick="switchCategory('mystery_dust')">✨ Mystery Dust</button>
@@ -1603,10 +1602,6 @@
         <div class="store-content">
           <div class="store-profile" id="STORE-PROFILE">
             <div class="store-profile-grid">
-              <div class="store-profile-stat">
-                <div class="label">Available XP</div>
-                <div class="value" id="STORE-XP-VALUE">0 XP</div>
-              </div>
               <div class="store-profile-stat">
                 <div class="label">Linked Account</div>
                 <div class="value" id="STORE-USER-VALUE">Guest</div>
@@ -1621,12 +1616,6 @@
             <div class="stitle">🌟 Server Ranks</div>
             <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
             <div class="g3" id="RANKS-GRID"></div>
-          </div>
-
-          <div id="CAT-booster" class="cat-section">
-            <div class="stitle">⚡ Network Boosters</div>
-            <p class="ssub">Multiply your coin earnings globally across the entire network.</p>
-            <div class="g3" id="BOOSTERS-GRID"></div>
           </div>
 
           <div id="CAT-mystery_box" class="cat-section">
@@ -2121,7 +2110,6 @@
         return;
       }
       wrap.style.display = 'block';
-      I('STORE-XP-VALUE').textContent = `${(ME.current_xp || 0).toLocaleString()} XP`;
       I('STORE-USER-VALUE').textContent = ME.mc_username || ME.username || 'Unknown';
       I('STORE-RANK-VALUE').textContent = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : 'None';
     }
