@@ -6306,13 +6306,18 @@
       }
     }
 
-    async function ensureMonetagServiceWorker() {
+    async function cleanupMonetagServiceWorker() {
       if (!('serviceWorker' in navigator)) return false;
       try {
-        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        const regs = await navigator.serviceWorker.getRegistrations();
+        const monetagRegs = regs.filter(reg => {
+          const scriptUrl = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || '';
+          return scriptUrl.includes('/sw.js');
+        });
+        await Promise.all(monetagRegs.map(reg => reg.unregister()));
         return true;
       } catch (e) {
-        console.log('Monetag SW registration failed:', e);
+        console.log('Monetag SW cleanup failed:', e);
         return false;
       }
     }
@@ -6349,6 +6354,7 @@
       document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
       const pg = I('pg-' + id);
       if (pg) pg.classList.add('ON');
+      await cleanupMonetagServiceWorker();
       window.scrollTo(0, 0);
 
       // Mark active nav button
@@ -9303,7 +9309,7 @@
       }
 
       try {
-        await ensureMonetagServiceWorker();
+        await cleanupMonetagServiceWorker();
         const res = await API('/api/ads/request', {
           method: 'POST',
           body: { session_fingerprint: getAdSessionFingerprint() }
