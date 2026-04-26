@@ -175,6 +175,10 @@ def phs(n):
 def ts(v): return str(v) if v else ""
 
 
+def stripe_is_configured():
+    return bool((stripe.api_key or "").strip())
+
+
 STORE_SPA_ROUTES = {"", "admin", "cart", "home", "ranks", "ticket-view", "tickets"}
 
 # ═══════════════════════════════════════════════════════
@@ -737,6 +741,12 @@ def create_checkout():
             return jsonify(result)
 
         elif pay_method == "stripe":
+            if not stripe_is_configured():
+                c.close(); db.close()
+                return jsonify({
+                    "error": "Card checkout is not configured right now. Please set STRIPE_SECRET_KEY on the store server or use another payment method."
+                }), 503
+
             # Create Stripe Checkout Session
             line_items = []
             for item in cart_items:
@@ -792,6 +802,36 @@ def create_checkout():
             try: db.close()
             except: pass
         return jsonify({"error": f"Checkout failed: {str(e)}"}), 500
+
+
+@app.route("/api/store/orders/history")
+@auth_required
+def store_order_history():
+    db = get_db(); c = db_cursor(db)
+    c.execute(
+        f"""SELECT id, order_code, items, total, status, payment_method, payment_status, created_at
+            FROM hc_store_orders
+            WHERE user_id={ph()}
+            ORDER BY created_at DESC, id DESC""",
+        (request.cu["id"],)
+    )
+    rows = to_list(c.fetchall()); c.close(); db.close()
+    for row in rows:
+        row["created_at"] = ts(row.get("created_at", ""))
+        try:
+            parsed_items = json.loads(row.get("items", "[]"))
+        except Exception:
+            parsed_items = []
+        normalized_items = []
+        for item in parsed_items:
+            if isinstance(item, dict):
+                normalized_items.append({
+                    "name": item.get("item_name") or item.get("name") or "Store item",
+                    "price": item.get("item_price") or item.get("price") or 0,
+                    "gamemode": item.get("gamemode") or "",
+                })
+        row["items"] = normalized_items
+    return jsonify(rows)
 
 
 @app.route("/api/stripe/webhook", methods=["POST"])
