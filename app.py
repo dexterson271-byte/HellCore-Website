@@ -592,9 +592,13 @@ def get_reward_profile(cursor, user_id, now=None):
     next_available = get_next_ad_available_at(cursor, user_id, now=now)
     active_watch = get_active_ad_watch(cursor, user_id, now=now)
     if active_watch:
-        active_retry = (parse_db_datetime(active_watch.get("started_at")) or now) + timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
+        active_started_at = parse_db_datetime(active_watch.get("started_at")) or now
+        active_retry = active_started_at + timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
         if not next_available or active_retry > next_available:
             next_available = active_retry
+    else:
+        active_started_at = None
+        active_retry = None
     return {
         "current_xp": current["current_xp"],
         "rank": current["rank"],
@@ -607,6 +611,9 @@ def get_reward_profile(cursor, user_id, now=None):
         "daily_xp_cap": AFK_DAILY_XP_CAP,
         "next_ad": isoformat_utc(next_available),
         "active_ad_in_progress": bool(active_watch),
+        "active_session_token": active_watch.get("ad_token") if active_watch else "",
+        "active_session_started_at": isoformat_utc(active_started_at) if active_started_at else None,
+        "active_session_expires_at": isoformat_utc(active_retry) if active_retry else None,
         "ads_blocked": ad_block["blocked"],
         "ads_block_reason": ad_block["reason"],
         "ads_blocked_until": ad_block["until"],

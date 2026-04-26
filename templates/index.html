@@ -9043,6 +9043,7 @@
         I('XP-PROGRESS-TEXT').textContent = `${d.daily_xp_earned || 0} / 60 XP`;
         I('XP-BAR-FILL').style.width = `${Math.min(100, ((d.daily_xp_earned || 0) / 60) * 100)}%`;
         XP_STATE = { ...d }; // Sync with server state
+        syncActiveAfkSessionFromProfile(I('pg-store-free')?.classList.contains('ON'));
         
         if (d.next_ad) {
           const diff = Math.ceil((new Date(d.next_ad).getTime() - new Date().getTime()) / 1000);
@@ -9404,6 +9405,81 @@
       `;
     }
 
+    function afkTrackerMarkup(state) {
+      const total = Math.max(1, Number(state?.totalSeconds || XP_STATE.session_seconds || 300));
+      const remaining = Math.max(0, Number(state?.remainingSeconds || 0));
+      const progress = Math.min(100, Math.max(0, ((total - remaining) / total) * 100));
+      return `
+        <div style="width:100%;padding:22px 18px;text-align:center">
+          <div style="width:92px;height:92px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--g) ${progress}%, rgba(255,255,255,0.08) 0);box-shadow:0 0 28px rgba(255,81,47,0.18)">
+            <div style="width:70px;height:70px;border-radius:50%;background:rgba(9,9,11,0.96);display:grid;place-items:center;font-size:1.5rem">⏳</div>
+          </div>
+          <div style="font-weight:800;font-size:1rem;color:var(--tx);margin-bottom:6px">AFK tracker active</div>
+          <div style="color:var(--tx2);line-height:1.7;margin-bottom:14px">Stay on this page while the session runs. You can leave and come back; the tracker will resume.</div>
+          <div style="display:flex;justify-content:center;gap:8px;margin-bottom:10px">
+            <span style="width:10px;height:10px;border-radius:999px;background:rgba(255,81,47,0.35);animation:rewardPulse 1.2s ease-in-out infinite"></span>
+            <span style="width:10px;height:10px;border-radius:999px;background:rgba(255,81,47,0.55);animation:rewardPulse 1.2s ease-in-out 0.15s infinite"></span>
+            <span style="width:10px;height:10px;border-radius:999px;background:rgba(255,81,47,0.75);animation:rewardPulse 1.2s ease-in-out 0.3s infinite"></span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--tx3)">Resume-safe session • ${fmtCountdown(remaining)} remaining</div>
+        </div>
+      `;
+    }
+
+    function syncActiveAfkSessionFromProfile(openOverlay = false) {
+      if (!XP_STATE.active_ad_in_progress || !XP_STATE.active_session_token) {
+        if (ACTIVE_AD_INTERVAL) {
+          clearInterval(ACTIVE_AD_INTERVAL);
+          ACTIVE_AD_INTERVAL = null;
+        }
+        if (!ACTIVE_AD_SESSION) return;
+        ACTIVE_AD_SESSION = null;
+        return;
+      }
+      const expiresAt = XP_STATE.active_session_expires_at ? new Date(XP_STATE.active_session_expires_at).getTime() : 0;
+      const remainingSeconds = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : Math.max(0, Number(XP_STATE.session_seconds || 300));
+      ACTIVE_AD_SESSION = {
+        token: XP_STATE.active_session_token,
+        totalSeconds: Number(XP_STATE.session_seconds || 300),
+        remainingSeconds,
+        xpReward: Number(XP_STATE.xp_per_session || 5),
+      };
+      if (openOverlay) {
+        I('AD-CLAIM-BTN').style.display = remainingSeconds > 0 ? 'none' : 'block';
+        I('AD-TIMER-BOX').style.display = remainingSeconds > 0 ? 'block' : 'none';
+        I('AD-TIMER-BOX').textContent = fmtCountdown(remainingSeconds);
+        I('AD-STATUS-ICON').textContent = remainingSeconds > 0 ? 'ZZZ' : '✓';
+        I('AD-STATUS-TITLE').textContent = remainingSeconds > 0 ? 'AFK Session Resumed' : 'XP Ready to Claim';
+        I('AD-STATUS-SUB').textContent = remainingSeconds > 0
+          ? `Your AFK session resumed with ${fmtCountdown(remainingSeconds)} remaining.`
+          : `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
+        I('AD-PLACEMENT').innerHTML = afkTrackerMarkup(ACTIVE_AD_SESSION);
+        openM('AD-OVERLAY');
+      }
+      if (ACTIVE_AD_INTERVAL) clearInterval(ACTIVE_AD_INTERVAL);
+      if (remainingSeconds <= 0) return;
+      ACTIVE_AD_INTERVAL = setInterval(() => {
+        if (!ACTIVE_AD_SESSION) {
+          clearInterval(ACTIVE_AD_INTERVAL);
+          ACTIVE_AD_INTERVAL = null;
+          return;
+        }
+        ACTIVE_AD_SESSION.remainingSeconds = Math.max(0, ACTIVE_AD_SESSION.remainingSeconds - 1);
+        I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
+        I('AD-PLACEMENT').innerHTML = afkTrackerMarkup(ACTIVE_AD_SESSION);
+        renderRewardDashboard(XP_STATE.current_xp);
+        if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
+          clearInterval(ACTIVE_AD_INTERVAL);
+          ACTIVE_AD_INTERVAL = null;
+          I('AD-TIMER-BOX').style.display = 'none';
+          I('AD-STATUS-ICON').textContent = '✓';
+          I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
+          I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
+          I('AD-CLAIM-BTN').style.display = 'block';
+        }
+      }, 1000);
+    }
+
     async function refreshRewardState() {
       const [xp, ranks] = await Promise.all([
         API('/api/user/xp'),
@@ -9509,6 +9585,7 @@
       try {
         const before = previousXp == null ? XP_STATE.current_xp : previousXp;
         await refreshRewardState();
+        syncActiveAfkSessionFromProfile(I('pg-store-free')?.classList.contains('ON'));
         renderRewardDashboard(before);
         if (DASHBOARD_TIMER) clearInterval(DASHBOARD_TIMER);
         DASHBOARD_TIMER = setInterval(() => {
@@ -9583,7 +9660,7 @@
         I('AD-STATUS-TITLE').textContent = 'AFK Session Running';
         I('AD-STATUS-SUB').textContent = `Stay on this page for ${Math.round(totalSeconds / 60)} minutes to earn ${ACTIVE_AD_SESSION.xpReward} XP.`;
         I('AD-TIMER-BOX').textContent = fmtCountdown(totalSeconds);
-        I('AD-PLACEMENT').innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx2);line-height:1.7"><div style="font-size:2rem;margin-bottom:10px">⏳</div><div style="font-weight:700;color:var(--tx)">AFK tracker active</div><div style="margin-top:8px">Keep this tab open while the timer runs.</div></div>';
+        I('AD-PLACEMENT').innerHTML = afkTrackerMarkup(ACTIVE_AD_SESSION);
         openM('AD-OVERLAY');
         renderRewardDashboard(XP_STATE.current_xp);
 
@@ -9595,11 +9672,13 @@
           }
           ACTIVE_AD_SESSION.remainingSeconds = Math.max(0, ACTIVE_AD_SESSION.remainingSeconds - 1);
           I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
+          I('AD-PLACEMENT').innerHTML = afkTrackerMarkup(ACTIVE_AD_SESSION);
           renderRewardDashboard(XP_STATE.current_xp);
           if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
             clearInterval(ACTIVE_AD_INTERVAL);
             ACTIVE_AD_INTERVAL = null;
             I('AD-TIMER-BOX').style.display = 'none';
+            I('AD-STATUS-ICON').textContent = '✓';
             I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
             I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
             I('AD-CLAIM-BTN').style.display = 'block';
