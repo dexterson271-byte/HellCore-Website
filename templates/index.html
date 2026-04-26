@@ -9472,6 +9472,43 @@
       showRewardAdFrame();
     }
 
+    function activeSessionRemaining(state = ACTIVE_AD_SESSION) {
+      if (!state) return 0;
+      if (state.expiresAtMs) return Math.max(0, Math.ceil((state.expiresAtMs - Date.now()) / 1000));
+      return Math.max(0, Number(state.remainingSeconds || 0));
+    }
+
+    function startActiveSessionTicker() {
+      if (ACTIVE_AD_INTERVAL) {
+        clearInterval(ACTIVE_AD_INTERVAL);
+        ACTIVE_AD_INTERVAL = null;
+      }
+      if (!ACTIVE_AD_SESSION) return;
+
+      const paint = () => {
+        if (!ACTIVE_AD_SESSION) return;
+        ACTIVE_AD_SESSION.remainingSeconds = activeSessionRemaining(ACTIVE_AD_SESSION);
+        I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
+        renderRewardOverlay(ACTIVE_AD_SESSION);
+        renderRewardDashboard(XP_STATE.current_xp);
+        if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
+          if (ACTIVE_AD_INTERVAL) {
+            clearInterval(ACTIVE_AD_INTERVAL);
+            ACTIVE_AD_INTERVAL = null;
+          }
+          I('AD-TIMER-BOX').style.display = 'none';
+          I('AD-STATUS-ICON').textContent = '✓';
+          I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
+          I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
+          I('AD-CLAIM-BTN').style.display = 'block';
+        }
+      };
+
+      paint();
+      if (ACTIVE_AD_SESSION.remainingSeconds <= 0) return;
+      ACTIVE_AD_INTERVAL = setInterval(paint, 1000);
+    }
+
     function syncActiveAfkSessionFromProfile(openOverlay = false) {
       const resumeBtn = I('XP-RESUME-BTN');
       if (!XP_STATE.active_ad_in_progress || !XP_STATE.active_session_token) {
@@ -9492,6 +9529,7 @@
         totalSeconds: Number(XP_STATE.session_seconds || 300),
         remainingSeconds,
         xpReward: Number(XP_STATE.xp_per_session || 5),
+        expiresAtMs: expiresAt || (Date.now() + (remainingSeconds * 1000)),
       };
       if (openOverlay) {
         I('AD-CLAIM-BTN').style.display = remainingSeconds > 0 ? 'none' : 'block';
@@ -9505,28 +9543,7 @@
         renderRewardOverlay(ACTIVE_AD_SESSION);
         openM('AD-OVERLAY');
       }
-      if (ACTIVE_AD_INTERVAL) clearInterval(ACTIVE_AD_INTERVAL);
-      if (remainingSeconds <= 0) return;
-      ACTIVE_AD_INTERVAL = setInterval(() => {
-        if (!ACTIVE_AD_SESSION) {
-          clearInterval(ACTIVE_AD_INTERVAL);
-          ACTIVE_AD_INTERVAL = null;
-          return;
-        }
-        ACTIVE_AD_SESSION.remainingSeconds = Math.max(0, ACTIVE_AD_SESSION.remainingSeconds - 1);
-        I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
-        renderRewardOverlay(ACTIVE_AD_SESSION);
-        renderRewardDashboard(XP_STATE.current_xp);
-        if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
-          clearInterval(ACTIVE_AD_INTERVAL);
-          ACTIVE_AD_INTERVAL = null;
-          I('AD-TIMER-BOX').style.display = 'none';
-          I('AD-STATUS-ICON').textContent = '✓';
-          I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
-          I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
-          I('AD-CLAIM-BTN').style.display = 'block';
-        }
-      }, 1000);
+      startActiveSessionTicker();
     }
 
     async function refreshRewardState() {
@@ -9646,6 +9663,20 @@
       }
     }
 
+    async function syncRewardSessionState() {
+      if (!ME || !I('pg-store-free')?.classList.contains('ON')) return;
+      try {
+        await refreshRewardState();
+        syncActiveAfkSessionFromProfile(I('AD-OVERLAY')?.classList.contains('OPEN'));
+        renderRewardDashboard(XP_STATE.current_xp);
+      } catch {}
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) syncRewardSessionState();
+    });
+    window.addEventListener('focus', syncRewardSessionState);
+
 
 
     function fireConfetti() {
@@ -9700,10 +9731,10 @@
           totalSeconds,
           remainingSeconds: totalSeconds,
           xpReward: Number(res.xp_reward || XP_STATE.xp_per_session || 5),
+          expiresAtMs: Date.now() + (totalSeconds * 1000),
         };
         if (I('XP-RESUME-BTN')) I('XP-RESUME-BTN').style.display = 'inline-flex';
 
-        if (ACTIVE_AD_INTERVAL) clearInterval(ACTIVE_AD_INTERVAL);
         I('AD-CLAIM-BTN').style.display = 'none';
         I('AD-TIMER-BOX').style.display = 'block';
         I('AD-STATUS-ICON').textContent = 'ZZZ';
@@ -9713,27 +9744,7 @@
         renderRewardOverlay(ACTIVE_AD_SESSION);
         openM('AD-OVERLAY');
         renderRewardDashboard(XP_STATE.current_xp);
-
-        ACTIVE_AD_INTERVAL = setInterval(() => {
-          if (!ACTIVE_AD_SESSION) {
-            clearInterval(ACTIVE_AD_INTERVAL);
-            ACTIVE_AD_INTERVAL = null;
-            return;
-          }
-          ACTIVE_AD_SESSION.remainingSeconds = Math.max(0, ACTIVE_AD_SESSION.remainingSeconds - 1);
-          I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
-          renderRewardOverlay(ACTIVE_AD_SESSION);
-          renderRewardDashboard(XP_STATE.current_xp);
-          if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
-            clearInterval(ACTIVE_AD_INTERVAL);
-            ACTIVE_AD_INTERVAL = null;
-            I('AD-TIMER-BOX').style.display = 'none';
-            I('AD-STATUS-ICON').textContent = '✓';
-            I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
-            I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
-            I('AD-CLAIM-BTN').style.display = 'block';
-          }
-        }, 1000);
+        startActiveSessionTicker();
 
       } catch (e) {
         toast('err', e.message);
