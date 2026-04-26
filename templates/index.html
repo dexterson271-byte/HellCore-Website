@@ -5265,12 +5265,12 @@
         <div class="xp-card">
           <div class="xp-label">Your Current Balance</div>
           <div id="XP-VAL" class="xp-val">0</div>
-          <p style="color:var(--tx2); margin-top:-10px">XP EARNED FROM ADS</p>
+          <p style="color:var(--tx2); margin-top:-10px">XP EARNED FROM AFK SESSIONS</p>
 
           <div class="xp-progress-wrap">
             <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; font-weight:600">
-              <span style="color:var(--tx2)">DAILY AD PROGRESS</span>
-              <span id="XP-PROGRESS-TEXT">0 / 60 ADS</span>
+              <span style="color:var(--tx2)">DAILY AFK PROGRESS</span>
+              <span id="XP-PROGRESS-TEXT">0 / 60 XP</span>
             </div>
             <div class="xp-bar-bg">
               <div id="XP-BAR-FILL" class="xp-bar-fill"></div>
@@ -5278,7 +5278,7 @@
           </div>
 
           <button id="XP-WATCH-BTN" class="btn watch-btn" onclick="watchAd()">
-            <svg class="ic"><use href="#ic-play"/></svg> WATCH AD TO EARN XP
+            <svg class="ic"><use href="#ic-play"/></svg> START AFK SESSION
           </button>
           
           <div id="XP-TIMER" style="margin-top:15px; font-size:0.85rem; font-weight:700; color:var(--g); display:none">
@@ -8977,7 +8977,7 @@
         { id: 'bw-booster', name: 'Booster', price: 3999, icon: '<svg class="ic"><use href="#ic-bolt"/></svg> ', cc: '#d946ef', gm: 'bedwars', perks: ['[Booster] Pink Tag', 'Booster Kit', '25% Discount', 'All Perks', 'Private Games'] },
       ],
       bw_free: [
-        { id: 'free-vip', name: 'FREE VIP', price: 0, icon: '<svg class="ic"><use href="#ic-gift"/></svg> ', cc: '#eab308', gm: 'bedwars', perks: ['Watch 3 Ads to claim', 'Temporary 1hr VIP', 'Earn coins & XP', 'Play for Free'] },
+        { id: 'free-vip', name: 'FREE VIP', price: 0, icon: '<svg class="ic"><use href="#ic-gift"/></svg> ', cc: '#eab308', gm: 'bedwars', perks: ['Run AFK sessions to earn XP', 'Temporary 1hr VIP', '5 XP every 5 minutes', '60 XP max per day'] },
       ],
       bw_mystery: [
         { id: 'bw-mb', name: 'Mystery Box', price: 299, icon: '<svg class="ic"><use href="#ic-box"/></svg> ', cc: '#a855f7', gm: 'bedwars', perks: ['Random cosmetic', 'Exclusive chance', 'Effect chance'] },
@@ -9032,12 +9032,16 @@
     let XP_CD = 0;
     let XP_INTERVAL = null;
 
+    function loadAdStatus() {
+      updateXpUI();
+    }
+
     function updateXpUI() {
       if (!ME) return;
       API('/api/reward-profile').then(d => {
         I('XP-VAL').textContent = d.current_xp.toLocaleString();
-        I('XP-PROGRESS-TEXT').textContent = `${d.ads_today} / 60 ADS`;
-        I('XP-BAR-FILL').style.width = `${(d.ads_today / 60) * 100}%`;
+        I('XP-PROGRESS-TEXT').textContent = `${d.daily_xp_earned || 0} / 60 XP`;
+        I('XP-BAR-FILL').style.width = `${Math.min(100, ((d.daily_xp_earned || 0) / 60) * 100)}%`;
         XP_STATE = { ...d }; // Sync with server state
         
         if (d.next_ad) {
@@ -9065,8 +9069,8 @@
           return;
         }
         const m = Math.floor(XP_CD / 60), s = XP_CD % 60;
-        I('XP-TIMER').textContent = `RECHARGING: ${m}:${s < 10 ? '0' : ''}${s}`;
-        I('XP-WATCH-BTN').textContent = `RECHARGING... (${m}:${s < 10 ? '0' : ''}${s})`;
+        I('XP-TIMER').textContent = `TRACKER: ${m}:${s < 10 ? '0' : ''}${s}`;
+        I('XP-WATCH-BTN').textContent = `SESSION RUNNING... (${m}:${s < 10 ? '0' : ''}${s})`;
         XP_CD--;
       }, 1000);
     }
@@ -9076,7 +9080,7 @@
       XP_INTERVAL = null;
       XP_CD = 0;
       I('XP-WATCH-BTN').disabled = false;
-      I('XP-WATCH-BTN').innerHTML = '<svg class="ic"><use href="#ic-play"/></svg> WATCH AD TO EARN XP';
+      I('XP-WATCH-BTN').innerHTML = '<svg class="ic"><use href="#ic-play"/></svg> START AFK SESSION';
       I('XP-TIMER').style.display = 'none';
     }
 
@@ -9088,7 +9092,7 @@
                 <img src="https://mc-heads.net/avatar/${x.mc_username || 'Steve'}/32" style="border-radius:4px;width:24px;height:24px">
                 <b>${esc(x.username)}</b>
               </div></td>
-              <td style="text-align:right"><span style="color:var(--grn);font-weight:700">+${x.xp_reward || 35} XP</span></td>
+              <td style="text-align:right"><span style="color:var(--grn);font-weight:700">+${x.xp_reward || 5} XP</span></td>
               <td style="text-align:right;color:var(--tx3);font-size:0.8rem">${fmtD(x.created_at)}</td>
           </tr>`).join('');
       } catch(e) {}
@@ -9158,7 +9162,7 @@
     <div class="sc-pr">${it.price === 0 ? 'FREE' : '₹' + it.price.toFixed(0)}</div>
     <ul class="sc-pk">${it.perks.map(p => `<li>${p}</li>`).join('')}</ul>
     <button class="btn ${it.price === 0 ? 'bgrn' : ''}" style="width:100%;margin-top:auto"
-      onclick="${it.price === 0 ? `GO('store-free')` : `addCart('${it.id}','${it.name.replace(/'/g, "\\'")}',${it.price},'${it.gm}')`}"><svg class="ic"><use href="${it.price === 0 ? '#ic-play' : '#ic-cart'}"/></svg>  ${it.price === 0 ? 'Watch Ads' : 'Add to Cart'}</button>
+      onclick="${it.price === 0 ? `GO('store-free')` : `addCart('${it.id}','${it.name.replace(/'/g, "\\'")}',${it.price},'${it.gm}')`}"><svg class="ic"><use href="${it.price === 0 ? '#ic-play' : '#ic-cart'}"/></svg>  ${it.price === 0 ? 'Start AFK' : 'Add to Cart'}</button>
   </div>`).join('');
     }
 
@@ -9267,16 +9271,16 @@
     function rewardErrorMessage(err, fallback) {
       const code = err?.data?.code;
       const map = {
-        missing_fingerprint: 'This browser tab could not start a tracked ad session. Refresh and try again.',
-        daily_limit_reached: 'You reached the 60 ads per day limit. Try again after the daily reset.',
-        cooldown_active: 'Your cooldown is still active. Wait for the timer to finish and try again.',
-        active_tab_conflict: 'Another tab already has an active ad session. Finish that one first.',
-        ad_already_active: 'You already have an ad in progress in this tab.',
-        too_fast: 'The ad ended too quickly, so no XP was awarded.',
-        token_replayed: 'That ad session was already used.',
-        invalid_proof: 'We could not verify the ad completion proof.',
-        token_expired: 'That ad session expired. Start a fresh one.',
-        ip_rate_limited: 'Too many ad rewards came from this connection in the last hour.',
+        missing_fingerprint: 'This browser tab could not start a tracked AFK session. Refresh and try again.',
+        daily_limit_reached: 'You reached the 60 XP daily AFK cap. Try again after the daily reset.',
+        cooldown_active: 'Your AFK session cooldown is still active. Wait for the timer to finish and try again.',
+        active_tab_conflict: 'Another tab already has an AFK session running. Finish that one first.',
+        ad_already_active: 'You already have an AFK session running in this tab.',
+        too_fast: 'The AFK session ended too quickly, so no XP was awarded.',
+        token_replayed: 'That AFK session was already used.',
+        invalid_proof: 'We could not verify the AFK session completion proof.',
+        token_expired: 'That AFK session expired. Start a fresh one.',
+        ip_rate_limited: 'Too many AFK rewards came from this connection in the last hour.',
         insufficient_xp: 'You do not have enough XP for that rank yet.',
         already_owned: 'You already own this rank.',
         lower_tier_owned: 'You cannot downgrade to a lower-tier rank.',
@@ -9423,16 +9427,20 @@
       const activeRemaining = active ? Math.max(0, active.remainingSeconds || 0) : 0;
       const adsWatched = XP_STATE.daily_ads_watched || 0;
       const adsRemaining = XP_STATE.ads_remaining_today || 0;
+      const dailyXpEarned = XP_STATE.daily_xp_earned || 0;
+      const dailyXpRemaining = XP_STATE.daily_xp_remaining ?? Math.max(0, 60 - dailyXpEarned);
+      const xpPerSession = XP_STATE.xp_per_session || 5;
+      const sessionSeconds = XP_STATE.session_seconds || 300;
       const buttonDisabled = !!active || serverLock || cooldownLeft > 0 || adsRemaining <= 0;
       const buttonLabel = active
-        ? `Watching Ad ${fmtCountdown(activeRemaining)}`
+        ? `AFK Session ${fmtCountdown(activeRemaining)}`
         : serverLock
-          ? 'Ad Session Locked'
+          ? 'Session Locked'
         : cooldownLeft > 0
-          ? `Next Ad In ${fmtCountdown(cooldownLeft)}`
-          : adsRemaining <= 0
-            ? 'Daily Limit Reached'
-            : 'Watch Ad';
+          ? `Next Session In ${fmtCountdown(cooldownLeft)}`
+        : adsRemaining <= 0
+            ? 'Daily Cap Reached'
+            : 'Start AFK Session';
 
       el.innerHTML = `
         <div class="xp-dashboard-grid">
@@ -9441,7 +9449,7 @@
             <div class="dash-head">
               <div>
                 <div class="dash-title">${esc(ME?.username || 'Player')}</div>
-                <div class="dash-copy">Earn XP from rewarded ads, keep the remainder after rank purchases, and climb through the rank tiers at your own pace.</div>
+                <div class="dash-copy">Earn passive XP by keeping this page open. Each AFK session lasts 5 minutes, pays 5 XP, and caps at 60 XP per day.</div>
               </div>
               <div class="dash-rank-pill ${tierClass}">${esc(rank?.name || 'Unranked')}</div>
             </div>
@@ -9461,32 +9469,32 @@
             </div>
             <div class="dashboard-metrics">
               <div class="metric-card">
-                <span>Ads Watched Today</span>
-                <strong>${adsWatched}/60</strong>
+                <span>Sessions Today</span>
+                <strong>${adsWatched}/12</strong>
               </div>
               <div class="metric-card">
-                <span>Ads Remaining</span>
-                <strong>${adsRemaining}</strong>
+                <span>Daily XP</span>
+                <strong>${dailyXpEarned}/60</strong>
               </div>
               <div class="metric-card">
-                <span>Cooldown</span>
-                <strong>${active ? fmtCountdown(activeRemaining) : (cooldownLeft ? fmtCountdown(cooldownLeft) : 'Ready')}</strong>
+                <span>Session Length</span>
+                <strong>${Math.round(sessionSeconds / 60)} min</strong>
               </div>
             </div>
           </div>
           <div class="ad-panel">
             <div class="ad-panel-head">
               <div>
-                <div class="ad-panel-title">Rewarded Ad Queue</div>
-                <div style="color:var(--tx2);font-size:.84rem">${adsWatched}/60 ads watched today</div>
+                <div class="ad-panel-title">AFK XP Session</div>
+                <div style="color:var(--tx2);font-size:.84rem">${dailyXpRemaining} XP left before daily reset</div>
               </div>
-              <div class="ad-chip">${active ? 'IN PROGRESS' : (serverLock ? 'LOCKED' : (cooldownLeft ? 'COOLDOWN' : 'READY'))}</div>
+              <div class="ad-chip">${active ? 'RUNNING' : (serverLock ? 'LOCKED' : (cooldownLeft ? 'COOLDOWN' : 'READY'))}</div>
             </div>
-            <div style="font-size:1.7rem;font-family:'Outfit',sans-serif">+10 to +50 XP</div>
-            <div style="color:var(--tx2);line-height:1.6">Server-side checks enforce the daily cap, timing window, tab lock, and one-time token validation before XP is awarded.</div>
+            <div style="font-size:1.7rem;font-family:'Outfit',sans-serif">+${xpPerSession} XP every 5 minutes</div>
+            <div style="color:var(--tx2);line-height:1.6">Start a tracked AFK session, keep this page open, and claim the XP once the tracker completes. The daily cap is enforced server-side.</div>
             <div class="ad-progress"><div id="DASH-AD-PROGRESS" style="width:${active ? `${Math.min(100, ((active.totalSeconds - activeRemaining) / active.totalSeconds) * 100)}%` : '0%'}"></div></div>
             <button class="btn" id="DASH-WATCH-BTN" ${buttonDisabled ? 'disabled' : ''} onclick="watchRewardAd()">${buttonLabel}</button>
-            <div class="ad-footnote">${active ? 'Keep this tab active while the ad finishes.' : (serverLock ? 'A previous ad session is still active on the server, so new requests stay blocked until it expires.' : (cooldownLeft ? `Next ad available in ${fmtCountdown(cooldownLeft)}.` : 'When the ad completes, your XP reward lands instantly and is logged server-side.'))}</div>
+            <div class="ad-footnote">${active ? 'Tracker running. Keep this page open until the session completes.' : (serverLock ? 'A previous AFK session is still active on the server, so new sessions stay blocked until it expires.' : (cooldownLeft ? `Next AFK session available in ${fmtCountdown(cooldownLeft)}.` : 'When the 5-minute tracker completes, your XP reward is claimed and logged server-side.'))}</div>
           </div>
         </div>
       `;
@@ -9536,53 +9544,64 @@
     async function watchRewardAd() {
       if (!ME) {
         openM('ML');
-        toast('err', 'Please log in to earn XP from ads.');
+        toast('err', 'Please log in to start an AFK XP session.');
         return;
       }
       if (ACTIVE_AD_SESSION) return;
       if (XP_STATE.active_ad_in_progress) {
-        toast('err', 'An earlier ad session is still locked on the server. Please wait for it to clear.');
+        toast('err', 'An earlier AFK session is still locked on the server. Please wait for it to clear.');
         return;
       }
       const cooldownLeft = countdownSeconds(XP_STATE.next_ad);
       if (cooldownLeft > 0) {
-        toast('err', `Your next ad unlocks in ${fmtCountdown(cooldownLeft)}.`);
+        toast('err', `Your next AFK session unlocks in ${fmtCountdown(cooldownLeft)}.`);
         return;
       }
       if ((XP_STATE.ads_remaining || 0) <= 0) {
-        toast('err', 'You reached the ad cap for today.');
+        toast('err', 'You reached the 60 XP daily cap for today.');
         return;
       }
 
       try {
-        await cleanupMonetagServiceWorker();
         const res = await API('/api/ads/request', {
           method: 'POST',
           body: { session_fingerprint: getAdSessionFingerprint() }
         });
-        
-        ACTIVE_AD_SESSION = res.ad_token;
-        
-        // Trigger Ads dynamically using the server route to ensure domain verification passes
-        const iframe = I('AD-IFRAME');
-        iframe.style.display = 'block';
-        iframe.src = '/ad-banner?t=' + Date.now(); // Cache busting to force reload
 
-        // Show Ad UI
+        const totalSeconds = Number(res.session_seconds || XP_STATE.session_seconds || 300);
+        ACTIVE_AD_SESSION = {
+          token: res.ad_token,
+          totalSeconds,
+          remainingSeconds: totalSeconds,
+          xpReward: Number(res.xp_reward || XP_STATE.xp_per_session || 5),
+        };
+
+        if (ACTIVE_AD_INTERVAL) clearInterval(ACTIVE_AD_INTERVAL);
         I('AD-CLAIM-BTN').style.display = 'none';
         I('AD-TIMER-BOX').style.display = 'block';
-        I('AD-STATUS-TITLE').textContent = 'Generating Rewards...';
-        I('AD-TIMER-BOX').textContent = '15s';
+        I('AD-STATUS-ICON').textContent = 'ZZZ';
+        I('AD-STATUS-TITLE').textContent = 'AFK Session Running';
+        I('AD-STATUS-SUB').textContent = `Stay on this page for ${Math.round(totalSeconds / 60)} minutes to earn ${ACTIVE_AD_SESSION.xpReward} XP.`;
+        I('AD-TIMER-BOX').textContent = fmtCountdown(totalSeconds);
+        I('AD-PLACEMENT').innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx2);line-height:1.7"><div style="font-size:2rem;margin-bottom:10px">⏳</div><div style="font-weight:700;color:var(--tx)">AFK tracker active</div><div style="margin-top:8px">Keep this tab open while the timer runs.</div></div>';
         openM('AD-OVERLAY');
+        renderRewardDashboard(XP_STATE.current_xp);
 
-        let left = 15;
-        const iv = setInterval(() => {
-          left--;
-          I('AD-TIMER-BOX').textContent = left + 's';
-          if (left <= 0) {
-            clearInterval(iv);
+        ACTIVE_AD_INTERVAL = setInterval(() => {
+          if (!ACTIVE_AD_SESSION) {
+            clearInterval(ACTIVE_AD_INTERVAL);
+            ACTIVE_AD_INTERVAL = null;
+            return;
+          }
+          ACTIVE_AD_SESSION.remainingSeconds = Math.max(0, ACTIVE_AD_SESSION.remainingSeconds - 1);
+          I('AD-TIMER-BOX').textContent = fmtCountdown(ACTIVE_AD_SESSION.remainingSeconds);
+          renderRewardDashboard(XP_STATE.current_xp);
+          if (ACTIVE_AD_SESSION.remainingSeconds <= 0) {
+            clearInterval(ACTIVE_AD_INTERVAL);
+            ACTIVE_AD_INTERVAL = null;
             I('AD-TIMER-BOX').style.display = 'none';
-            I('AD-STATUS-TITLE').textContent = 'Rewards Ready!';
+            I('AD-STATUS-TITLE').textContent = 'XP Ready to Claim';
+            I('AD-STATUS-SUB').textContent = `Your ${ACTIVE_AD_SESSION.xpReward} XP is ready. Claim it now.`;
             I('AD-CLAIM-BTN').style.display = 'block';
           }
         }, 1000);
@@ -9598,22 +9617,20 @@
       btn.disabled = true;
       btn.textContent = 'Processing...';
       try {
-        // The backend expects a proof based on 'hellcore-mock-ad-proof-v1'
-        const token = ACTIVE_AD_SESSION;
-        const secret = 'hellcore-mock-ad-proof-v1';
-        const completion_proof = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token + secret))
-          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
+        const token = ACTIVE_AD_SESSION.token;
+        const completion_proof = await sha256Hex(token + AD_COMPLETION_SECRET);
 
         const d = await API('/api/ads/complete', {
           method: 'POST',
           body: { ad_token: token, completion_proof }
         });
         closeM('AD-OVERLAY');
-        I('AD-IFRAME').src = ''; // clear iframe
-        I('AD-IFRAME').style.display = 'none';
-        toast('success', `Earned 10 XP!`);
+        I('AD-PLACEMENT').innerHTML = '';
+        toast('success', `Earned ${d.xp_earned} XP!`);
+        if (ACTIVE_AD_INTERVAL) { clearInterval(ACTIVE_AD_INTERVAL); ACTIVE_AD_INTERVAL = null; }
         ACTIVE_AD_SESSION = null;
         updateXpUI();
+        await loadRewardDashboard(d.current_xp - d.xp_earned);
       } catch (e) {
         btn.disabled = false;
         btn.textContent = 'CLAIM REWARD';

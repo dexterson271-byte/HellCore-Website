@@ -68,10 +68,13 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 
 app = Flask(__name__)
 
-AD_DAILY_LIMIT = 60
+AFK_XP_PER_SESSION = 5
+AFK_SESSION_SECONDS = 300
+AFK_DAILY_XP_CAP = 60
+AD_DAILY_LIMIT = max(1, AFK_DAILY_XP_CAP // AFK_XP_PER_SESSION)
 AD_COOLDOWN_SECONDS = 0
-AD_MIN_DURATION_SECONDS = 10
-AD_COMPLETION_WINDOW_SECONDS = 90
+AD_MIN_DURATION_SECONDS = AFK_SESSION_SECONDS
+AD_COMPLETION_WINDOW_SECONDS = 900
 AD_IP_COMPLETION_LIMIT = 60
 AD_IP_COMPLETION_WINDOW_SECONDS = 3600
 AD_TOKEN_SECRET = os.environ.get("HC_AD_TOKEN_SECRET", "hellcore-ad-token-secret")
@@ -111,12 +114,12 @@ STORE_RANK_SEEDS = [
     },
 ]
 MOCK_AD_PAYLOAD = {
-    "id": "mock-rewarded-video",
-    "title": "Hellcore Rewarded Break",
-    "description": "Stay on this tab while the mock rewarded ad finishes to earn XP.",
+    "id": "hellcore-afk-session",
+    "title": "Hellcore AFK XP Session",
+    "description": "Keep this tab open for 5 minutes to earn AFK XP.",
     "duration_seconds": AD_MIN_DURATION_SECONDS,
-    "reward_range": {"min": 10, "max": 50},
-    "creative_type": "progress",
+    "reward_range": {"min": AFK_XP_PER_SESSION, "max": AFK_XP_PER_SESSION},
+    "creative_type": "afk",
 }
 
 @app.after_request
@@ -555,6 +558,17 @@ def get_daily_ad_watch_count(cursor, user_id, now=None):
     return int(row.get("count") or row.get("COUNT(*)") or 0)
 
 
+def get_daily_reward_xp(cursor, user_id, now=None):
+    day_start, day_end = utc_day_bounds(now=now)
+    cursor.execute(
+        f"""SELECT COALESCE(SUM(xp_awarded), 0) AS total_xp FROM hc_ad_watches
+            WHERE user_id={ph()} AND started_at >= {ph()} AND started_at < {ph()} AND status='completed'""",
+        (user_id, day_start, day_end),
+    )
+    row = to_dict(cursor.fetchone()) or {}
+    return int(row.get("total_xp") or row.get("SUM(xp_awarded)") or 0)
+
+
 def get_next_ad_available_at(cursor, user_id, now=None):
     now = now or utcnow()
     last_completed = get_latest_completed_ad(cursor, user_id)
@@ -574,6 +588,7 @@ def get_reward_profile(cursor, user_id, now=None):
     user_row = to_dict(cursor.fetchone()) or {}
     ad_block = get_user_ad_block_state(user_row, now=now)
     daily_ads_watched = get_daily_ad_watch_count(cursor, user_id, now=now)
+    daily_xp_earned = get_daily_reward_xp(cursor, user_id, now=now)
     next_available = get_next_ad_available_at(cursor, user_id, now=now)
     active_watch = get_active_ad_watch(cursor, user_id, now=now)
     if active_watch:
@@ -585,11 +600,19 @@ def get_reward_profile(cursor, user_id, now=None):
         "rank": current["rank"],
         "ads_today": daily_ads_watched,
         "ads_remaining": max(0, AD_DAILY_LIMIT - daily_ads_watched),
+        "daily_xp_earned": daily_xp_earned,
+        "daily_xp_remaining": max(0, AFK_DAILY_XP_CAP - daily_xp_earned),
+        "xp_per_session": AFK_XP_PER_SESSION,
+        "session_seconds": AFK_SESSION_SECONDS,
+        "daily_xp_cap": AFK_DAILY_XP_CAP,
         "next_ad": isoformat_utc(next_available),
         "active_ad_in_progress": bool(active_watch),
         "ads_blocked": ad_block["blocked"],
         "ads_block_reason": ad_block["reason"],
         "ads_blocked_until": ad_block["until"],
+        "daily_ads_watched": daily_ads_watched,
+        "ads_remaining_today": max(0, AD_DAILY_LIMIT - daily_ads_watched),
+        "next_ad_available_at": isoformat_utc(next_available),
     }
 
 
@@ -3384,7 +3407,7 @@ def ads_request():
     if daily_count >= AD_DAILY_LIMIT:
         _, next_day = utc_day_bounds(now=now)
         return jsonify({
-            "error": "You have reached today's ad limit. Come back after the UTC reset.",
+            "error": "You have reached today's AFK XP cap. Come back after the UTC reset.",
             "code": "daily_limit_reached",
             "retry_after": isoformat_utc(next_day),
         }), 429
@@ -3392,7 +3415,7 @@ def ads_request():
     next_available = get_next_ad_available_at(c, user_id, now=now)
     if next_available:
         return jsonify({
-            "error": "Your ad cooldown is still active.",
+            "error": "Your AFK session cooldown is still active.",
             "code": "cooldown_active",
             "retry_after": isoformat_utc(next_available),
         }), 429
@@ -3403,9 +3426,9 @@ def ads_request():
         retry_after = active_started + timedelta(seconds=AD_COMPLETION_WINDOW_SECONDS)
         error_code = "active_tab_conflict" if active_watch.get("session_fingerprint") != session_fingerprint else "ad_already_active"
         error_message = (
-            "Another active ad session is already open in a different tab."
+            "Another AFK session is already open in a different tab."
             if error_code == "active_tab_conflict"
-            else "Finish or wait out your current ad session before starting another."
+            else "Finish or wait out your current AFK session before starting another."
         )
         return jsonify({
             "error": error_message,
@@ -3418,6 +3441,7 @@ def ads_request():
     _, token_signature = ad_token.split(".", 1)
     ad_payload = dict(MOCK_AD_PAYLOAD)
     ad_payload["requested_at"] = isoformat_utc(now)
+    ad_payload["xp_reward"] = AFK_XP_PER_SESSION
 
     c.execute(
         f"""INSERT INTO hc_ad_watches
@@ -3440,6 +3464,8 @@ def ads_request():
     return jsonify({
         "ad_token": ad_token,
         "ad": ad_payload,
+        "xp_reward": AFK_XP_PER_SESSION,
+        "session_seconds": AFK_SESSION_SECONDS,
     })
 
 
@@ -3477,7 +3503,7 @@ def ads_complete():
             ("expired", "expired", next_failure_count, now, watch["id"]),
         )
         db.commit()
-        return jsonify({"error": "This ad token expired before completion.", "code": "token_expired"}), 400
+        return jsonify({"error": "This AFK session expired before completion.", "code": "token_expired"}), 400
 
     if completion_proof != build_completion_proof(ad_token):
         c.execute(
@@ -3497,7 +3523,7 @@ def ads_complete():
             ("too_fast", next_failure_count, now, watch["id"]),
         )
         db.commit()
-        return jsonify({"error": "The ad finished too quickly to be valid.", "code": "too_fast"}), 400
+        return jsonify({"error": "This AFK session ended too early to award XP.", "code": "too_fast"}), 400
 
     completion_ip = get_client_ip()
     if is_ip_completion_limited(completion_ip, now=now):
@@ -3511,7 +3537,7 @@ def ads_complete():
         return jsonify({"error": "Too many ad completions came from this IP in the last hour.", "code": "ip_rate_limited"}), 429
 
     current = get_current_store_rank(c, request.cu["id"])
-    awarded_xp = 10
+    awarded_xp = AFK_XP_PER_SESSION
     new_balance = current["current_xp"] + awarded_xp
     c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_balance, request.cu["id"]))
     c.execute(
@@ -3536,8 +3562,8 @@ def ads_complete():
         request.cu["id"],
         awarded_xp,
         new_balance,
-        "ad_reward",
-        "ad_watch",
+        "afk_reward",
+        "afk_session",
         watch["id"],
         {
             "ad_token": ad_token,
