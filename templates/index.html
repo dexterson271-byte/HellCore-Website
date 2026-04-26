@@ -6306,6 +6306,17 @@
       }
     }
 
+    async function ensureMonetagServiceWorker() {
+      if (!('serviceWorker' in navigator)) return false;
+      try {
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        return true;
+      } catch (e) {
+        console.log('Monetag SW registration failed:', e);
+        return false;
+      }
+    }
+
     // ════════════════════════════════════════════════════
     // NAVIGATION
     // ════════════════════════════════════════════════════
@@ -9292,6 +9303,7 @@
       }
 
       try {
+        await ensureMonetagServiceWorker();
         const res = await API('/api/ads/request', {
           method: 'POST',
           body: { session_fingerprint: getAdSessionFingerprint() }
