@@ -966,13 +966,15 @@ def auth_me():
     if not u: return jsonify({"error":"Not logged in"}), 401
     
     db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (u["id"],))
+    xp_row = to_dict(c.fetchone()) or {}
     payload = enrich_user_with_rank({
         "id":u["id"],
         "username":u["username"],
         "email":u["email"],
         "mc_username":u.get("mc_username","") or "",
         "role":u["role"],
-        "current_xp": int(u.get("current_xp") or 0),
+        "current_xp": int(xp_row.get("current_xp") or u.get("current_xp") or 0),
     }, u["id"], c)
     payload["ranks"] = payload["rank_details"]
     c.close(); db.close()
@@ -996,6 +998,8 @@ def login():
             db.close(); return jsonify({"error":"Wrong credentials"}), 401
         tok = secrets.token_hex(32)
         c.execute(f"UPDATE hc_users SET session_token={ph()} WHERE id={ph()}", (tok, row["id"]))
+        c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (row["id"],))
+        xp_row = to_dict(c.fetchone()) or {}
         payload = enrich_user_with_rank({
             "token": tok,
             "id": row["id"],
@@ -1003,7 +1007,7 @@ def login():
             "email": row["email"],
             "mc_username": row.get("mc_username","") or "",
             "role": row["role"],
-            "current_xp": int(row.get("current_xp") or 0),
+            "current_xp": int(xp_row.get("current_xp") or row.get("current_xp") or 0),
         }, row["id"], c)
         db.commit(); c.close(); db.close()
         resp = jsonify(payload)
