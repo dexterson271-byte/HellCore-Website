@@ -124,13 +124,7 @@
         }
 
         .notice {
-            margin-top: 18px;
-            padding: 14px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--warn-border);
-            background: var(--warn-bg);
-            color: var(--warn-text);
-            line-height: 1.6;
+            display: none;
         }
 
         .grid {
@@ -243,8 +237,6 @@
                 pricing notes, payment methods, delivery timing, and return policy details for digital purchases.
             </p>
             <div class="notice">
-                Before submitting this URL to your payment provider, replace any placeholder values below with your real
-                legal business details.
             </div>
         </section>
 
@@ -258,17 +250,8 @@
                     <div class="label">Operator name</div>
                     <div>{{ info.operator_name }}</div>
 
-                    <div class="label">Business address</div>
-                    <div>{{ info.business_address }}</div>
-
-                    <div class="label">Phone number</div>
-                    <div>{{ info.business_phone }}</div>
-
                     <div class="label">Email address</div>
                     <div>{{ info.business_email }}</div>
-
-                    <div class="label">Support hours</div>
-                    <div>{{ info.business_hours }}</div>
 
                     <div class="label">Service description</div>
                     <div>{{ info.service_description }}</div>
