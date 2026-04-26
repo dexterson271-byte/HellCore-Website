@@ -972,6 +972,7 @@ def auth_me():
         "email":u["email"],
         "mc_username":u.get("mc_username","") or "",
         "role":u["role"],
+        "current_xp": int(u.get("current_xp") or 0),
     }, u["id"], c)
     payload["ranks"] = payload["rank_details"]
     c.close(); db.close()
@@ -1002,6 +1003,7 @@ def login():
             "email": row["email"],
             "mc_username": row.get("mc_username","") or "",
             "role": row["role"],
+            "current_xp": int(row.get("current_xp") or 0),
         }, row["id"], c)
         db.commit(); c.close(); db.close()
         resp = jsonify(payload)
