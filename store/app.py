@@ -590,6 +590,30 @@ def main_static(f):
     return send_from_directory(main_static_dir, f)
 
 
+@app.route("/business-info")
+def business_info_page():
+    business_info = {
+        "business_name": os.environ.get("STORE_BUSINESS_NAME", "Hellcore Network"),
+        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "Update with your legal operator name"),
+        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "Update with your business address"),
+        "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "Update with your business phone number"),
+        "business_email": os.environ.get("STORE_BUSINESS_EMAIL", "support@hellcore.net"),
+        "business_hours": os.environ.get("STORE_BUSINESS_HOURS", "Update with your support hours"),
+        "price_note": os.environ.get("STORE_PRICE_NOTE", "Prices are shown on each product page in the store."),
+        "payment_methods": os.environ.get("STORE_PAYMENT_METHODS", "Stripe, card payments, and other payment methods shown at checkout."),
+        "delivery_time": os.environ.get("STORE_DELIVERY_TIME", "Digital items are usually delivered shortly after successful payment."),
+        "returns_policy": os.environ.get("STORE_RETURNS_POLICY", "Because the store sells digital goods, returns and cancellations may not be available after delivery unless required by law."),
+        "additional_fees": os.environ.get("STORE_ADDITIONAL_FEES", "Customers are responsible for any internet connection or bank-related fees."),
+        "service_description": os.environ.get("STORE_SERVICE_DESCRIPTION", "Minecraft server ranks, perks, and other digital goods for Hellcore Network."),
+    }
+    return render_template("business_info.html", info=business_info), 200
+
+
+@app.route("/business_info")
+def business_info_legacy_redirect():
+    return redirect("/business-info", code=301)
+
+
 @app.route("/<path:p>")
 def catch_all(p):
     if is_known_store_spa_path("/" + p):
