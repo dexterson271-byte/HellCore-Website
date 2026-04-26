@@ -2,14 +2,24 @@
 hellcore.db
 *.sqlite3
 
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.log
+
 # Python
+venv/
+env/
+.venv/
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
-.venv/
-env/
-venv/
+
+# Env files
 .env
+*.env.local
 
 # Java / Maven
 target/
@@ -23,12 +33,17 @@ target/
 .settings/
 dependency-reduced-pom.xml
 
-# IDEs
+# IDEs / OS
 .vscode/
 .idea/
+.DS_Store
 *.swp
 *.swo
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 
-# Credentials (Just in case)
-.env
+# Credentials
 secret.json
