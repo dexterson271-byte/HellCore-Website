@@ -389,6 +389,18 @@ def isoformat_utc(value):
     return parsed.strftime("%Y-%m-%dT%H:%M:%SZ") if parsed else None
 
 
+def get_user_ad_block_state(user_row, now=None):
+    now = now or utcnow()
+    blocked_until = parse_db_datetime((user_row or {}).get("ads_blocked_until"))
+    manual_block = bool((user_row or {}).get("ads_blocked"))
+    active = manual_block or (blocked_until and blocked_until > now)
+    return {
+        "blocked": bool(active),
+        "reason": (user_row or {}).get("ads_block_reason") or "",
+        "until": isoformat_utc(blocked_until),
+    }
+
+
 def utc_day_bounds(now=None):
     now = now or utcnow()
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -555,6 +567,12 @@ def get_next_ad_available_at(cursor, user_id, now=None):
 def get_reward_profile(cursor, user_id, now=None):
     now = now or utcnow()
     current = get_current_store_rank(cursor, user_id)
+    cursor.execute(
+        f"SELECT ads_blocked, ads_block_reason, ads_blocked_until FROM hc_users WHERE id={ph()}",
+        (user_id,),
+    )
+    user_row = to_dict(cursor.fetchone()) or {}
+    ad_block = get_user_ad_block_state(user_row, now=now)
     daily_ads_watched = get_daily_ad_watch_count(cursor, user_id, now=now)
     next_available = get_next_ad_available_at(cursor, user_id, now=now)
     active_watch = get_active_ad_watch(cursor, user_id, now=now)
@@ -569,6 +587,9 @@ def get_reward_profile(cursor, user_id, now=None):
         "ads_remaining": max(0, AD_DAILY_LIMIT - daily_ads_watched),
         "next_ad": isoformat_utc(next_available),
         "active_ad_in_progress": bool(active_watch),
+        "ads_blocked": ad_block["blocked"],
+        "ads_block_reason": ad_block["reason"],
+        "ads_blocked_until": ad_block["until"],
     }
 
 
@@ -983,6 +1004,18 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         pass
     try:
         c.execute("ALTER TABLE hc_users ADD COLUMN rank_id INTEGER DEFAULT NULL")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN ads_blocked INTEGER DEFAULT 0")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN ads_block_reason VARCHAR(255) DEFAULT ''")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN ads_blocked_until DATETIME")
     except:
         pass
     try:
@@ -2781,15 +2814,29 @@ def admin_users():
     q = request.args.get("q", "").strip()
     db = get_db(); c = db_cursor(db)
     if q:
-        c.execute(f"SELECT id,email,username,mc_username,role,created_at,current_xp FROM hc_users WHERE username LIKE {ph()} OR email LIKE {ph()}", (f"%{q}%", f"%{q}%"))
+        c.execute(
+            f"""SELECT id,email,username,mc_username,role,created_at,current_xp,is_verified,last_seen,
+                ads_blocked,ads_block_reason,ads_blocked_until,rank_id
+                FROM hc_users WHERE username LIKE {ph()} OR email LIKE {ph()}""",
+            (f"%{q}%", f"%{q}%")
+        )
     else:
-        c.execute("SELECT id,email,username,mc_username,role,created_at,current_xp FROM hc_users ORDER BY created_at DESC LIMIT 50")
+        c.execute(
+            """SELECT id,email,username,mc_username,role,created_at,current_xp,is_verified,last_seen,
+                ads_blocked,ads_block_reason,ads_blocked_until,rank_id
+                FROM hc_users ORDER BY created_at DESC LIMIT 50"""
+        )
     
     rows = to_list(c.fetchall())
     
     scored = []
     for r in rows:
         r["created_at"] = ts(r["created_at"])
+        r["last_seen"] = ts(r.get("last_seen"))
+        ad_block = get_user_ad_block_state(r)
+        r["ads_blocked"] = ad_block["blocked"]
+        r["ads_block_reason"] = ad_block["reason"]
+        r["ads_blocked_until"] = ad_block["until"]
         if q:
             uname = r["username"].lower()
             ql = q.lower()
@@ -2878,6 +2925,134 @@ def admin_user_xp(uid):
     # Audit log
     log_audit(request.cu["id"], "CHANGE_XP", uid, f"Changed XP for {user['username']} to {amount}")
     
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/xp-adjust", methods=["POST"])
+@admin_required
+def admin_user_xp_adjust(uid):
+    d = request.get_json(force=True) or {}
+    delta = d.get("delta")
+    if delta is None:
+        return jsonify({"error": "XP delta required"}), 400
+    try:
+        delta = int(delta)
+    except Exception:
+        return jsonify({"error": "XP delta must be an integer"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username,current_xp FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    new_xp = max(0, int(user.get("current_xp") or 0) + delta)
+    c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_xp, uid))
+    log_audit(request.cu["id"], "ADJUST_XP", uid, f"Adjusted XP for {user['username']} by {delta}; new balance {new_xp}")
+    db.commit()
+    return jsonify({"ok": True, "current_xp": new_xp})
+
+@app.route("/api/admin/users/<int:uid>/ads-block", methods=["POST"])
+@admin_required
+def admin_user_ads_block(uid):
+    d = request.get_json(force=True) or {}
+    blocked = 1 if d.get("blocked") else 0
+    reason = str(d.get("reason") or "").strip()[:255]
+    hours = d.get("hours")
+    blocked_until = None
+    if blocked and hours not in (None, ""):
+        try:
+            blocked_until = utcnow() + timedelta(hours=max(0, int(hours)))
+        except Exception:
+            return jsonify({"error": "Hours must be a whole number"}), 400
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    c.execute(
+        f"UPDATE hc_users SET ads_blocked={ph()}, ads_block_reason={ph()}, ads_blocked_until={ph()} WHERE id={ph()}",
+        (blocked, reason, blocked_until, uid)
+    )
+    action = "BLOCK_ADS" if blocked else "UNBLOCK_ADS"
+    log_audit(request.cu["id"], action, uid, f"Ads blocked={blocked}; reason={reason}; until={blocked_until}")
+    db.commit()
+    return jsonify({"ok": True, "blocked": bool(blocked), "until": isoformat_utc(blocked_until), "reason": reason})
+
+@app.route("/api/admin/users/<int:uid>/ad-sessions/reset", methods=["POST"])
+@admin_required
+def admin_user_reset_ad_sessions(uid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    now = utcnow()
+    c.execute(
+        f"""UPDATE hc_ad_watches
+            SET status={ph()}, failure_reason={ph()}, last_attempt_at={ph()}
+            WHERE user_id={ph()} AND completed_at IS NULL""",
+        ("reset_by_admin", "reset_by_admin", now, uid)
+    )
+    log_audit(request.cu["id"], "RESET_AD_SESSIONS", uid, f"Cleared active ad sessions for {user['username']}")
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/trials/reset", methods=["POST"])
+@admin_required
+def admin_user_reset_trials(uid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    c.execute(f"DELETE FROM hc_user_trials WHERE user_id={ph()}", (uid,))
+    log_audit(request.cu["id"], "RESET_TRIALS", uid, f"Reset trial claims for {user['username']}")
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/unlink", methods=["POST"])
+@admin_required
+def admin_user_unlink(uid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    c.execute(
+        f"UPDATE hc_users SET mc_username='', mc_uuid='', is_verified=0, verification_code=NULL WHERE id={ph()}",
+        (uid,)
+    )
+    log_audit(request.cu["id"], "UNLINK_MC", uid, f"Unlinked Minecraft account for {user['username']}")
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/logout", methods=["POST"])
+@admin_required
+def admin_user_logout(uid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    c.execute(f"UPDATE hc_users SET session_token=NULL WHERE id={ph()}", (uid,))
+    log_audit(request.cu["id"], "FORCE_LOGOUT", uid, f"Cleared session token for {user['username']}")
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/users/<int:uid>/rank-reset", methods=["POST"])
+@admin_required
+def admin_user_rank_reset(uid):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT username FROM hc_users WHERE id={ph()}", (uid,))
+    user = to_dict(c.fetchone())
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()}", (uid,))
+    c.execute(f"UPDATE hc_users SET rank_id=NULL WHERE id={ph()}", (uid,))
+    log_audit(request.cu["id"], "RESET_RANKS", uid, f"Cleared ranks for {user['username']}")
     db.commit()
     return jsonify({"ok": True})
 
@@ -3196,6 +3371,14 @@ def ads_request():
     db = get_db(); c = db_cursor(db)
     now = utcnow()
     user_id = request.cu["id"]
+    c.execute(f"SELECT ads_blocked, ads_block_reason, ads_blocked_until FROM hc_users WHERE id={ph()}", (user_id,))
+    ad_block = get_user_ad_block_state(to_dict(c.fetchone()) or {}, now=now)
+    if ad_block["blocked"]:
+        return jsonify({
+            "error": ad_block["reason"] or "Ad rewards are disabled for this account.",
+            "code": "ads_blocked",
+            "retry_after": ad_block["until"],
+        }), 403
 
     daily_count = get_daily_ad_watch_count(c, user_id, now=now)
     if daily_count >= AD_DAILY_LIMIT:

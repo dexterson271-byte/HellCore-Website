@@ -8031,13 +8031,37 @@
                             <div style="font-size:0.8rem;color:var(--tx2)">Current XP:</div>
                             <input id="ADM-XP-INP-${u.id}" type="number" class="inp bsm" style="width:120px" value="${u.current_xp || 0}">
                             <button class="btn bsm" onclick="admUpdateXP(${u.id})">Save XP</button>
+                            <button class="bto bsm" onclick="admAdjustXP(${u.id}, 100)">+100 XP</button>
+                            <button class="bto bsm" onclick="admAdjustXP(${u.id}, -100)">-100 XP</button>
+                            <button class="bto bsm" onclick="admResetXP(${u.id})">Reset XP</button>
                             <button class="bto bsm" onclick="admViewLogs(${u.id}, '${esc(u.username)}')">View Activity Logs</button>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                            <div style="font-size:0.8rem;color:var(--tx2)">Last Seen:</div>
+                            <div style="font-size:0.8rem">${u.last_seen ? fmtD(u.last_seen) : 'Never'}</div>
+                            <div style="font-size:0.8rem;color:var(--tx2)">Ad Access:</div>
+                            <div style="font-size:0.8rem;color:${u.ads_blocked ? 'var(--r2)' : 'var(--grn)'}">${u.ads_blocked ? 'Blocked' : 'Allowed'}</div>
+                            ${u.ads_blocked ? `<div style="font-size:0.75rem;color:var(--tx3)">${esc(u.ads_block_reason || 'No reason set')}${u.ads_blocked_until ? ` until ${fmtD(u.ads_blocked_until)}` : ''}</div>` : ''}
+                          </div>
+                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                            <input id="ADM-ADS-REASON-${u.id}" class="inp bsm" style="width:220px" placeholder="Ad block reason" value="${esc(u.ads_block_reason || '')}">
+                            <input id="ADM-ADS-HOURS-${u.id}" type="number" min="0" class="inp bsm" style="width:110px" placeholder="Hours">
+                            <button class="btn bsm" onclick="admBlockAds(${u.id})">${u.ads_blocked ? 'Update Block' : 'Block Ads'}</button>
+                            <button class="bto bsm" onclick="admUnblockAds(${u.id})">Unblock Ads</button>
+                            <button class="bto bsm" onclick="admResetAdSessions(${u.id})">Clear Ad Session</button>
                           </div>
 
                           <div class="stitle" style="margin:15px 0 5px 0">Identity Status</div>
-                          <div style="display:flex;align-items:center;gap:10px">
+                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                             <div style="font-size:0.8rem;color:${u.is_verified ? 'var(--grn)' : 'var(--r2)'}">${u.is_verified ? 'Verified ✅' : 'Unverified ❌'}</div>
                             <button class="btn bsm" onclick="admToggleVerify(${u.id}, ${u.is_verified ? 0 : 1})">${u.is_verified ? 'Revoke Verification' : 'Mark Verified'}</button>
+                          </div>
+                          <div class="stitle" style="margin:15px 0 5px 0">Account Maintenance</div>
+                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                            <button class="bto bsm" onclick="admForceLogout(${u.id})">Force Logout</button>
+                            <button class="bto bsm" onclick="admUnlinkMc(${u.id})">Unlink Minecraft</button>
+                            <button class="bto bsm" onclick="admResetTrials(${u.id})">Reset Trials</button>
+                            <button class="bto bsm" onclick="admResetRanks(${u.id})">Reset Ranks</button>
                           </div>
 
                         </div>
@@ -8083,6 +8107,81 @@
         await API(`/api/admin/users/${uid}/xp`, { method: 'POST', body: { xp } });
         toast('ok', 'User XP updated successfully');
         admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admAdjustXP(uid, delta) {
+      try {
+        const res = await API(`/api/admin/users/${uid}/xp-adjust`, { method: 'POST', body: { delta } });
+        if (I(`ADM-XP-INP-${uid}`)) I(`ADM-XP-INP-${uid}`).value = res.current_xp;
+        toast('ok', `XP ${delta >= 0 ? 'added' : 'removed'} successfully`);
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admResetXP(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/xp`, { method: 'POST', body: { xp: 0 } });
+        toast('ok', 'XP reset to 0');
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admBlockAds(uid) {
+      const reason = V(`ADM-ADS-REASON-${uid}`).trim();
+      const hoursRaw = V(`ADM-ADS-HOURS-${uid}`).trim();
+      try {
+        await API(`/api/admin/users/${uid}/ads-block`, {
+          method: 'POST',
+          body: { blocked: true, reason, hours: hoursRaw ? parseInt(hoursRaw, 10) : null }
+        });
+        toast('ok', 'Ad access blocked');
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admUnblockAds(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/ads-block`, { method: 'POST', body: { blocked: false, reason: '', hours: null } });
+        toast('ok', 'Ad access restored');
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admResetAdSessions(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/ad-sessions/reset`, { method: 'POST' });
+        toast('ok', 'Active ad sessions cleared');
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admForceLogout(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/logout`, { method: 'POST' });
+        toast('ok', 'User logged out');
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admUnlinkMc(uid) {
+      if (!confirm('Unlink this Minecraft account and remove verification?')) return;
+      try {
+        await API(`/api/admin/users/${uid}/unlink`, { method: 'POST' });
+        toast('ok', 'Minecraft account unlinked');
+        admSearchP();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admResetTrials(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/trials/reset`, { method: 'POST' });
+        toast('ok', 'Trial claims reset');
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function admResetRanks(uid) {
+      try {
+        await API(`/api/admin/users/${uid}/rank-reset`, { method: 'POST' });
+        toast('ok', 'User ranks cleared');
       } catch (e) { toast('err', e.message); }
     }
 
