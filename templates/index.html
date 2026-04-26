@@ -7993,14 +7993,11 @@
         el.innerHTML = `
           <div class="adm-table-wrap">
             <table class="adm-table">
-
             <thead>
               <tr><th>User</th><th>Contact</th><th>Role</th><th>Actions</th></tr>
             </thead>
             <tbody>
-              ${users.map(u => {
-          const isStaff = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].includes(u.role);
-          return `
+              ${users.map(u => `
                   <tr class="adm-user-row" onclick="admToggleUser(${u.id})">
                     <td>
                       <div style="font-weight:700">${highlight(u.username, q)}</div>
@@ -8020,56 +8017,69 @@
                       <div style="display:flex;gap:20px">
                         <img src="/api/skin/head/${enc(u.mc_username || u.username)}/64" style="border-radius:8px;background:var(--bg3);padding:10px">
                         <div style="flex:1">
-                          <div class="stitle" style="margin:0">Manage Permissions</div>
-                          <div class="role-grid">
-                            ${['player', 'helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].map(r => `
-                              <button class="role-btn ${u.role === r ? 'ON' : ''}" onclick="admUpdateRole(${u.id}, '${r}')">${r.toUpperCase()}</button>
-                            `).join('')}
-                          </div>
-                          <div class="stitle" style="margin:15px 0 5px 0">Economy & Logs</div>
-                          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-                            <div style="font-size:0.8rem;color:var(--tx2)">Current XP:</div>
-                            <input id="ADM-XP-INP-${u.id}" type="number" class="inp bsm" style="width:120px" value="${u.current_xp || 0}">
-                            <button class="btn bsm" onclick="admUpdateXP(${u.id})">Save XP</button>
-                            <button class="bto bsm" onclick="admAdjustXP(${u.id}, 100)">+100 XP</button>
-                            <button class="bto bsm" onclick="admAdjustXP(${u.id}, -100)">-100 XP</button>
-                            <button class="bto bsm" onclick="admResetXP(${u.id})">Reset XP</button>
-                            <button class="bto bsm" onclick="admViewLogs(${u.id}, '${esc(u.username)}')">View Activity Logs</button>
-                          </div>
-                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-                            <div style="font-size:0.8rem;color:var(--tx2)">Last Seen:</div>
-                            <div style="font-size:0.8rem">${u.last_seen ? fmtD(u.last_seen) : 'Never'}</div>
-                            <div style="font-size:0.8rem;color:var(--tx2)">Ad Access:</div>
-                            <div style="font-size:0.8rem;color:${u.ads_blocked ? 'var(--r2)' : 'var(--grn)'}">${u.ads_blocked ? 'Blocked' : 'Allowed'}</div>
-                            ${u.ads_blocked ? `<div style="font-size:0.75rem;color:var(--tx3)">${esc(u.ads_block_reason || 'No reason set')}${u.ads_blocked_until ? ` until ${fmtD(u.ads_blocked_until)}` : ''}</div>` : ''}
-                          </div>
-                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-                            <input id="ADM-ADS-REASON-${u.id}" class="inp bsm" style="width:220px" placeholder="Ad block reason" value="${esc(u.ads_block_reason || '')}">
-                            <input id="ADM-ADS-HOURS-${u.id}" type="number" min="0" class="inp bsm" style="width:110px" placeholder="Hours">
-                            <button class="btn bsm" onclick="admBlockAds(${u.id})">${u.ads_blocked ? 'Update Block' : 'Block Ads'}</button>
-                            <button class="bto bsm" onclick="admUnblockAds(${u.id})">Unblock Ads</button>
-                            <button class="bto bsm" onclick="admResetAdSessions(${u.id})">Clear Ad Session</button>
+                          <div class="tabs" style="margin:0 0 14px 0">
+                            <button id="ADM-USER-TAB-${u.id}-overview" class="tab ON" onclick="admUserTab(${u.id}, 'overview')">Overview</button>
+                            <button id="ADM-USER-TAB-${u.id}-economy" class="tab" onclick="admUserTab(${u.id}, 'economy')">XP & Ads</button>
+                            <button id="ADM-USER-TAB-${u.id}-account" class="tab" onclick="admUserTab(${u.id}, 'account')">Account</button>
                           </div>
 
-                          <div class="stitle" style="margin:15px 0 5px 0">Identity Status</div>
-                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                            <div style="font-size:0.8rem;color:${u.is_verified ? 'var(--grn)' : 'var(--r2)'}">${u.is_verified ? 'Verified ✅' : 'Unverified ❌'}</div>
-                            <button class="btn bsm" onclick="admToggleVerify(${u.id}, ${u.is_verified ? 0 : 1})">${u.is_verified ? 'Revoke Verification' : 'Mark Verified'}</button>
-                          </div>
-                          <div class="stitle" style="margin:15px 0 5px 0">Account Maintenance</div>
-                          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                            <button class="bto bsm" onclick="admForceLogout(${u.id})">Force Logout</button>
-                            <button class="bto bsm" onclick="admUnlinkMc(${u.id})">Unlink Minecraft</button>
-                            <button class="bto bsm" onclick="admResetTrials(${u.id})">Reset Trials</button>
-                            <button class="bto bsm" onclick="admResetRanks(${u.id})">Reset Ranks</button>
+                          <div id="ADM-USER-PANEL-${u.id}-overview">
+                            <div class="stitle" style="margin:0">Manage Permissions</div>
+                            <div class="role-grid">
+                              ${['player', 'helper', 'mod', 'dev', 'admin', 'owner', 'founder', 'youtube', 'famous'].map(r => `
+                                <button class="role-btn ${u.role === r ? 'ON' : ''}" onclick="admUpdateRole(${u.id}, '${r}')">${r.toUpperCase()}</button>
+                              `).join('')}
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:15px">
+                              <div style="font-size:0.8rem;color:var(--tx2)">Current XP:</div>
+                              <div style="font-size:0.9rem;font-weight:700">${u.current_xp || 0}</div>
+                              <div style="font-size:0.8rem;color:var(--tx2)">Last Seen:</div>
+                              <div style="font-size:0.8rem">${u.last_seen ? fmtD(u.last_seen) : 'Never'}</div>
+                              <div style="font-size:0.8rem;color:var(--tx2)">Ad Access:</div>
+                              <div style="font-size:0.8rem;color:${u.ads_blocked ? 'var(--r2)' : 'var(--grn)'}">${u.ads_blocked ? 'Blocked' : 'Allowed'}</div>
+                            </div>
+                            ${u.ads_blocked ? `<div style="font-size:0.75rem;color:var(--tx3);margin-top:8px">${esc(u.ads_block_reason || 'No reason set')}${u.ads_blocked_until ? ` until ${fmtD(u.ads_blocked_until)}` : ''}</div>` : ''}
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:15px">
+                              <div style="font-size:0.8rem;color:${u.is_verified ? 'var(--grn)' : 'var(--r2)'}">${u.is_verified ? 'Verified' : 'Unverified'}</div>
+                              <button class="btn bsm" onclick="admToggleVerify(${u.id}, ${u.is_verified ? 0 : 1})">${u.is_verified ? 'Revoke Verification' : 'Mark Verified'}</button>
+                              <button class="bto bsm" onclick="admViewLogs(${u.id}, '${esc(u.username)}')">View Activity Logs</button>
+                            </div>
                           </div>
 
+                          <div id="ADM-USER-PANEL-${u.id}-economy" style="display:none">
+                            <div class="stitle" style="margin:0 0 5px 0">XP Controls</div>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                              <div style="font-size:0.8rem;color:var(--tx2)">Current XP:</div>
+                              <input id="ADM-XP-INP-${u.id}" type="number" class="inp bsm" style="width:120px" value="${u.current_xp || 0}">
+                              <button class="btn bsm" onclick="admUpdateXP(${u.id})">Save XP</button>
+                              <button class="bto bsm" onclick="admAdjustXP(${u.id}, 100)">+100 XP</button>
+                              <button class="bto bsm" onclick="admAdjustXP(${u.id}, -100)">-100 XP</button>
+                              <button class="bto bsm" onclick="admResetXP(${u.id})">Reset XP</button>
+                            </div>
+                            <div class="stitle" style="margin:15px 0 5px 0">Ad Moderation</div>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+                              <input id="ADM-ADS-REASON-${u.id}" class="inp bsm" style="width:220px" placeholder="Ad block reason" value="${esc(u.ads_block_reason || '')}">
+                              <input id="ADM-ADS-HOURS-${u.id}" type="number" min="0" class="inp bsm" style="width:110px" placeholder="Hours">
+                              <button class="btn bsm" onclick="admBlockAds(${u.id})">${u.ads_blocked ? 'Update Block' : 'Block Ads'}</button>
+                              <button class="bto bsm" onclick="admUnblockAds(${u.id})">Unblock Ads</button>
+                              <button class="bto bsm" onclick="admResetAdSessions(${u.id})">Clear Ad Session</button>
+                            </div>
+                          </div>
+
+                          <div id="ADM-USER-PANEL-${u.id}-account" style="display:none">
+                            <div class="stitle" style="margin:0 0 5px 0">Account Maintenance</div>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                              <button class="bto bsm" onclick="admForceLogout(${u.id})">Force Logout</button>
+                              <button class="bto bsm" onclick="admUnlinkMc(${u.id})">Unlink Minecraft</button>
+                              <button class="bto bsm" onclick="admResetTrials(${u.id})">Reset Trials</button>
+                              <button class="bto bsm" onclick="admResetRanks(${u.id})">Reset Ranks</button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </td>
                   </tr>
-                `;
-        }).join('')}
+                `).join('')}
             </tbody>
           </table>
         </div>
@@ -8081,7 +8091,19 @@
       const el = I(`ADM-USER-EXTRA-${uid}`);
       const wasOn = el.classList.contains('ON');
       document.querySelectorAll('.adm-user-details').forEach(d => d.classList.remove('ON'));
-      if (!wasOn) el.classList.add('ON');
+      if (!wasOn) {
+        el.classList.add('ON');
+        admUserTab(uid, 'overview');
+      }
+    }
+
+    function admUserTab(uid, tab) {
+      ['overview', 'economy', 'account'].forEach(name => {
+        const panel = I(`ADM-USER-PANEL-${uid}-${name}`);
+        if (panel) panel.style.display = name === tab ? 'block' : 'none';
+        const btn = I(`ADM-USER-TAB-${uid}-${name}`);
+        if (btn) btn.classList.toggle('ON', name === tab);
+      });
     }
 
     async function admUpdateRole(uid, next) {
