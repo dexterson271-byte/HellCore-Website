@@ -1,0 +1,35 @@
+name: BWMystery
+version: 1.0.0
+main: fun.crushmc.bwmystery.BWMystery
+api-version: 1.13
+description: "BedWars1058 addon: mystery boxes, mystery dust, and auto-coin rewards."
+author: CrushMC
+depend:
+  - BedWars1058
+softdepend:
+  - PlaceholderAPI
+
+commands:
+  gmysteryboxes:
+    description: "Manage mystery boxes."
+    usage: "/gmysteryboxes give <player> <amount> [quality] [ex=7h/7d/7m/false]"
+    permission: bwmystery.command.mysteryboxes
+  mysterydust:
+    description: "Manage mystery dust."
+    usage: "/mysterydust add <player> <amount>"
+    permission: bwmystery.command.mysterydust
+  mysterycoins:
+    description: "Manage BedWars mystery-plugin coins."
+    usage: "/mysterycoins add <player> <amount>"
+    permission: bwmystery.command.mysterycoins
+
+permissions:
+  bwmystery.command.mysteryboxes:
+    description: "Allow giving mystery boxes."
+    default: op
+  bwmystery.command.mysterydust:
+    description: "Allow giving mystery dust."
+    default: op
+  bwmystery.command.mysterycoins:
+    description: "Allow giving BedWars coins."
+    default: op

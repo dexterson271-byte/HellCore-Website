@@ -1,0 +1,23 @@
+# =====================================================================
+# BWMystery configuration
+# =====================================================================
+# Coins are granted automatically when BedWars1058 fires its built-in
+# XP rewards. There is no /coins command — coins flow in alongside
+# playtime and kill XP, exactly the same way XP does.
+# Set any value to 0 to disable that source.
+# =====================================================================
+coins:
+  per-minute: 5         # Playtime tick (BW1058 PER_MINUTE)
+  per-teammate: 5       # Per-teammate bonus
+  regular-kill: 10      # Regular kill
+  final-kill: 25        # Final kill
+  bed-destroyed: 30     # Bed destroyed
+  game-win: 100         # Win the game
+
+# Default mystery box quality if /gmysteryboxes give is called without one
+defaults:
+  box-quality: COMMON
+
+# Save player data to disk every N seconds (also saved on plugin disable)
+storage:
+  autosave-seconds: 300
