@@ -666,10 +666,14 @@ def main_static(f):
 def business_info_page():
     business_info = {
         "business_name": os.environ.get("STORE_BUSINESS_NAME", "Hellcore Network"),
-        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "ohShiney"),
+        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "井高 康弘"),
+        "representative_name": os.environ.get("STORE_REPRESENTATIVE_NAME", "井高 康弘"),
+        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "2 Chome-1-2 Takabana, 印西市, 千葉県 270-1354, Japan"),
+        "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "0476-47-3381"),
         "business_email": os.environ.get("STORE_BUSINESS_EMAIL", "support@hellcore.net"),
         "price_note": os.environ.get("STORE_PRICE_NOTE", "Prices are shown on each product page in the store."),
         "payment_methods": os.environ.get("STORE_PAYMENT_METHODS", "Stripe, card payments, and other payment methods shown at checkout."),
+        "payment_timing": os.environ.get("STORE_PAYMENT_TIMING", "Payment is charged at the time an order is placed and accepted."),
         "delivery_time": os.environ.get("STORE_DELIVERY_TIME", "Digital items are usually delivered shortly after successful payment."),
         "returns_policy": os.environ.get("STORE_RETURNS_POLICY", "Because the store sells digital goods, returns and cancellations may not be available after delivery unless required by law."),
         "additional_fees": os.environ.get("STORE_ADDITIONAL_FEES", "Customers are responsible for any internet connection or bank-related fees."),
