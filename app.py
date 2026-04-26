@@ -69,7 +69,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 app = Flask(__name__)
 
 AD_DAILY_LIMIT = 60
-AD_COOLDOWN_SECONDS = 90
+AD_COOLDOWN_SECONDS = 0
 AD_MIN_DURATION_SECONDS = 10
 AD_COMPLETION_WINDOW_SECONDS = 90
 AD_IP_COMPLETION_LIMIT = 60

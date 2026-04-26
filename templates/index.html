@@ -5264,7 +5264,7 @@
           </button>
           
           <div id="XP-TIMER" style="margin-top:15px; font-size:0.85rem; font-weight:700; color:var(--g); display:none">
-            RECHARGING: 1:30
+            READY
           </div>
         </div>
 
@@ -9007,7 +9007,7 @@
       const code = err?.data?.code;
       const map = {
         missing_fingerprint: 'This browser tab could not start a tracked ad session. Refresh and try again.',
-        daily_limit_reached: 'You reached the 20 ads per day limit. Try again after the daily reset.',
+        daily_limit_reached: 'You reached the 60 ads per day limit. Try again after the daily reset.',
         cooldown_active: 'Your cooldown is still active. Wait for the timer to finish and try again.',
         active_tab_conflict: 'Another tab already has an active ad session. Finish that one first.',
         ad_already_active: 'You already have an ad in progress in this tab.',
@@ -9201,7 +9201,7 @@
             <div class="dashboard-metrics">
               <div class="metric-card">
                 <span>Ads Watched Today</span>
-                <strong>${adsWatched}/20</strong>
+                <strong>${adsWatched}/60</strong>
               </div>
               <div class="metric-card">
                 <span>Ads Remaining</span>
@@ -9217,12 +9217,12 @@
             <div class="ad-panel-head">
               <div>
                 <div class="ad-panel-title">Rewarded Ad Queue</div>
-                <div style="color:var(--tx2);font-size:.84rem">${adsWatched}/20 ads watched today</div>
+                <div style="color:var(--tx2);font-size:.84rem">${adsWatched}/60 ads watched today</div>
               </div>
               <div class="ad-chip">${active ? 'IN PROGRESS' : (serverLock ? 'LOCKED' : (cooldownLeft ? 'COOLDOWN' : 'READY'))}</div>
             </div>
             <div style="font-size:1.7rem;font-family:'Outfit',sans-serif">+10 to +50 XP</div>
-            <div style="color:var(--tx2);line-height:1.6">Server-side checks enforce the daily cap, cooldown, timing window, tab lock, and one-time token validation before XP is awarded.</div>
+            <div style="color:var(--tx2);line-height:1.6">Server-side checks enforce the daily cap, timing window, tab lock, and one-time token validation before XP is awarded.</div>
             <div class="ad-progress"><div id="DASH-AD-PROGRESS" style="width:${active ? `${Math.min(100, ((active.totalSeconds - activeRemaining) / active.totalSeconds) * 100)}%` : '0%'}"></div></div>
             <button class="btn" id="DASH-WATCH-BTN" ${buttonDisabled ? 'disabled' : ''} onclick="watchRewardAd()">${buttonLabel}</button>
             <div class="ad-footnote">${active ? 'Keep this tab active while the ad finishes.' : (serverLock ? 'A previous ad session is still active on the server, so new requests stay blocked until it expires.' : (cooldownLeft ? `Next ad available in ${fmtCountdown(cooldownLeft)}.` : 'When the ad completes, your XP reward lands instantly and is logged server-side.'))}</div>
