@@ -5280,6 +5280,9 @@
           <button id="XP-WATCH-BTN" class="btn watch-btn" onclick="watchAd()">
             <svg class="ic"><use href="#ic-play"/></svg> START AFK SESSION
           </button>
+          <button id="XP-RESUME-BTN" class="bto" style="width:100%;margin-top:10px;display:none" onclick="syncActiveAfkSessionFromProfile(true)">
+            <svg class="ic"><use href="#ic-history"/></svg> RESUME AFK SESSION
+          </button>
           
           <div id="XP-TIMER" style="margin-top:15px; font-size:0.85rem; font-weight:700; color:var(--g); display:none">
             READY
@@ -9039,10 +9042,12 @@
     function updateXpUI() {
       if (!ME) return;
       API('/api/reward-profile').then(d => {
+        const resumeBtn = I('XP-RESUME-BTN');
         I('XP-VAL').textContent = d.current_xp.toLocaleString();
         I('XP-PROGRESS-TEXT').textContent = `${d.daily_xp_earned || 0} / 60 XP`;
         I('XP-BAR-FILL').style.width = `${Math.min(100, ((d.daily_xp_earned || 0) / 60) * 100)}%`;
         XP_STATE = { ...d }; // Sync with server state
+        if (resumeBtn) resumeBtn.style.display = d.active_ad_in_progress ? 'inline-flex' : 'none';
         syncActiveAfkSessionFromProfile(I('pg-store-free')?.classList.contains('ON'));
         
         if (d.next_ad) {
@@ -9082,6 +9087,7 @@
       XP_CD = 0;
       I('XP-WATCH-BTN').disabled = false;
       I('XP-WATCH-BTN').innerHTML = '<svg class="ic"><use href="#ic-play"/></svg> START AFK SESSION';
+      if (I('XP-RESUME-BTN')) I('XP-RESUME-BTN').style.display = 'none';
       I('XP-TIMER').style.display = 'none';
     }
 
@@ -9427,15 +9433,18 @@
     }
 
     function syncActiveAfkSessionFromProfile(openOverlay = false) {
+      const resumeBtn = I('XP-RESUME-BTN');
       if (!XP_STATE.active_ad_in_progress || !XP_STATE.active_session_token) {
         if (ACTIVE_AD_INTERVAL) {
           clearInterval(ACTIVE_AD_INTERVAL);
           ACTIVE_AD_INTERVAL = null;
         }
+        if (resumeBtn) resumeBtn.style.display = 'none';
         if (!ACTIVE_AD_SESSION) return;
         ACTIVE_AD_SESSION = null;
         return;
       }
+      if (resumeBtn) resumeBtn.style.display = 'inline-flex';
       const expiresAt = XP_STATE.active_session_expires_at ? new Date(XP_STATE.active_session_expires_at).getTime() : 0;
       const remainingSeconds = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : Math.max(0, Number(XP_STATE.session_seconds || 300));
       ACTIVE_AD_SESSION = {
@@ -9652,6 +9661,7 @@
           remainingSeconds: totalSeconds,
           xpReward: Number(res.xp_reward || XP_STATE.xp_per_session || 5),
         };
+        if (I('XP-RESUME-BTN')) I('XP-RESUME-BTN').style.display = 'inline-flex';
 
         if (ACTIVE_AD_INTERVAL) clearInterval(ACTIVE_AD_INTERVAL);
         I('AD-CLAIM-BTN').style.display = 'none';
@@ -9708,6 +9718,7 @@
         toast('success', `Earned ${d.xp_earned} XP!`);
         if (ACTIVE_AD_INTERVAL) { clearInterval(ACTIVE_AD_INTERVAL); ACTIVE_AD_INTERVAL = null; }
         ACTIVE_AD_SESSION = null;
+        if (I('XP-RESUME-BTN')) I('XP-RESUME-BTN').style.display = 'none';
         updateXpUI();
         await loadRewardDashboard(d.current_xp - d.xp_earned);
       } catch (e) {
