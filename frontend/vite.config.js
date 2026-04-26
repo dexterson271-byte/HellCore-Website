@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
     host: "0.0.0.0",
-    allowedHosts: [".railway.app"]
+    allowedHosts: [".railway.app", "mcfleet.dev", ".mcfleet.dev"]
   }
 });
