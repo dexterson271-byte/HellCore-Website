@@ -138,7 +138,7 @@ public class HellcoreSync {
             
             try (Connection conn = dataSource.getConnection()) {
                 logger.info("✓ Successfully connected to MySQL database!");
-                try (PreparedStatement ps1 = conn.prepareStatement("CREATE TABLE IF NOT EXISTS hc_command_queue (id INT AUTO_INCREMENT PRIMARY KEY, command VARCHAR(255) NOT NULL, status VARCHAR(20) DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+                try (PreparedStatement ps1 = conn.prepareStatement("CREATE TABLE IF NOT EXISTS hc_command_queue (id INT AUTO_INCREMENT PRIMARY KEY, command VARCHAR(255) NOT NULL, target VARCHAR(20) DEFAULT 'proxy', status VARCHAR(20) DEFAULT 'pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
                      PreparedStatement ps2 = conn.prepareStatement("CREATE TABLE IF NOT EXISTS hc_server_metrics (" +
                              "server_name VARCHAR(50) PRIMARY KEY, " +
                              "online_players INT DEFAULT 0, " +
@@ -147,6 +147,9 @@ public class HellcoreSync {
                              "last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
                      PreparedStatement ps3 = conn.prepareStatement("CREATE TABLE IF NOT EXISTS hc_player_history (id INT AUTO_INCREMENT PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, total_players INT DEFAULT 0)")) {
                     ps1.executeUpdate();
+                    try (PreparedStatement ps4 = conn.prepareStatement("ALTER TABLE hc_command_queue ADD COLUMN target VARCHAR(20) DEFAULT 'proxy'")) {
+                        ps4.executeUpdate();
+                    } catch (Exception ignored) {}
                     ps2.executeUpdate();
                     ps3.executeUpdate();
                     logger.info("✓ Database schema verified & metrics synchronized.");
@@ -197,7 +200,7 @@ public class HellcoreSync {
     private void pollCommandQueue() {
         if (dataSource == null || dataSource.isClosed()) return;
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement select = conn.prepareStatement("SELECT id, command FROM hc_command_queue WHERE status = 'pending' LIMIT 10")) {
+             PreparedStatement select = conn.prepareStatement("SELECT id, command FROM hc_command_queue WHERE status = 'pending' AND (target = 'proxy' OR target IS NULL OR target = '') LIMIT 10")) {
             
             ResultSet rs = select.executeQuery();
             while (rs.next()) {

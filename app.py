@@ -917,6 +917,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_ad_watches(
 f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
   id INTEGER PRIMARY KEY {AI},
   command VARCHAR(255) NOT NULL,
+  target VARCHAR(20) DEFAULT 'proxy',
   status VARCHAR(20) DEFAULT 'pending',
   created_at {DT})""",
 
@@ -1061,7 +1062,8 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         "ALTER TABLE hc_store_orders ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending'",
         "ALTER TABLE hc_store_orders ADD COLUMN source_app VARCHAR(32) DEFAULT 'main'",
         "ALTER TABLE hc_store_orders ADD COLUMN details_json TEXT",
-        "ALTER TABLE hc_store_orders ADD COLUMN rank_snapshot TEXT"
+        "ALTER TABLE hc_store_orders ADD COLUMN rank_snapshot TEXT",
+        "ALTER TABLE hc_command_queue ADD COLUMN target VARCHAR(20) DEFAULT 'proxy'"
     ]:
         try:
             c.execute(sql)
@@ -2422,7 +2424,7 @@ def ticket_rank_grant(tid):
     c.execute(f"SELECT * FROM hc_tickets WHERE id={ph()}", (tid,))
     t = to_dict(c.fetchone())
     if not t: return jsonify({"error":"Ticket not found"}), 404
-    c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+    c.execute(f"INSERT INTO hc_command_queue(command,target) VALUES({phs(2)})", (cmd, "proxy"))
     add_ticket_activity(c, tid, u["id"], "rank_grant", f"{mode}:{username}:{rank}:{duration}")
     c.execute(f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,is_internal,message_type) VALUES({phs(5)})",
               (tid, u["id"], f"Rank grant queued for {username} -> {rank} ({mode}{' '+duration if mode=='temp_add' else ''})", 1, "system"))
@@ -3270,7 +3272,7 @@ def admin_command_queue():
     start_time = time.time()
     db = get_db(); c = db_cursor(db)
     try:
-        c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+        c.execute(f"INSERT INTO hc_command_queue(command,target) VALUES({phs(2)})", (cmd, "proxy"))
         db.commit()
         duration = round((time.time() - start_time) * 1000, 2)
         log_audit(request.cu["id"], "command_exec", None, f"Queued: {cmd}", "success", duration)
@@ -3812,7 +3814,7 @@ def ads_watch():
 
     if reward["vip_hours"] > 0 and u["mc_username"]:
         cmd = f"lpv user {u['mc_username']} parent addtemp vip {reward['vip_hours']}h"
-        c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+        c.execute(f"INSERT INTO hc_command_queue(command,target) VALUES({phs(2)})", (cmd, "proxy"))
 
     db.commit()
     return jsonify({"ok": True, "ads_today": ads_today, "ad_streak": ad_streak, "reward": reward})
@@ -4199,7 +4201,7 @@ def claim_trial(tid):
               
     # 5. Push command to proxy (Direct Command Engine)
     cmd = f"lpv user {mc_username} parent addtemp {trial['rank_name']} {trial['duration_days']}d"
-    c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+    c.execute(f"INSERT INTO hc_command_queue(command,target) VALUES({phs(2)})", (cmd, "proxy"))
               
     # 6. Record claim
     c.execute(f"INSERT INTO hc_user_trials (user_id, trial_id, claimed_at) VALUES ({ph()}, {ph()}, {ph()})",
