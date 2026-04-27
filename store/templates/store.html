@@ -1591,7 +1591,6 @@
         <aside class="store-sidebar">
           <h3>Categories</h3>
           <button class="cat-btn active" onclick="switchCategory('rank')">🌟 Ranks</button>
-          <button class="cat-btn" onclick="switchCategory('mystery_box')">🎁 Mystery Boxes</button>
           <button class="cat-btn" onclick="switchCategory('coins')">🪙 Coins</button>
           <button class="cat-btn" onclick="switchCategory('mystery_dust')">✨ Mystery Dust</button>
           <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--bd)">
@@ -1616,12 +1615,6 @@
             <div class="stitle">🌟 Server Ranks</div>
             <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
             <div class="g3" id="RANKS-GRID"></div>
-          </div>
-
-          <div id="CAT-mystery_box" class="cat-section">
-            <div class="stitle">🎁 Mystery Boxes</div>
-            <p class="ssub">Unlock epic cosmetics, gadgets, and pets.</p>
-            <div class="g3" id="MYSTERY-BOXES-GRID"></div>
           </div>
 
           <div id="CAT-coins" class="cat-section">
@@ -2194,9 +2187,6 @@
 
       const boosters = PRODUCTS.filter(p => p.category === 'booster').sort((a, b) => a.sort_order - b.sort_order);
       if(I('BOOSTERS-GRID')) I('BOOSTERS-GRID').innerHTML = boosters.map(r => renderProductCard(r)).join('');
-
-      const mystery_boxes = PRODUCTS.filter(p => p.category === 'mystery_box').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('MYSTERY-BOXES-GRID')) I('MYSTERY-BOXES-GRID').innerHTML = mystery_boxes.map(r => renderProductCard(r)).join('');
 
       const coins = PRODUCTS.filter(p => p.category === 'coins').sort((a, b) => a.sort_order - b.sort_order);
       if(I('COINS-GRID')) I('COINS-GRID').innerHTML = coins.map(r => renderProductCard(r)).join('');

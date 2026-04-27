@@ -68,7 +68,6 @@ public final class StoreQueueBridge {
         props.setProperty("tcpKeepAlive", "true");
         props.setProperty("connectTimeout", "5000");
         props.setProperty("socketTimeout", "10000");
-        plugin.getLogger().info("Opening store queue DB connection via " + driver + " to " + jdbcUrl);
         return DriverManager.getConnection(jdbcUrl, props);
     }
 

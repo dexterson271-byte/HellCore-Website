@@ -676,11 +676,6 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
             cmd = f"lpv user {username} parent set {rank_name}"
             event_action = "rank_fulfillment_queued"
             event_label = "Rank fulfillment queued"
-        elif category == "mystery_box":
-            amount, quality = infer_product_grant(product, item)
-            cmd = f"bwmystery:gmysteryboxes give {username} {amount} {quality or 'COMMON'} ex=false"
-            event_action = "mystery_box_fulfillment_queued"
-            event_label = "Mystery box fulfillment queued"
         elif category == "mystery_dust":
             amount, _ = infer_product_grant(product, item)
             cmd = f"bwmystery:mysterydust add {username} {amount}"
@@ -688,9 +683,9 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
             event_label = "Mystery dust fulfillment queued"
         elif category == "coins":
             amount, _ = infer_product_grant(product, item)
-            cmd = f"bwmystery:mysterycoins add {username} {amount}"
+            cmd = f"eco give {username} {amount}"
             event_action = "mystery_coin_fulfillment_queued"
-            event_label = "Mystery coin fulfillment queued"
+            event_label = "Coin fulfillment queued"
         else:
             continue
 
