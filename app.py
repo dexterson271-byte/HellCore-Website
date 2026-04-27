@@ -66,11 +66,11 @@ AIVEN_DATABASE = os.environ.get("AIVEN_DATABASE", "")
 
 # ── RAILWAY MYSQL (cloud) ─────────────────────────────
 USE_MYSQL_RAILWAY = os.environ.get("USE_MYSQL_RAILWAY", "True").lower() == "true"
-RAILWAY_HOST     = os.environ.get("MYSQL_HOST", "")
-RAILWAY_PORT     = int(os.environ.get("MYSQL_PORT", 3306))
-RAILWAY_USER     = os.environ.get("MYSQL_USER", "root")
-RAILWAY_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
-RAILWAY_DATABASE = os.environ.get("MYSQL_DATABASE", "railway")
+RAILWAY_HOST     = os.environ.get("MYSQL_HOST") or os.environ.get("MYSQLHOST") or ""
+RAILWAY_PORT     = int(os.environ.get("MYSQL_PORT") or os.environ.get("MYSQLPORT") or 3306)
+RAILWAY_USER     = os.environ.get("MYSQL_USER") or os.environ.get("MYSQLUSER") or "root"
+RAILWAY_PASSWORD = os.environ.get("MYSQL_PASSWORD") or os.environ.get("MYSQLPASSWORD") or ""
+RAILWAY_DATABASE = os.environ.get("MYSQL_DATABASE") or os.environ.get("MYSQLDATABASE") or "railway"
 
 SQLITE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'hellcore.db')
 _DB_MODE = "sqlite"
