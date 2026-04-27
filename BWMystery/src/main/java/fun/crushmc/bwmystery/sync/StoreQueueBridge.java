@@ -1,13 +1,18 @@
 package fun.crushmc.bwmystery.sync;
 
 import fun.crushmc.bwmystery.BWMystery;
+import fun.crushmc.bwmystery.data.MysteryBox;
+import fun.crushmc.bwmystery.data.PlayerProfile;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * Polls the shared store command queue for Bukkit-targeted rewards and executes
@@ -120,7 +125,10 @@ public final class StoreQueueBridge {
     private void execute(int id, String command) {
         boolean success = false;
         try {
-            success = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+            success = executeInternally(command);
+            if (!success) {
+                success = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+            }
             plugin.getLogger().info("Executed store reward [" + id + "]: " + command + " => " + success);
         } catch (Exception e) {
             plugin.getLogger().warning("Store reward execution failed [" + id + "]: " + e.getMessage());
@@ -139,5 +147,98 @@ public final class StoreQueueBridge {
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to finalize queue command [" + id + "]: " + e.getClass().getName() + ": " + e.getMessage());
         }
+    }
+
+    private boolean executeInternally(String rawCommand) {
+        String command = String.valueOf(rawCommand).trim();
+        if (command.isEmpty()) return false;
+
+        String[] parts = command.split("\\s+");
+        if (parts.length < 1) return false;
+
+        String root = parts[0].toLowerCase();
+        if ("bwmystery:gmysteryboxes".equals(root)) {
+            return handleMysteryBoxes(parts);
+        }
+        if ("bwmystery:mysterydust".equals(root)) {
+            return handleMysteryDust(parts);
+        }
+        if ("bwmystery:mysterycoins".equals(root)) {
+            return handleMysteryCoins(parts);
+        }
+        return false;
+    }
+
+    private boolean handleMysteryBoxes(String[] parts) {
+        if (parts.length < 4 || !"give".equalsIgnoreCase(parts[1])) return false;
+        UUID targetUuid = resolvePlayerUuid(parts[2]);
+        if (targetUuid == null) return false;
+        int amount;
+        try {
+            amount = Integer.parseInt(parts[3]);
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+        if (amount <= 0) return false;
+
+        String quality = parts.length >= 5 ? parts[4] : plugin.getConfig().getString("defaults.box-quality", "COMMON");
+        long expiresAt = 0L;
+        for (int i = 5; i < parts.length; i++) {
+            String token = parts[i];
+            if (token.toLowerCase().startsWith("ex=") && !"ex=false".equalsIgnoreCase(token)) {
+                expiresAt = 0L;
+            }
+        }
+
+        PlayerProfile profile = plugin.getDataStore().get(targetUuid);
+        for (int i = 0; i < amount; i++) {
+            profile.addBox(new MysteryBox(UUID.randomUUID(), quality, expiresAt));
+        }
+        plugin.getDataStore().markDirty();
+        Player online = Bukkit.getPlayer(targetUuid);
+        if (online != null) {
+            online.sendMessage("You received " + amount + " " + quality.toUpperCase() + " mystery box(es).");
+        }
+        return true;
+    }
+
+    private boolean handleMysteryDust(String[] parts) {
+        if (parts.length < 4 || !"add".equalsIgnoreCase(parts[1])) return false;
+        UUID targetUuid = resolvePlayerUuid(parts[2]);
+        if (targetUuid == null) return false;
+        long amount;
+        try {
+            amount = Long.parseLong(parts[3]);
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+        PlayerProfile profile = plugin.getDataStore().get(targetUuid);
+        profile.addDust(amount);
+        plugin.getDataStore().markDirty();
+        return true;
+    }
+
+    private boolean handleMysteryCoins(String[] parts) {
+        if (parts.length < 4 || !"add".equalsIgnoreCase(parts[1])) return false;
+        UUID targetUuid = resolvePlayerUuid(parts[2]);
+        if (targetUuid == null) return false;
+        long amount;
+        try {
+            amount = Long.parseLong(parts[3]);
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+        PlayerProfile profile = plugin.getDataStore().get(targetUuid);
+        profile.addCoins(amount);
+        plugin.getDataStore().markDirty();
+        return true;
+    }
+
+    private UUID resolvePlayerUuid(String name) {
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) return online.getUniqueId();
+        @SuppressWarnings("deprecation")
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+        return offline != null ? offline.getUniqueId() : null;
     }
 }
