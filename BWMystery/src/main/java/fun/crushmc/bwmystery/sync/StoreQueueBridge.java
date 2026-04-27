@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Properties;
 
 /**
  * Polls the shared store command queue for Bukkit-targeted rewards and executes
@@ -18,6 +19,9 @@ public final class StoreQueueBridge {
     private final BWMystery plugin;
     private final boolean enabled;
     private final String jdbcUrl;
+    private final String host;
+    private final int port;
+    private final String database;
     private final String user;
     private final String password;
 
@@ -25,13 +29,12 @@ public final class StoreQueueBridge {
         this.plugin = plugin;
         this.enabled = plugin.getConfig().getBoolean("queue.enabled", true);
 
-        String host = plugin.getConfig().getString("queue.mysql.host", "127.0.0.1");
-        int port = plugin.getConfig().getInt("queue.mysql.port", 3306);
-        String database = plugin.getConfig().getString("queue.mysql.database", "railway");
+        this.host = plugin.getConfig().getString("queue.mysql.host", "127.0.0.1");
+        this.port = plugin.getConfig().getInt("queue.mysql.port", 3306);
+        this.database = plugin.getConfig().getString("queue.mysql.database", "railway");
         this.user = plugin.getConfig().getString("queue.mysql.user", "root");
         this.password = plugin.getConfig().getString("queue.mysql.password", "");
-        this.jdbcUrl = "jdbc:mysql://" + host + ":" + port + "/" + database
-                + "?useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true";
+        this.jdbcUrl = "jdbc:mysql://" + this.host + ":" + this.port + "/" + this.database;
     }
 
     public void start() {
@@ -42,11 +45,26 @@ public final class StoreQueueBridge {
 
         long period = Math.max(2L, plugin.getConfig().getLong("queue.poll-seconds", 5L)) * 20L;
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::poll, 20L * 5L, period);
-        plugin.getLogger().info("Store queue bridge enabled.");
+        plugin.getLogger().info("Store queue bridge enabled. Target DB: " + host + ":" + port + "/" + database);
     }
 
     private Connection getConnection() throws Exception {
-        return DriverManager.getConnection(jdbcUrl, user, password);
+        String driver = "com.mysql.cj.jdbc.Driver";
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException first) {
+            driver = "com.mysql.jdbc.Driver";
+            Class.forName(driver);
+        }
+        Properties props = new Properties();
+        props.setProperty("user", user);
+        props.setProperty("password", password);
+        props.setProperty("useSSL", "false");
+        props.setProperty("tcpKeepAlive", "true");
+        props.setProperty("connectTimeout", "5000");
+        props.setProperty("socketTimeout", "10000");
+        plugin.getLogger().info("Opening store queue DB connection via " + driver + " to " + jdbcUrl);
+        return DriverManager.getConnection(jdbcUrl, props);
     }
 
     private void ensureSchema(Connection conn) {
@@ -82,7 +100,7 @@ public final class StoreQueueBridge {
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("Store queue poll failed: " + e.getMessage());
+            plugin.getLogger().warning("Store queue poll failed: " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
@@ -94,7 +112,7 @@ public final class StoreQueueBridge {
             update.setInt(1, id);
             return update.executeUpdate() == 1;
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to claim queue command [" + id + "]: " + e.getMessage());
+            plugin.getLogger().warning("Failed to claim queue command [" + id + "]: " + e.getClass().getName() + ": " + e.getMessage());
             return false;
         }
     }
@@ -119,7 +137,7 @@ public final class StoreQueueBridge {
             update.setInt(2, id);
             update.executeUpdate();
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to finalize queue command [" + id + "]: " + e.getMessage());
+            plugin.getLogger().warning("Failed to finalize queue command [" + id + "]: " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 }
