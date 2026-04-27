@@ -661,17 +661,17 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
             event_label = "Rank fulfillment queued"
         elif category == "mystery_box":
             amount, quality = infer_product_grant(product, item)
-            cmd = f"gmysteryboxes give {username} {amount} {quality or 'COMMON'} ex=false"
+            cmd = f"bwmystery:gmysteryboxes give {username} {amount} {quality or 'COMMON'} ex=false"
             event_action = "mystery_box_fulfillment_queued"
             event_label = "Mystery box fulfillment queued"
         elif category == "mystery_dust":
             amount, _ = infer_product_grant(product, item)
-            cmd = f"mysterydust add {username} {amount}"
+            cmd = f"bwmystery:mysterydust add {username} {amount}"
             event_action = "mystery_dust_fulfillment_queued"
             event_label = "Mystery dust fulfillment queued"
         elif category == "coins":
             amount, _ = infer_product_grant(product, item)
-            cmd = f"mysterycoins add {username} {amount}"
+            cmd = f"bwmystery:mysterycoins add {username} {amount}"
             event_action = "mystery_coin_fulfillment_queued"
             event_label = "Mystery coin fulfillment queued"
         else:
