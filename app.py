@@ -291,6 +291,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_store_orders(
 f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
   id INTEGER PRIMARY KEY {AI},
   command VARCHAR(255) NOT NULL,
+  target VARCHAR(20) DEFAULT 'proxy',
   status VARCHAR(20) DEFAULT 'pending',
   created_at {DT})""",
     ]
@@ -323,6 +324,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
         "ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''",
         "ALTER TABLE hc_store_products ADD COLUMN xp_price INTEGER DEFAULT 0",
         "ALTER TABLE hc_users ADD COLUMN current_xp INTEGER DEFAULT 0",
+        "ALTER TABLE hc_command_queue ADD COLUMN target VARCHAR(20) DEFAULT 'proxy'",
     ]:
         try: c.execute(sql)
         except: pass
@@ -675,7 +677,8 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
         else:
             continue
 
-        c.execute(f"INSERT INTO hc_command_queue(command) VALUES({ph()})", (cmd,))
+        target = "proxy" if category == "rank" else "bukkit"
+        c.execute(f"INSERT INTO hc_command_queue(command,target) VALUES({phs(2)})", (cmd, target))
         queued_commands.append(cmd)
 
         if ticket_id:
