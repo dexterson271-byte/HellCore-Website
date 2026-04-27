@@ -1761,6 +1761,23 @@
       text-align: center;
     }
 
+    .account-modal {
+      max-width: 980px;
+      width: min(980px, calc(100vw - 32px));
+      padding: 22px;
+      background: #101014;
+    }
+
+    .account-modal h2 {
+      text-align: left;
+      margin-bottom: 14px;
+    }
+
+    .xp-dashboard-modal {
+      display: grid;
+      margin-bottom: 0;
+    }
+
     .fg {
       margin-bottom: 16px;
     }
@@ -2420,59 +2437,6 @@
               <button class="bto bsm" onclick="switchCategory('mystery_box')">Boxes</button>
             </div>
           </div>
-          <div class="xp-dashboard" id="XP-DASHBOARD">
-            <div class="xp-panel">
-              <div class="xp-kicker">XP Dashboard</div>
-              <h2 id="XP-DASH-NAME">Guest</h2>
-              <p class="xp-copy">Earn passive XP by keeping the free XP page open. Each AFK session lasts 5 minutes, pays 5 XP, and caps at 60 XP per day.</p>
-              <div class="xp-rank-chip" id="XP-RANK-CHIP">Unranked</div>
-              <div class="xp-metrics">
-                <div>
-                  <div class="label">Current XP</div>
-                  <div class="xp-total" id="XP-TOTAL-VALUE">0 XP</div>
-                </div>
-                <div class="xp-next">
-                  <span class="value" id="XP-NEXT-LABEL">Bronze at 100 XP</span>
-                  <span class="sub" id="XP-NEXT-REMAINING">100 XP to go</span>
-                </div>
-              </div>
-              <div class="xp-progress-meta">
-                <span id="XP-PROGRESS-LEFT">No rank owned yet</span>
-                <span id="XP-PROGRESS-RIGHT">0 XP to go</span>
-              </div>
-              <div class="xp-progress">
-                <div class="xp-progress-fill" id="XP-PROGRESS-FILL"></div>
-              </div>
-              <div class="xp-stat-grid">
-                <div class="xp-stat-card">
-                  <div class="label">Sessions Today</div>
-                  <div class="value" id="XP-SESSION-COUNT">0/12</div>
-                </div>
-                <div class="xp-stat-card">
-                  <div class="label">Daily XP</div>
-                  <div class="value" id="XP-DAILY-CAP">0/60</div>
-                </div>
-                <div class="xp-stat-card">
-                  <div class="label">Session Length</div>
-                  <div class="value">5 min</div>
-                </div>
-              </div>
-            </div>
-            <div class="xp-session-card">
-              <div class="xp-session-top">
-                <div>
-                  <h3>AFK XP Session</h3>
-                  <p id="XP-SESSION-LEFT">60 XP left before daily reset</p>
-                </div>
-                <div class="xp-ready-badge">Ready</div>
-              </div>
-              <div class="xp-session-rate">+5 XP every 5 minutes</div>
-              <div class="xp-session-copy">Start a tracked AFK session, keep the page open, and claim the XP once the tracker completes. The daily cap is enforced server-side.</div>
-              <div class="xp-session-track"></div>
-              <button class="btn" style="width:100%" onclick="window.location.href=`${MAIN_SITE}/store/free`">Start AFK Session</button>
-              <div class="xp-session-note">When the 5-minute tracker completes, your XP reward is claimed and logged on the main site.</div>
-            </div>
-          </div>
           <div class="store-profile" id="STORE-PROFILE">
             <div class="store-profile-grid">
               <div class="store-profile-stat">
@@ -2660,6 +2624,67 @@
       <button class="btn" style="width:100%; margin-top:8px" onclick="doLogin()">Login</button>
       <p style="color:var(--tx3); text-align:center; margin-top:16px; font-size:0.82rem">Don't have an account? <a
           href="https://hellcore.net" style="color:var(--g)">Register on main site</a></p>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="M-ACCOUNT">
+    <div class="modal account-modal">
+      <button class="modal-close" onclick="closeModal('M-ACCOUNT')">✕</button>
+      <h2>Account</h2>
+      <div class="xp-dashboard xp-dashboard-modal" id="XP-DASHBOARD">
+        <div class="xp-panel">
+          <div class="xp-kicker">XP Dashboard</div>
+          <h2 id="XP-DASH-NAME">Guest</h2>
+          <p class="xp-copy">Earn passive XP by keeping the free XP page open. Each AFK session lasts 5 minutes, pays 5 XP, and caps at 60 XP per day.</p>
+          <div class="xp-rank-chip" id="XP-RANK-CHIP">Unranked</div>
+          <div class="xp-metrics">
+            <div>
+              <div class="label">Current XP</div>
+              <div class="xp-total" id="XP-TOTAL-VALUE">0 XP</div>
+            </div>
+            <div class="xp-next">
+              <span class="value" id="XP-NEXT-LABEL">Bronze at 100 XP</span>
+              <span class="sub" id="XP-NEXT-REMAINING">100 XP to go</span>
+            </div>
+          </div>
+          <div class="xp-progress-meta">
+            <span id="XP-PROGRESS-LEFT">No rank owned yet</span>
+            <span id="XP-PROGRESS-RIGHT">0 XP to go</span>
+          </div>
+          <div class="xp-progress">
+            <div class="xp-progress-fill" id="XP-PROGRESS-FILL"></div>
+          </div>
+          <div class="xp-stat-grid">
+            <div class="xp-stat-card">
+              <div class="label">Sessions Today</div>
+              <div class="value" id="XP-SESSION-COUNT">0/12</div>
+            </div>
+            <div class="xp-stat-card">
+              <div class="label">Daily XP</div>
+              <div class="value" id="XP-DAILY-CAP">0/60</div>
+            </div>
+            <div class="xp-stat-card">
+              <div class="label">Session Length</div>
+              <div class="value">5 min</div>
+            </div>
+          </div>
+        </div>
+        <div class="xp-session-card">
+          <div class="xp-session-top">
+            <div>
+              <h3>AFK XP Session</h3>
+              <p id="XP-SESSION-LEFT">60 XP left before daily reset</p>
+            </div>
+            <div class="xp-ready-badge">Ready</div>
+          </div>
+          <div class="xp-session-rate">+5 XP every 5 minutes</div>
+          <div class="xp-session-copy">Start a tracked AFK session, keep the page open, and claim the XP once the tracker completes. The daily cap is enforced server-side.</div>
+          <div class="xp-session-track"></div>
+          <button class="btn" style="width:100%" onclick="window.location.href=`${MAIN_SITE}/store/free`">Start AFK Session</button>
+          <button class="bto" style="width:100%;margin-top:10px" onclick="doLogout()">Logout</button>
+          <div class="xp-session-note">When the 5-minute tracker completes, your XP reward is claimed and logged on the main site.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2961,17 +2986,21 @@
     // ════════════════════════════════════════════════════════
     async function handleAuth() {
       if (ME) {
-        if (confirm('Log out?')) {
-          try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
-          ME = null;
-          updateAuthUI();
-          updateStoreProfile();
-          toast('ok', 'Logged out');
-          GO('home');
-        }
+        updateXpDashboard();
+        openModal('M-ACCOUNT');
       } else {
         redirectToMainLogin();
       }
+    }
+
+    async function doLogout() {
+      try { await API('/api/auth/logout', { method: 'POST' }); } catch (e) { }
+      closeModal('M-ACCOUNT');
+      ME = null;
+      updateAuthUI();
+      updateStoreProfile();
+      toast('ok', 'Logged out');
+      GO('home');
     }
 
     async function doLogin() {
@@ -3015,16 +3044,13 @@
 
     function updateStoreProfile() {
       const wrap = I('STORE-PROFILE');
-      const xpWrap = I('XP-DASHBOARD');
       if (!wrap) return;
       if (!ME) {
         wrap.style.display = 'none';
-        if (xpWrap) xpWrap.style.display = 'none';
         if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = '0';
         return;
       }
       wrap.style.display = 'block';
-      if (xpWrap) xpWrap.style.display = 'grid';
       I('STORE-USER-VALUE').textContent = ME.mc_username || ME.username || 'Unknown';
       I('STORE-RANK-VALUE').textContent = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : 'None';
       if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = String(CART.length || 0);

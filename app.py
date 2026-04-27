@@ -1697,6 +1697,7 @@ def login():
             "mc_username": row["mc_username"] or "",
             "role": row["role"],
             "is_verified": bool(row.get("is_verified", 0)),
+            "current_xp": int(row.get("current_xp") or 0),
         }
         resp.set_data(json.dumps(enrich_user_with_rank(payload, row["id"], c)))
         resp.mimetype = "application/json"
@@ -1720,13 +1721,16 @@ def logout():
 def auth_me():
     u = request.cu
     db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT current_xp FROM hc_users WHERE id={ph()}", (u["id"],))
+    xp_row = to_dict(c.fetchone()) or {}
     payload = {
         "id": u["id"],
         "username": u["username"],
         "email": u["email"],
         "mc_username": u.get("mc_username") or "",
         "role": u["role"],
-        "is_verified": bool(u.get("is_verified", 0))
+        "is_verified": bool(u.get("is_verified", 0)),
+        "current_xp": int(xp_row.get("current_xp") or u.get("current_xp") or 0),
     }
     payload = enrich_user_with_rank(payload, u["id"], c)
     payload["ranks"] = payload["rank_details"]
