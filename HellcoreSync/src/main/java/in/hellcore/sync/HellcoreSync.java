@@ -45,9 +45,9 @@ public class HellcoreSync {
             return;
         }
 
-        // Poll Command Queue every 5 seconds
+        // Poll Command Queue at a gentler pace for public Railway MySQL
         server.getScheduler().buildTask(this, this::pollCommandQueue)
-                .repeat(5L, TimeUnit.SECONDS)
+                .repeat(10L, TimeUnit.SECONDS)
                 .schedule();
 
         server.getScheduler().buildTask(this, this::pushLiveStats)
@@ -118,20 +118,25 @@ public class HellcoreSync {
             logger.info("Target: " + host + ":" + port + "/" + database);
 
             HikariConfig config = new HikariConfig();
-            // Use SSL=false for Railway to avoid trustStore issues, keep it for others
+            // Use Railway-tolerant network settings for public TCP proxy connections.
             String sslParam = host.contains("rlwy.net") ? "useSSL=false" : "useSSL=true";
             config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?" + sslParam + "&autoReconnect=true&allowPublicKeyRetrieval=true");
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
             config.setUsername(props.getProperty("mysql.user"));
             config.setPassword(props.getProperty("mysql.password"));
-            config.setMaximumPoolSize(5);
+            config.addDataSourceProperty("connectTimeout", "10000");
+            config.addDataSourceProperty("socketTimeout", "30000");
+            config.addDataSourceProperty("tcpKeepAlive", "true");
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            config.setMaximumPoolSize(2);
             config.setMinimumIdle(1);
-            config.setConnectionTimeout(5000);
-            config.setValidationTimeout(2000);
+            config.setConnectionTimeout(15000);
+            config.setValidationTimeout(5000);
             config.setIdleTimeout(60_000);
-            config.setMaxLifetime(600_000);
+            config.setMaxLifetime(300_000);
             config.setKeepaliveTime(120_000);
-            config.setLeakDetectionThreshold(10_000);
             config.setPoolName("hellcoresync-hikari");
 
             dataSource = new HikariDataSource(config);
