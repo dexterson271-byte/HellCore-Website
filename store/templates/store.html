@@ -423,9 +423,78 @@
 
     /* ═══ HERO ═══ */
     .hero {
-      text-align: center;
       padding: 60px 0 40px;
       position: relative;
+    }
+
+    .hero-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-main {
+      text-align: left;
+      padding: 36px;
+      border: 1px solid var(--bd);
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255, 81, 47, 0.12), rgba(221, 36, 118, 0.08)),
+        rgba(24, 24, 27, 0.62);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .hero-panel {
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      background: rgba(24, 24, 27, 0.72);
+      padding: 20px;
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-panel h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 12px;
+    }
+
+    .hero-points {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hero-point {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--tx2);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .hero-point strong {
+      color: #fff;
+      display: block;
+      font-size: 0.92rem;
+      margin-bottom: 2px;
+    }
+
+    .hero-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 6px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--g), var(--g2));
+      box-shadow: 0 0 18px rgba(255, 81, 47, 0.35);
     }
 
     .hero-badge {
@@ -478,16 +547,75 @@
     .hero p {
       color: var(--tx2);
       font-size: 1.15rem;
-      max-width: 600px;
-      margin: 0 auto 32px;
+      max-width: 640px;
+      margin: 0 0 28px;
       line-height: 1.6;
     }
 
     .hero-actions {
       display: flex;
       gap: 12px;
-      justify-content: center;
       flex-wrap: wrap;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .hero-stat {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+    }
+
+    .hero-stat .value {
+      display: block;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .hero-stat .label {
+      color: var(--tx2);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      line-height: 1.4;
+    }
+
+    .home-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .home-strip-card {
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      background: rgba(24, 24, 27, 0.62);
+      padding: 18px;
+      min-height: 112px;
+    }
+
+    .home-strip-card strong {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .home-strip-card p {
+      margin: 0;
+      color: var(--tx2);
+      font-size: 0.84rem;
+      line-height: 1.55;
     }
 
     /* ═══ SECTION TITLES ═══ */
@@ -696,14 +824,20 @@
     }
 
     .store-sidebar {
-      width: 250px;
+      width: 270px;
       flex-shrink: 0;
+      position: sticky;
+      top: 100px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .sidebar-panel {
       background: var(--p1);
       border: 1px solid var(--bd);
       border-radius: 16px;
       padding: 16px;
-      position: sticky;
-      top: 100px;
+      backdrop-filter: blur(12px);
     }
 
     .store-sidebar h3 {
@@ -717,8 +851,12 @@
 
     .cat-btn {
       width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       text-align: left;
-      padding: 12px 16px;
+      padding: 13px 14px;
       background: transparent;
       border: none;
       color: var(--tx);
@@ -738,6 +876,35 @@
     .cat-btn.active {
       background: rgba(255, 81, 47, 0.1);
       color: var(--g);
+    }
+
+    .cat-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .cat-count {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--tx2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .cat-btn.active .cat-count {
+      color: #fff;
+      background: rgba(255, 81, 47, 0.18);
+      border-color: rgba(255, 81, 47, 0.28);
     }
 
     .store-content {
@@ -775,6 +942,94 @@
       color: #fff;
     }
 
+    .store-hero {
+      margin-bottom: 18px;
+      padding: 24px 24px 22px;
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 81, 47, 0.1), rgba(240, 152, 25, 0.06)),
+        rgba(24, 24, 27, 0.66);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .store-hero h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+
+    .store-hero p {
+      color: var(--tx2);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin: 0;
+      max-width: 640px;
+    }
+
+    .store-hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .store-notes {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .store-note {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 14px;
+    }
+
+    .store-note strong {
+      display: block;
+      font-size: 0.88rem;
+      margin-bottom: 4px;
+    }
+
+    .store-note span {
+      color: var(--tx2);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section-head .stitle,
+    .section-head .ssub {
+      text-align: left;
+      margin-bottom: 0;
+    }
+
+    .section-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--bd);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--tx2);
+      font-size: 0.8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .cat-section {
       display: none;
       animation: fadeIn 0.3s ease;
@@ -788,17 +1043,145 @@
     .product-card {
       background: var(--p1);
       border: 1px solid var(--bd);
-      border-radius: 16px;
+      border-radius: 18px;
       padding: 24px;
-      text-align: center;
+      text-align: left;
       transition: all 0.3s;
       display: flex;
       flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
     }
 
     .product-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-6px);
       border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
+    }
+
+    .product-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--cc, var(--g)), transparent);
+      opacity: 0.9;
+    }
+
+    .product-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .product-icon-wrap {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .product-text {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .product-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .product-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.06rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .product-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--tx2);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .product-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0 18px;
+    }
+
+    .product-meta span {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--tx2);
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+
+    .product-bottom {
+      margin-top: auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .product-price-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .product-xp {
+      color: var(--tx2);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .support-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .support-card-copy {
+      color: var(--tx2);
+      font-size: 0.84rem;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .support-card-points {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .support-card-points span {
+      color: var(--tx2);
+      font-size: 0.8rem;
     }
 
     /* ═══ PLUGIN CARDS ═══ */
@@ -930,6 +1313,53 @@
       border-radius: 16px;
       padding: 24px;
       margin-top: 20px;
+    }
+
+    .cart-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .cart-main,
+    .cart-side {
+      min-width: 0;
+    }
+
+    .cart-side {
+      position: sticky;
+      top: 100px;
+    }
+
+    .cart-helper {
+      margin-top: 16px;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--bd);
+      background: rgba(24, 24, 27, 0.58);
+    }
+
+    .cart-helper h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.98rem;
+      margin-bottom: 10px;
+    }
+
+    .cart-helper ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      color: var(--tx2);
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+
+    .cart-helper li::before {
+      content: '•';
+      color: var(--g);
+      font-weight: 800;
+      margin-right: 8px;
     }
 
     .cart-total {
@@ -1384,6 +1814,40 @@
       .pg {
         padding: 80px 16px 40px;
       }
+
+      .hero-shell,
+      .store-hero,
+      .cart-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-main {
+        padding: 28px 22px;
+      }
+
+      .hero-stats,
+      .home-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .store-layout {
+        flex-direction: column;
+      }
+
+      .store-sidebar,
+      .cart-side {
+        width: 100%;
+        position: static;
+      }
+
+      .store-hero-actions {
+        justify-content: flex-start;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
 
     /* ═══ SVG ICONS ═══ */
@@ -1561,22 +2025,90 @@
     <div class="pg ON" id="pg-home">
       <div class="W">
         <div class="hero">
-          <div class="hero-badge"><span class="dot"></span> Official Hellcore Network Store</div>
-          <h1>Power Up Your<br>Game Experience</h1>
-          <p>Unlock exclusive ranks and special perks. Join thousands of players who've upgraded their Hellcore
-            experience.</p>
-          <div class="hero-actions">
-            <button class="btn" onclick="GO('ranks')"><svg class="ic">
-                <use href="#ic-star" />
-              </svg> Browse Ranks</button>
+          <div class="hero-shell">
+            <div class="hero-main">
+              <div class="hero-badge"><span class="dot"></span> Official Hellcore Network Store</div>
+              <h1>Upgrade Your Hellcore Loadout Without the Clutter</h1>
+              <p>Ranks, coins, and reward bundles in one place. The store now keeps pricing, account context, and checkout flow much clearer so players can move fast without guessing.</p>
+              <div class="hero-actions">
+                <button class="btn" onclick="GO('ranks')"><svg class="ic">
+                    <use href="#ic-star" />
+                  </svg> Explore Store</button>
+                <button class="bto" onclick="GO('history')">View History</button>
+              </div>
+              <div class="hero-stats">
+                <div class="hero-stat">
+                  <span class="value">24/7</span>
+                  <span class="label">Store access for every supported reward lane</span>
+                </div>
+                <div class="hero-stat">
+                  <span class="value">XP + Card</span>
+                  <span class="label">Two checkout paths with totals visible throughout</span>
+                </div>
+                <div class="hero-stat">
+                  <span class="value">Fast Delivery</span>
+                  <span class="label">Queue-based reward fulfillment for supported items</span>
+                </div>
+              </div>
+            </div>
+            <div class="hero-side">
+              <div class="hero-panel">
+                <h3>Why this flow feels better</h3>
+                <div class="hero-points">
+                  <div class="hero-point">
+                    <span class="hero-dot"></span>
+                    <div><strong>Cleaner browsing</strong>Players can jump between ranks, coins, boxes, and dust without digging through a flat page.</div>
+                  </div>
+                  <div class="hero-point">
+                    <span class="hero-dot"></span>
+                    <div><strong>Sharper pricing</strong>Cash price and XP price stay together so buying decisions are easier.</div>
+                  </div>
+                  <div class="hero-point">
+                    <span class="hero-dot"></span>
+                    <div><strong>Less backtracking</strong>Account, rank, and cart state stay visible while shopping.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero-panel">
+                <h3>Quick routes</h3>
+                <div class="hero-actions" style="justify-content:flex-start">
+                  <button class="btn bsm" onclick="switchCategory('rank');GO('ranks')">Ranks</button>
+                  <button class="bto bsm" onclick="switchCategory('coins');GO('ranks')">Coins</button>
+                  <button class="bto bsm" onclick="switchCategory('mystery_dust');GO('ranks')">Dust</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <div class="home-strip">
+          <div class="home-strip-card">
+            <strong>Permanent rank upgrades</strong>
+            <p>Featured rank cards focus on long-term value and perks instead of feeling like generic store tiles.</p>
+          </div>
+          <div class="home-strip-card">
+            <strong>Reward bundles</strong>
+            <p>Coins, boxes, and dust now sit in their own lanes, which makes the catalog much easier to scan.</p>
+          </div>
+          <div class="home-strip-card">
+            <strong>Clear totals</strong>
+            <p>Both payment routes stay visible through cart and checkout so players can decide without math in their head.</p>
+          </div>
+          <div class="home-strip-card">
+            <strong>Support nearby</strong>
+            <p>Purchase history and tickets stay inside the store, which cuts down on bouncing between pages.</p>
           </div>
         </div>
 
         <!-- Featured Ranks Preview -->
         <div style="margin-top:60px">
-          <div class="stitle">🔥 Featured Ranks</div>
-          <p class="ssub">Permanent ranks with exclusive perks — prices slashed!</p>
+          <div class="section-head">
+            <div>
+              <div class="stitle">🔥 Featured Ranks</div>
+              <p class="ssub">Permanent upgrades with the strongest value and the fastest path to checkout.</p>
+            </div>
+            <div class="section-pill">Recommended starting point for new buyers</div>
+          </div>
           <div class="g5" id="FEATURED-RANKS"></div>
         </div>
 
@@ -1589,17 +2121,55 @@
       <div class="W store-layout">
         
         <aside class="store-sidebar">
-          <h3>Categories</h3>
-          <button class="cat-btn active" onclick="switchCategory('rank')">🌟 Ranks</button>
-          <button class="cat-btn" onclick="switchCategory('mystery_box')">🎁 Mystery Boxes</button>
-          <button class="cat-btn" onclick="switchCategory('coins')">🪙 Coins</button>
-          <button class="cat-btn" onclick="switchCategory('mystery_dust')">✨ Mystery Dust</button>
-          <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--bd)">
-            <button class="cat-btn" onclick="GO('history')">📜 Purchase History</button>
+          <div class="sidebar-panel">
+            <h3>Categories</h3>
+            <button class="cat-btn active" onclick="switchCategory('rank')">
+              <span class="cat-main">🌟 <span>Ranks</span></span>
+              <span class="cat-count" id="COUNT-rank">0</span>
+            </button>
+            <button class="cat-btn" onclick="switchCategory('mystery_box')">
+              <span class="cat-main">🎁 <span>Mystery Boxes</span></span>
+              <span class="cat-count" id="COUNT-mystery_box">0</span>
+            </button>
+            <button class="cat-btn" onclick="switchCategory('coins')">
+              <span class="cat-main">🪙 <span>Coins</span></span>
+              <span class="cat-count" id="COUNT-coins">0</span>
+            </button>
+            <button class="cat-btn" onclick="switchCategory('mystery_dust')">
+              <span class="cat-main">✨ <span>Mystery Dust</span></span>
+              <span class="cat-count" id="COUNT-mystery_dust">0</span>
+            </button>
+            <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--bd)">
+              <button class="cat-btn" onclick="GO('history')">
+                <span class="cat-main">📜 <span>Purchase History</span></span>
+                <span class="cat-count">→</span>
+              </button>
+            </div>
+          </div>
+          <div class="sidebar-panel">
+            <div class="support-card-title">Need help with a purchase?</div>
+            <div class="support-card-copy">If a reward looks delayed or the wrong account is linked, you can open a ticket from the store and keep moving.</div>
+            <div class="support-card-points">
+              <span>Fast path for missing rewards and account issues</span>
+              <span>Purchase history stays one click away</span>
+              <span>Business info page is available directly from the footer</span>
+            </div>
+            <button class="btn bsm" style="width:100%" onclick="GO('tickets')">Open Support</button>
           </div>
         </aside>
 
         <div class="store-content">
+          <div class="store-hero">
+            <div>
+              <h2>Pick a lane and shop faster</h2>
+              <p>Ranks are for long-term account upgrades. Coins, boxes, and dust are for quick server reward top-ups. This layout keeps those decisions clean.</p>
+            </div>
+            <div class="store-hero-actions">
+              <button class="btn bsm" onclick="switchCategory('rank')">Ranks</button>
+              <button class="bto bsm" onclick="switchCategory('coins')">Coins</button>
+              <button class="bto bsm" onclick="switchCategory('mystery_box')">Boxes</button>
+            </div>
+          </div>
           <div class="store-profile" id="STORE-PROFILE">
             <div class="store-profile-grid">
               <div class="store-profile-stat">
@@ -1610,29 +2180,53 @@
                 <div class="label">Current Rank</div>
                 <div class="value" id="STORE-RANK-VALUE">None</div>
               </div>
+              <div class="store-profile-stat">
+                <div class="label">Cart Items</div>
+                <div class="value" id="STORE-CART-VALUE">0</div>
+              </div>
             </div>
           </div>
           <div id="CAT-rank" class="cat-section active">
-            <div class="stitle">🌟 Server Ranks</div>
-            <p class="ssub">Permanent ranks that work across all gamemodes. One-time purchase, lifetime perks.</p>
+            <div class="section-head">
+              <div>
+                <div class="stitle">🌟 Server Ranks</div>
+                <p class="ssub">Permanent ranks that work across all gamemodes. One purchase, long-term account value.</p>
+              </div>
+              <div class="section-pill">Best for players upgrading their main account</div>
+            </div>
             <div class="g3" id="RANKS-GRID"></div>
           </div>
 
           <div id="CAT-mystery_box" class="cat-section">
-            <div class="stitle">🎁 Mystery Boxes</div>
-            <p class="ssub">Unlock cosmetics and rewards from your server mystery box system.</p>
+            <div class="section-head">
+              <div>
+                <div class="stitle">🎁 Mystery Boxes</div>
+                <p class="ssub">Quick bundle purchases for the live mystery box system on your server.</p>
+              </div>
+              <div class="section-pill">Best for cosmetic and reward openings</div>
+            </div>
             <div class="g3" id="MYSTERY-BOXES-GRID"></div>
           </div>
 
           <div id="CAT-coins" class="cat-section">
-            <div class="stitle">🪙 Coins</div>
-            <p class="ssub">Instantly receive coins to spend in your favorite gamemodes.</p>
+            <div class="section-head">
+              <div>
+                <div class="stitle">🪙 Coins</div>
+                <p class="ssub">Top up your balance fast when you want immediate spend power in game.</p>
+              </div>
+              <div class="section-pill">Best for direct economy purchases</div>
+            </div>
             <div class="g3" id="COINS-GRID"></div>
           </div>
 
           <div id="CAT-mystery_dust" class="cat-section">
-            <div class="stitle">✨ Mystery Dust</div>
-            <p class="ssub">Craft the exact cosmetics you want directly.</p>
+            <div class="section-head">
+              <div>
+                <div class="stitle">✨ Mystery Dust</div>
+                <p class="ssub">Buy dust directly when you already know what you want to craft or unlock.</p>
+              </div>
+              <div class="section-pill">Best for targeted cosmetic crafting</div>
+            </div>
             <div class="g3" id="MYSTERY-DUST-GRID"></div>
           </div>
         </div>
@@ -1644,15 +2238,29 @@
 
     <!-- ═══ CART PAGE ═══ -->
     <div class="pg" id="pg-cart">
-      <div class="W" style="max-width:700px">
+      <div class="W">
         <div class="stitle" style="font-size:2rem; margin-bottom:4px">🛒 Your Cart</div>
-        <p class="ssub">Review your items and proceed to checkout</p>
-        <div id="CART-LIST">
-          <div class="ld">
-            <div class="sp"></div>
+        <p class="ssub">Review your items, compare payment paths, and finish checkout without jumping around the store.</p>
+        <div class="cart-layout">
+          <div class="cart-main">
+            <div id="CART-LIST">
+              <div class="ld">
+                <div class="sp"></div>
+              </div>
+            </div>
+          </div>
+          <div class="cart-side">
+            <div id="CART-SUMMARY"></div>
+            <div class="cart-helper">
+              <h3>Before you checkout</h3>
+              <ul>
+                <li>Make sure your linked Minecraft username is correct for in-game rewards.</li>
+                <li>XP checkout uses your live balance, while card checkout opens the secure payment flow.</li>
+                <li>Support tickets stay available here if a reward looks delayed after purchase.</li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div id="CART-SUMMARY"></div>
       </div>
     </div>
     <!-- ═══ TICKETS PAGE ═══ -->
@@ -2107,11 +2715,13 @@
       if (!wrap) return;
       if (!ME) {
         wrap.style.display = 'none';
+        if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = '0';
         return;
       }
       wrap.style.display = 'block';
       I('STORE-USER-VALUE').textContent = ME.mc_username || ME.username || 'Unknown';
       I('STORE-RANK-VALUE').textContent = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : 'None';
+      if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = String(CART.length || 0);
     }
 
     function getCartXpTotal() {
@@ -2163,22 +2773,51 @@
     }
 
     function renderProductCard(p) {
-      return `<div class="product-card">
-    <span class="rank-icon" style="color:${p.color};font-size:3rem;margin-bottom:16px"><svg class="ic" style="width:3rem;height:3rem"><use href="#${p.icon}"/></svg></span>
-    <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
-    ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
-    <div class="rank-price"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
-    <div style="font-size:0.85rem;color:var(--tx2);font-weight:600;margin-top:-5px;margin-bottom:15px">OR ${p.xp_price.toLocaleString()} XP</div>
-    <p style="color:var(--tx2);font-size:0.9rem;margin-bottom:20px;flex:1">${esc(p.description)}</p>
-    <button class="btn" style="width:100%" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
-      <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
-    </button>
+      const categoryLabel = String(p.category || 'reward').replace(/_/g, ' ');
+      const subLabel = p.subcategory ? esc(String(p.subcategory).replace(/-/g, ' ')) : 'Network';
+      const xpValue = Number.isFinite(Number(p.xp_price)) ? Number(p.xp_price).toLocaleString() : '0';
+      return `<div class="product-card" style="--cc:${p.color}">
+    <div class="product-top">
+      <div class="product-icon-wrap">
+        <svg class="ic" style="width:2rem;height:2rem;color:${p.color}"><use href="#${p.icon}"/></svg>
+      </div>
+      <div class="product-text">
+        <div class="product-title-row">
+          <div class="product-title" style="color:${p.color}">${esc(p.name)}</div>
+          <span class="product-type">${esc(categoryLabel)}</span>
+        </div>
+        <p style="color:var(--tx2);font-size:0.88rem;line-height:1.6">${esc(p.description)}</p>
+      </div>
+    </div>
+    <div class="product-meta">
+      <span>${subLabel}</span>
+      <span>Instant queue delivery</span>
+      <span>Account-linked reward</span>
+    </div>
+    <div class="product-bottom">
+      <div class="product-price-row">
+        <div>
+          ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
+          <div class="rank-price" style="margin:0"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
+        </div>
+        <div class="product-xp">OR ${xpValue} XP</div>
+      </div>
+      <button class="btn" style="width:100%" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
+        <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
+      </button>
+    </div>
   </div>`;
     }
 
     function switchCategory(cat) {
       document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+      const trigger = typeof event !== 'undefined' && event && event.currentTarget ? event.currentTarget : null;
+      if (trigger && trigger.classList.contains('cat-btn')) {
+        trigger.classList.add('active');
+      } else {
+        const fallback = document.querySelector(`.cat-btn[onclick*="switchCategory('${cat}')"]`);
+        if (fallback) fallback.classList.add('active');
+      }
       
       document.querySelectorAll('.cat-section').forEach(sec => sec.classList.remove('active'));
       const activeSec = I('CAT-' + cat);
@@ -2192,9 +2831,6 @@
       const ranks = PRODUCTS.filter(p => p.category === 'rank').sort((a, b) => a.sort_order - b.sort_order);
       if(I('RANKS-GRID')) I('RANKS-GRID').innerHTML = ranks.map(r => renderRankCard(r)).join('');
 
-      const boosters = PRODUCTS.filter(p => p.category === 'booster').sort((a, b) => a.sort_order - b.sort_order);
-      if(I('BOOSTERS-GRID')) I('BOOSTERS-GRID').innerHTML = boosters.map(r => renderProductCard(r)).join('');
-
       const mystery_boxes = PRODUCTS.filter(p => p.category === 'mystery_box').sort((a, b) => a.sort_order - b.sort_order);
       if(I('MYSTERY-BOXES-GRID')) I('MYSTERY-BOXES-GRID').innerHTML = mystery_boxes.map(r => renderProductCard(r)).join('');
 
@@ -2203,6 +2839,11 @@
 
       const mystery_dust = PRODUCTS.filter(p => p.category === 'mystery_dust').sort((a, b) => a.sort_order - b.sort_order);
       if(I('MYSTERY-DUST-GRID')) I('MYSTERY-DUST-GRID').innerHTML = mystery_dust.map(r => renderProductCard(r)).join('');
+
+      if (I('COUNT-rank')) I('COUNT-rank').textContent = String(ranks.length);
+      if (I('COUNT-mystery_box')) I('COUNT-mystery_box').textContent = String(mystery_boxes.length);
+      if (I('COUNT-coins')) I('COUNT-coins').textContent = String(coins.length);
+      if (I('COUNT-mystery_dust')) I('COUNT-mystery_dust').textContent = String(mystery_dust.length);
     }
 
     // ════════════════════════════════════════════════════════
@@ -2249,12 +2890,16 @@
     }
 
     async function updateCartCount() {
-      if (!ME) return;
+      if (!ME) {
+        if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = '0';
+        return;
+      }
       try {
         CART = await API('/api/cart');
         const badge = I('CART-COUNT');
         if (CART.length) { badge.style.display = 'flex'; badge.textContent = CART.length; }
         else { badge.style.display = 'none'; }
+        if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = String(CART.length);
       } catch { }
     }
 
