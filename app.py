@@ -585,13 +585,27 @@ def get_products_for_cart(c, cart_items):
         item_id = str(item.get("item_id") or "").strip()
         if item_id.isdigit():
             product_ids.append(int(item_id))
-    if not product_ids:
-        return {}
-    c.execute(
-        f"SELECT id, name, slug, category, subcategory FROM hc_store_products WHERE id IN ({phs(len(product_ids))})",
-        tuple(product_ids),
-    )
-    return {int(row["id"]): to_dict(row) for row in to_list(c.fetchall())}
+    rows = []
+    if product_ids:
+        c.execute(
+            f"SELECT id, name, slug, category, subcategory FROM hc_store_products WHERE id IN ({phs(len(product_ids))})",
+            tuple(product_ids),
+        )
+        rows = to_list(c.fetchall())
+
+    products = {int(row["id"]): to_dict(row) for row in rows}
+    by_name = {str(row.get("name") or "").strip().lower(): to_dict(row) for row in rows}
+
+    if len(products) < len(cart_items):
+        c.execute("SELECT id, name, slug, category, subcategory FROM hc_store_products WHERE status='active'")
+        all_rows = to_list(c.fetchall())
+        if not by_name:
+            by_name = {str(row.get("name") or "").strip().lower(): to_dict(row) for row in all_rows}
+        else:
+            for row in all_rows:
+                by_name.setdefault(str(row.get("name") or "").strip().lower(), to_dict(row))
+
+    return products, by_name
 
 
 def parse_numeric_prefix(value):
@@ -634,12 +648,15 @@ def infer_product_grant(product, item):
 
 def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
     username = resolve_purchase_username(user)
-    products = get_products_for_cart(c, cart_items)
+    products, products_by_name = get_products_for_cart(c, cart_items)
     queued_commands = []
 
     for item in cart_items:
         item_id = str(item.get("item_id") or "").strip()
         product = products.get(int(item_id)) if item_id.isdigit() else None
+        if not product:
+            item_name = str(item.get("item_name") or item.get("name") or "").strip().lower()
+            product = products_by_name.get(item_name)
         if not product:
             continue
         category = str(product.get("category") or "").strip().lower()
