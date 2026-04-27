@@ -623,6 +623,38 @@ def get_reward_profile(cursor, user_id, now=None):
     }
 
 
+def normalize_rank_command_name(value):
+    text = str(value or "").strip().lower()
+    aliases = {
+        "vip": "vip",
+        "vip+": "vip+",
+        "vip plus": "vip+",
+        "mvp": "mvp",
+        "mvp+": "mvp+",
+        "mvp plus": "mvp+",
+        "mvp++": "mvp++",
+        "mvp plus plus": "mvp++",
+    }
+    return aliases.get(text, text)
+
+
+def canonical_rank_display(value):
+    normalized = normalize_rank_command_name(value)
+    labels = {
+        "vip": "VIP",
+        "vip+": "VIP+",
+        "mvp": "MVP",
+        "mvp+": "MVP+",
+        "mvp++": "MVP++",
+    }
+    return labels.get(normalized, str(value or "").strip())
+
+
+def resolve_purchase_username(user_row):
+    row = user_row or {}
+    return str(row.get("mc_username") or row.get("username") or "").strip()
+
+
 def seed_store_ranks(cursor):
     for rank in STORE_RANK_SEEDS:
         cursor.execute(f"SELECT id FROM hc_xp_ranks WHERE name={ph()}", (rank["name"],))
@@ -2567,15 +2599,19 @@ def inventory():
     return jsonify(rows)
 
 @app.route("/api/gifts/send", methods=["POST"])
-@auth_required
+@admin_required
 def gift_send():
     d = request.get_json(force=True) or {}
     to_nm = str(d.get("to_username","")).strip()
+    item_name = normalize_rank_command_name(d.get("item_name", ""))
+    if item_name not in {"vip", "vip+", "mvp", "mvp+", "mvp++"}:
+        return jsonify({"error":"Unsupported gift rank"}), 400
+    display_name = canonical_rank_display(item_name)
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT id FROM hc_users WHERE username={ph()}", (to_nm,))
     if not c.fetchone(): return jsonify({"error":"Player not found"}), 404
     c.execute(f"INSERT INTO hc_gifts(from_user_id,to_username,item_type,item_name,gamemode) VALUES({phs(5)})",
-              (request.cu["id"], to_nm, d.get("item_type","rank"), d["item_name"], d.get("gamemode","")))
+              (request.cu["id"], to_nm, "rank", display_name, d.get("gamemode","global")))
     db.commit()
     return jsonify({"ok":True})
 
@@ -2598,9 +2634,21 @@ def gift_claim(gid):
               (gid, u["username"]))
     g = to_dict(c.fetchone())
     if not g: return jsonify({"error":"Gift not found"}), 404
+    if str(g.get("item_type") or "rank").lower() != "rank":
+        return jsonify({"error":"Unsupported gift type"}), 400
+    username = resolve_purchase_username(u)
+    if not username:
+        return jsonify({"error":"Link a Minecraft account before accepting this gift."}), 400
+    rank_name = normalize_rank_command_name(g.get("item_name"))
+    display_name = canonical_rank_display(rank_name)
+    gamemode = str(g.get("gamemode") or "global").strip().lower() or "global"
+    c.execute(f"DELETE FROM hc_ranks WHERE user_id={ph()} AND gamemode={ph()}", (u["id"], gamemode))
+    c.execute(f"INSERT INTO hc_ranks(user_id,gamemode,rank_name) VALUES({phs(3)})", (u["id"], gamemode, rank_name))
+    c.execute(f"INSERT INTO hc_command_queue(command,target,status) VALUES({phs(3)})",
+              (f"lpv user {username} parent set {rank_name}", "proxy", "pending"))
     c.execute(f"INSERT INTO hc_inventory(user_id,item_type,item_name,gamemode,gifted_by) VALUES({phs(5)})",
-              (u["id"], g["item_type"], g["item_name"], g["gamemode"], g["from_user_id"]))
-    c.execute(f"UPDATE hc_gifts SET status='claimed' WHERE id={ph()}", (gid,))
+              (u["id"], g["item_type"], display_name, gamemode, g["from_user_id"]))
+    c.execute(f"UPDATE hc_gifts SET status='accepted' WHERE id={ph()}", (gid,))
     db.commit()
     return jsonify({"ok":True})
 

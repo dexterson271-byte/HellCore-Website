@@ -5744,11 +5744,8 @@
               </table>
             </div>
             <div class="p">
-              <div class="stitle">Economy</div>
-              <div id="PR-ECO"></div>
-              <div class="dv"></div>
-              <div class="stitle">My Ranks</div>
-              <div id="PR-RANKS"></div>
+              <div class="stitle">XP Spend History</div>
+              <div id="PR-XP-HISTORY"></div>
             </div>
           </div>
         </div>
@@ -5758,10 +5755,11 @@
           </div>
         </div>
         <div id="PR-GIFTS" style="display:none">
-          <div class="p" style="margin-bottom:12px">
+          <div class="p" id="GIFT-ADMIN-PANEL" style="margin-bottom:12px;display:none">
             <div class="stitle"><svg class="ic">
                 <use href="#ic-gift" />
               </svg> Send a Gift</div>
+            <div style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Only admins can send rank gifts. Players receive the offer here and the rank command runs after they accept it.</div>
             <div class="g2">
               <div class="fg"><label>Recipient Username</label><input id="GFT-TO" class="inp" autocomplete="off"
                   placeholder="Hellcore username"></div>
@@ -5770,8 +5768,10 @@
                   <option>VIP+</option>
                   <option>MVP</option>
                   <option>MVP+</option>
+                  <option>MVP++</option>
                 </select></div>
               <div class="fg"><label>Gamemode</label><select id="GFT-GM" class="inp">
+                  <option value="global">Global</option>
                   <option value="bedwars">Bedwars</option>
                   <option value="lifesteal">Lifesteal</option>
                   <option value="skywars">SkyWars</option>
@@ -5784,7 +5784,7 @@
               </svg> Send Gift</button>
           </div>
           <div class="p">
-            <div class="stitle">Pending Gifts for You</div>
+            <div class="stitle">Gift Offers for You</div>
             <div id="PGIFTS"></div>
           </div>
         </div>
@@ -9845,21 +9845,36 @@
       I('PR-MC').textContent = ME.mc_username || 'Not linked';
       I('PR-UNLINK-BTN').style.display = ME.mc_username ? 'inline-block' : 'none';
       I('PR-ROLE').innerHTML = `<span class="rb rb-${ME.role}">${ME.role.toUpperCase()}</span>`;
+      const giftPanel = I('GIFT-ADMIN-PANEL');
+      if (giftPanel) giftPanel.style.display = ['admin', 'owner', 'founder', 'dev', 'mod', 'helper'].includes((ME.role || '').toLowerCase()) ? '' : 'none';
 
       if (ME.mc_username) I('PR-HEAD').src = `/api/skin/head/${enc(ME.mc_username)}/78`;
-      API(`/api/stats/${enc(ME.username)}`).then(d => {
-        const e = d.economy || {};
-        I('PR-ECO').innerHTML = `<div style="display:flex;gap:18px">
-      <div>💛 <strong>${e.server_gold || 0}</strong> <span style="color:var(--tx2);font-size:.76rem">Gold</span></div>
-      <div>⚪ <strong>${e.server_iron || 0}</strong> <span style="color:var(--tx2);font-size:.76rem">Iron</span></div>
-    </div>`;
-        const rk = I('PR-RANKS');
-        if (Object.keys(d.ranks || {}).length) {
-          rk.innerHTML = Object.entries(d.ranks).map(([m, r]) =>
-            `<div style="margin-bottom:4px">${mIC(m)} ${cap(m)}: <span class="rb rb-${rbcls(r)}">${r.toUpperCase()}</span></div>`
-          ).join('');
-        } else { rk.innerHTML = '<div style="color:var(--tx2);font-size:.8rem">No ranks yet.</div>'; }
-      }).catch(() => { });
+      API('/api/store/orders/history').then(d => {
+        const el = I('PR-XP-HISTORY');
+        const xpOrders = (d || []).filter(o => String(o.payment_method || '').toLowerCase() === 'xp');
+        if (!xpOrders.length) {
+          el.innerHTML = '<div style="color:var(--tx2);font-size:.8rem">No XP purchases yet.</div>';
+          return;
+        }
+        el.innerHTML = xpOrders.slice(0, 8).map(o => {
+          const items = Array.isArray(o.items) ? o.items.map(i => esc(i.name || i.item_name || 'Item')).join(', ') : 'Store purchase';
+          const xpSpent = Array.isArray(o.items) && o.items.length
+            ? o.items.reduce((sum, item) => sum + Number(item.xp_price || 0), 0)
+            : Math.max(0, Math.round(Number(o.total || 0) * 200));
+          return `<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div>
+              <div style="font-weight:700;color:var(--tx)">${items}</div>
+              <div style="font-size:.72rem;color:var(--tx2)">${fmtD(o.created_at)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:800;color:var(--g)">${xpSpent.toLocaleString()} XP</div>
+              <div style="font-size:.72rem;color:var(--tx2)">${String(o.status || 'completed').toUpperCase()}</div>
+            </div>
+          </div>`;
+        }).join('');
+      }).catch(() => {
+        I('PR-XP-HISTORY').innerHTML = '<div style="color:var(--tx2);font-size:.8rem">Could not load XP spend history.</div>';
+      });
     }
 
     async function doUnlink() {
@@ -9888,11 +9903,11 @@
       const el = I('PGIFTS'); if (!el || !ME) return;
       try {
         const d = await API('/api/gifts/pending');
-        if (!d.length) { el.innerHTML = '<div class="empty">No pending gifts.</div>'; return; }
+        if (!d.length) { el.innerHTML = '<div class="empty">No pending gift offers.</div>'; return; }
         el.innerHTML = d.map(g => `<div class="p" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
       <div><div style="font-weight:600"><svg class="ic"><use href="#ic-gift"/></svg>  ${esc(g.item_name)}</div>
         <div style="font-size:.72rem;color:var(--tx2)">From: ${esc(g.from_name)} · ${g.gamemode}</div></div>
-      <button class="btn bgrn bsm" onclick="claimGift(${g.id})">Claim</button>
+      <button class="btn bgrn bsm" onclick="claimGift(${g.id})">Accept</button>
     </div>`).join('');
       } catch (e) { }
     }
@@ -9906,7 +9921,7 @@
       catch (e) { toast('err', e.message); }
     }
     async function claimGift(id) {
-      try { await API(`/api/gifts/${id}/claim`, { method: 'POST' }); toast('ok', 'Gift claimed!'); loadGifts(); loadInv(); }
+      try { await API(`/api/gifts/${id}/claim`, { method: 'POST' }); toast('ok', 'Gift accepted! Rank command queued.'); loadGifts(); loadInv(); }
       catch (e) { toast('err', e.message); }
     }
 
