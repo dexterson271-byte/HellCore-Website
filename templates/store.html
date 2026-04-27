@@ -942,6 +942,254 @@
       color: #fff;
     }
 
+    .xp-dashboard {
+      display: none;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .xp-panel,
+    .xp-session-card {
+      border: 1px solid var(--bd);
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      min-width: 0;
+    }
+
+    .xp-panel {
+      padding: 28px 30px 24px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 159, 67, 0.16), transparent 42%),
+        linear-gradient(135deg, rgba(53, 34, 14, 0.92), rgba(14, 12, 10, 0.96));
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+    }
+
+    .xp-panel::after {
+      content: '';
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 3px;
+      background: linear-gradient(90deg, #ff9f43, #ff7b1f, #f43f5e);
+    }
+
+    .xp-kicker {
+      color: #d6b38a;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 10px;
+    }
+
+    .xp-panel h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 10px;
+      line-height: 1.05;
+    }
+
+    .xp-copy {
+      color: rgba(250, 250, 250, 0.78);
+      font-size: 0.98rem;
+      line-height: 1.55;
+      max-width: 620px;
+      margin-bottom: 18px;
+    }
+
+    .xp-rank-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: #f7dcc0;
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .xp-metrics {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .xp-metrics .label {
+      color: rgba(250, 250, 250, 0.72);
+      font-size: 0.86rem;
+      margin-bottom: 8px;
+    }
+
+    .xp-total {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      line-height: 1;
+      color: #ffefcf;
+      letter-spacing: 0;
+    }
+
+    .xp-next {
+      text-align: right;
+    }
+
+    .xp-next .value {
+      display: block;
+      color: #f7dcc0;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .xp-next .sub {
+      color: rgba(250, 250, 250, 0.58);
+      font-size: 0.8rem;
+    }
+
+    .xp-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: rgba(250, 250, 250, 0.62);
+      font-size: 0.82rem;
+      margin-bottom: 10px;
+    }
+
+    .xp-progress {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .xp-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ffb038, #ff8d1f, #ff5e62);
+      transition: width 0.3s ease;
+    }
+
+    .xp-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .xp-stat-card {
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .xp-stat-card .label {
+      color: rgba(250, 250, 250, 0.62);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .xp-stat-card .value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff4dc;
+    }
+
+    .xp-session-card {
+      padding: 22px 22px 20px;
+      background:
+        linear-gradient(180deg, rgba(11, 11, 15, 0.96), rgba(24, 11, 18, 0.94));
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+    }
+
+    .xp-session-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .xp-session-top h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .xp-session-top p {
+      color: rgba(250, 250, 250, 0.68);
+      font-size: 0.86rem;
+      margin: 0;
+    }
+
+    .xp-ready-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 76px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      color: #f9d6a3;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .xp-session-rate {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2rem, 4vw, 2.7rem);
+      line-height: 1.05;
+      margin-bottom: 14px;
+    }
+
+    .xp-session-copy {
+      color: rgba(250, 250, 250, 0.74);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .xp-session-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .xp-session-track::after {
+      content: '';
+      display: block;
+      width: 34%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(255, 176, 56, 0.65), rgba(244, 63, 94, 0.88));
+      opacity: 0.82;
+    }
+
+    .xp-session-note {
+      color: rgba(250, 250, 250, 0.52);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin-top: 14px;
+    }
+
     .store-hero {
       margin-bottom: 18px;
       padding: 24px 24px 22px;
@@ -1817,7 +2065,8 @@
 
       .hero-shell,
       .store-hero,
-      .cart-layout {
+      .cart-layout,
+      .xp-dashboard {
         grid-template-columns: 1fr;
       }
 
@@ -1826,7 +2075,8 @@
       }
 
       .hero-stats,
-      .home-strip {
+      .home-strip,
+      .xp-stat-grid {
         grid-template-columns: 1fr;
       }
 
@@ -2168,6 +2418,59 @@
               <button class="btn bsm" onclick="switchCategory('rank')">Ranks</button>
               <button class="bto bsm" onclick="switchCategory('coins')">Coins</button>
               <button class="bto bsm" onclick="switchCategory('mystery_box')">Boxes</button>
+            </div>
+          </div>
+          <div class="xp-dashboard" id="XP-DASHBOARD">
+            <div class="xp-panel">
+              <div class="xp-kicker">XP Dashboard</div>
+              <h2 id="XP-DASH-NAME">Guest</h2>
+              <p class="xp-copy">Earn passive XP by keeping the free XP page open. Each AFK session lasts 5 minutes, pays 5 XP, and caps at 60 XP per day.</p>
+              <div class="xp-rank-chip" id="XP-RANK-CHIP">Unranked</div>
+              <div class="xp-metrics">
+                <div>
+                  <div class="label">Current XP</div>
+                  <div class="xp-total" id="XP-TOTAL-VALUE">0 XP</div>
+                </div>
+                <div class="xp-next">
+                  <span class="value" id="XP-NEXT-LABEL">Bronze at 100 XP</span>
+                  <span class="sub" id="XP-NEXT-REMAINING">100 XP to go</span>
+                </div>
+              </div>
+              <div class="xp-progress-meta">
+                <span id="XP-PROGRESS-LEFT">No rank owned yet</span>
+                <span id="XP-PROGRESS-RIGHT">0 XP to go</span>
+              </div>
+              <div class="xp-progress">
+                <div class="xp-progress-fill" id="XP-PROGRESS-FILL"></div>
+              </div>
+              <div class="xp-stat-grid">
+                <div class="xp-stat-card">
+                  <div class="label">Sessions Today</div>
+                  <div class="value" id="XP-SESSION-COUNT">0/12</div>
+                </div>
+                <div class="xp-stat-card">
+                  <div class="label">Daily XP</div>
+                  <div class="value" id="XP-DAILY-CAP">0/60</div>
+                </div>
+                <div class="xp-stat-card">
+                  <div class="label">Session Length</div>
+                  <div class="value">5 min</div>
+                </div>
+              </div>
+            </div>
+            <div class="xp-session-card">
+              <div class="xp-session-top">
+                <div>
+                  <h3>AFK XP Session</h3>
+                  <p id="XP-SESSION-LEFT">60 XP left before daily reset</p>
+                </div>
+                <div class="xp-ready-badge">Ready</div>
+              </div>
+              <div class="xp-session-rate">+5 XP every 5 minutes</div>
+              <div class="xp-session-copy">Start a tracked AFK session, keep the page open, and claim the XP once the tracker completes. The daily cap is enforced server-side.</div>
+              <div class="xp-session-track"></div>
+              <button class="btn" style="width:100%" onclick="window.location.href=`${MAIN_SITE}/store/free`">Start AFK Session</button>
+              <div class="xp-session-note">When the 5-minute tracker completes, your XP reward is claimed and logged on the main site.</div>
             </div>
           </div>
           <div class="store-profile" id="STORE-PROFILE">
@@ -2712,16 +3015,79 @@
 
     function updateStoreProfile() {
       const wrap = I('STORE-PROFILE');
+      const xpWrap = I('XP-DASHBOARD');
       if (!wrap) return;
       if (!ME) {
         wrap.style.display = 'none';
+        if (xpWrap) xpWrap.style.display = 'none';
         if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = '0';
         return;
       }
       wrap.style.display = 'block';
+      if (xpWrap) xpWrap.style.display = 'grid';
       I('STORE-USER-VALUE').textContent = ME.mc_username || ME.username || 'Unknown';
       I('STORE-RANK-VALUE').textContent = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : 'None';
       if (I('STORE-CART-VALUE')) I('STORE-CART-VALUE').textContent = String(CART.length || 0);
+      updateXpDashboard();
+    }
+
+    function getXpTierInfo(xp) {
+      const tiers = [
+        { name: 'Bronze', target: 100 },
+        { name: 'Iron', target: 500 },
+        { name: 'Gold', target: 1000 },
+        { name: 'Diamond', target: 5000 },
+        { name: 'Emerald', target: 10000 },
+        { name: 'Master', target: 25000 },
+        { name: 'Legend', target: 50000 },
+        { name: 'Mythic', target: 100000 },
+      ];
+      const current = Math.max(0, Number(xp) || 0);
+      let previousTarget = 0;
+      let previousName = 'Unranked';
+      for (const tier of tiers) {
+        if (current < tier.target) {
+          return {
+            currentName: previousName,
+            nextName: tier.name,
+            nextTarget: tier.target,
+            previousTarget,
+            progress: previousTarget === tier.target ? 100 : ((current - previousTarget) / (tier.target - previousTarget)) * 100,
+            remaining: tier.target - current,
+          };
+        }
+        previousTarget = tier.target;
+        previousName = tier.name;
+      }
+      return {
+        currentName: previousName,
+        nextName: 'Maxed',
+        nextTarget: previousTarget,
+        previousTarget,
+        progress: 100,
+        remaining: 0,
+      };
+    }
+
+    function updateXpDashboard() {
+      if (!ME) return;
+      const xp = Math.max(0, Number(ME.current_xp) || 0);
+      const earnedToday = Math.min(60, xp % 60);
+      const sessionCount = Math.min(12, Math.floor(earnedToday / 5));
+      const tier = getXpTierInfo(xp);
+      const currentName = ME.primary_rank ? String(ME.primary_rank).toUpperCase() : tier.currentName.toUpperCase();
+
+      if (I('XP-DASH-NAME')) I('XP-DASH-NAME').textContent = ME.mc_username || ME.username || 'Player';
+      if (I('XP-RANK-CHIP')) I('XP-RANK-CHIP').textContent = currentName;
+      if (I('XP-TOTAL-VALUE')) I('XP-TOTAL-VALUE').textContent = `${xp.toLocaleString()} XP`;
+      if (I('XP-NEXT-LABEL')) I('XP-NEXT-LABEL').textContent = tier.remaining > 0 ? `${tier.nextName} at ${tier.nextTarget.toLocaleString()} XP` : 'Top milestone reached';
+      if (I('XP-NEXT-REMAINING')) I('XP-NEXT-REMAINING').textContent = tier.remaining > 0 ? `${tier.remaining.toLocaleString()} XP to go` : 'No XP left to next milestone';
+      if (I('XP-PROGRESS-LEFT')) I('XP-PROGRESS-LEFT').textContent = tier.currentName === 'Unranked' ? 'No rank owned yet' : `${tier.currentName} milestone reached`;
+      if (I('XP-PROGRESS-RIGHT')) I('XP-PROGRESS-RIGHT').textContent = tier.remaining > 0 ? `${tier.remaining.toLocaleString()} XP to go` : 'Completed';
+      if (I('XP-PROGRESS-FILL')) I('XP-PROGRESS-FILL').style.width = `${Math.max(0, Math.min(100, tier.progress))}%`;
+      if (I('XP-SESSION-COUNT')) I('XP-SESSION-COUNT').textContent = `${sessionCount}/12`;
+      if (I('XP-DAILY-CAP')) I('XP-DAILY-CAP').textContent = `${earnedToday}/60`;
+      if (I('XP-SESSION-LEFT')) I('XP-SESSION-LEFT').textContent = `${Math.max(0, 60 - earnedToday)} XP left before daily reset`;
     }
 
     function getCartXpTotal() {
