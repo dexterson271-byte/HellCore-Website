@@ -676,9 +676,14 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
             cmd = f"lpv user {username} parent set {rank_name}"
             event_action = "rank_fulfillment_queued"
             event_label = "Rank fulfillment queued"
+        elif category == "mystery_box":
+            amount, _ = infer_product_grant(product, item)
+            cmd = f"gmysterybox give {username} {amount}"
+            event_action = "mystery_box_fulfillment_queued"
+            event_label = "Mystery box fulfillment queued"
         elif category == "mystery_dust":
             amount, _ = infer_product_grant(product, item)
-            cmd = f"bwmystery:mysterydust add {username} {amount}"
+            cmd = f"mysterydust add {username} {amount}"
             event_action = "mystery_dust_fulfillment_queued"
             event_label = "Mystery dust fulfillment queued"
         elif category == "coins":
