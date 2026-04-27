@@ -6,6 +6,7 @@ import fun.crushmc.bwmystery.commands.MysteryDustCommand;
 import fun.crushmc.bwmystery.data.DataStore;
 import fun.crushmc.bwmystery.listeners.RewardListener;
 import fun.crushmc.bwmystery.papi.MysteryExpansion;
+import fun.crushmc.bwmystery.sync.StoreQueueBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,6 +30,7 @@ public final class BWMystery extends JavaPlugin {
     private static BWMystery instance;
     private DataStore dataStore;
     private int autosaveTaskId = -1;
+    private StoreQueueBridge storeQueueBridge;
 
     @Override
     public void onEnable() {
@@ -51,6 +53,9 @@ public final class BWMystery extends JavaPlugin {
             new MysteryExpansion(this).register();
             getLogger().info("PlaceholderAPI hook active (%bwmystery_*%).");
         }
+
+        storeQueueBridge = new StoreQueueBridge(this);
+        storeQueueBridge.start();
 
         // Periodic save
         long ticks = Math.max(60L, getConfig().getLong("storage.autosave-seconds", 300L)) * 20L;

@@ -21,3 +21,13 @@ defaults:
 # Save player data to disk every N seconds (also saved on plugin disable)
 storage:
   autosave-seconds: 300
+
+queue:
+  enabled: true
+  poll-seconds: 5
+  mysql:
+    host: "127.0.0.1"
+    port: 3306
+    database: "railway"
+    user: "root"
+    password: ""
