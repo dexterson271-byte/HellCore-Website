@@ -742,13 +742,14 @@ def main_static(f):
     return send_from_directory(main_static_dir, f)
 
 
-@app.route("/business-info")
+@app.route("/legal")
+@app.route("/legel")
 def business_info_page():
     business_info = {
         "business_name": os.environ.get("STORE_BUSINESS_NAME", "Hellcore Network"),
         "operator_name": os.environ.get("STORE_OPERATOR_NAME", "SUDIP GAUTAM"),
         "representative_name": os.environ.get("STORE_REPRESENTATIVE_NAME", "SUDIP GAUTAM"),
-        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "1-22-3 Jinnan, Shibuya-ku, Tokyo 150-0041, Japan"),
+        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "1-2-3 Soga, Chuo-ku, Chiba-shi, Chiba 260-0822, Japan"),
         "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "090-4231-5007"),
         "business_email": os.environ.get("STORE_BUSINESS_EMAIL", "support@hellcore.net"),
         "price_note": os.environ.get("STORE_PRICE_NOTE", "Prices are shown on each product page in the store."),
@@ -763,9 +764,9 @@ def business_info_page():
 
 
 @app.route("/business_info")
+@app.route("/business-info")
 def business_info_legacy_redirect():
-    return redirect("/business-info", code=301)
-
+    return redirect("/legal", code=301)
 
 @app.route("/<path:p>")
 def catch_all(p):
