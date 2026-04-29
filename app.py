@@ -4113,6 +4113,40 @@ def ads_txt():
     content = "google.com, pub-8470357358025733, DIRECT, f08c47fec0942fa0"
     return Response(content, mimetype="text/plain")
 
+# -------------------------------------------------------
+# LEGAL & SEO ROUTES (Server-Side Rendered for AdSense)
+# -------------------------------------------------------
+@app.route("/privacy")
+def privacy_policy():
+    return render_template("privacy.html")
+
+@app.route("/terms")
+def terms_of_service():
+    return render_template("terms.html")
+
+@app.route("/news")
+def news_feed():
+    try:
+        import json
+        with open("articles.json", "r", encoding="utf-8") as f:
+            articles = json.load(f)
+    except:
+        articles = []
+    return render_template("news.html", articles=articles, single=False)
+
+@app.route("/news/<slug>")
+def news_article(slug):
+    try:
+        import json
+        with open("articles.json", "r", encoding="utf-8") as f:
+            articles = json.load(f)
+    except:
+        articles = []
+    article = next((a for a in articles if a.get("slug") == slug), None)
+    if not article:
+        return "Article not found", 404
+    return render_template("news.html", article=article, single=True)
+
 @app.route("/robots.txt")
 def robots_txt():
     content = "User-agent: *\nAllow: /\nSitemap: https://hellcore.net/sitemap.xml"

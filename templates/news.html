@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if single %}{{ article.title }} | Hellcore News{% else %}Hellcore Network News & Blog{% endif %}</title>
+    <link rel="stylesheet" href="/static/shared-ui.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: #030303; color: #fff; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        .nav { padding: 20px 40px; background: rgba(3,3,3,0.8); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 15px; }
+        .nav a { color: #fff; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
+        .nav a:hover { color: #FF512F; }
+        .container { max-width: 900px; margin: 60px auto; padding: 0 20px; }
+        .stitle { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; background: linear-gradient(135deg, #fff, #FF512F); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .article-card { background: rgba(25,25,30,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 30px; margin-bottom: 30px; transition: transform 0.2s; }
+        .article-card:hover { transform: translateY(-3px); border-color: rgba(255,81,47,0.5); }
+        .article-title { font-family: 'Outfit', sans-serif; font-size: 1.8rem; margin: 0 0 10px 0; }
+        .article-title a { color: #fff; text-decoration: none; }
+        .article-meta { color: #a1a1aa; font-size: 0.9rem; margin-bottom: 20px; }
+        .article-excerpt { color: #d4d4d8; line-height: 1.6; }
+        
+        .single-article { background: rgba(25,25,30,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 40px; }
+        .single-article h1 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; margin-bottom: 10px; }
+        .single-article .meta { color: #a1a1aa; font-size: 0.95rem; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; }
+        .single-article .content { font-size: 1.05rem; line-height: 1.8; color: #e4e4e7; }
+        .single-article .content h3 { font-family: 'Outfit', sans-serif; color: #FF512F; margin-top: 30px; font-size: 1.5rem; }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #FF512F; text-decoration: none; font-weight: 600; }
+        .btn-back:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">← Back to Home</a>
+        <a href="/news" style="margin-left:auto;">News & Updates</a>
+    </div>
+
+    <div class="container">
+        {% if not single %}
+            <div style="margin-bottom: 40px;">
+                <h1 class="stitle">Latest News & Updates</h1>
+                <p style="color: #a1a1aa;">Read the latest patch notes, guides, and announcements from the Hellcore Network.</p>
+            </div>
+            {% for a in articles %}
+            <div class="article-card">
+                <h2 class="article-title"><a href="/news/{{ a.slug }}">{{ a.title }}</a></h2>
+                <div class="article-meta">Published on {{ a.date }} by {{ a.author }}</div>
+                <div class="article-excerpt">{{ a.excerpt }}</div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <a href="/news" class="btn-back">← Back to all news</a>
+            <article class="single-article">
+                <h1>{{ article.title }}</h1>
+                <div class="meta">Published on {{ article.date }} by {{ article.author }}</div>
+                <div class="content">
+                    {{ article.content | safe }}
+                </div>
+            </article>
+        {% endif %}
+    </div>
+</body>
+</html>
