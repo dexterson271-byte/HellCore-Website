@@ -156,7 +156,8 @@ public final class StoreQueueBridge {
         if (parts.length < 1) return false;
 
         String root = parts[0].toLowerCase();
-        if ("bwmystery:gmysteryboxes".equals(root)) {
+        if ("bwmystery:gmysteryboxes".equals(root) || "gmysteryboxes".equals(root) ||
+                "bwmystery:gmysterybox".equals(root) || "gmysterybox".equals(root)) {
             return handleMysteryBoxes(parts);
         }
         if ("bwmystery:mysterydust".equals(root)) {

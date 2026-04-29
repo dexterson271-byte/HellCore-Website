@@ -138,12 +138,15 @@
       0% {
         transform: rotate(0deg) scale(1) translate(0, 0);
       }
+
       33% {
         transform: rotate(5deg) scale(1.05) translate(2%, 2%);
       }
+
       66% {
         transform: rotate(-5deg) scale(1.1) translate(-2%, 1%);
       }
+
       100% {
         transform: rotate(8deg) scale(1.02) translate(1%, -2%);
       }
@@ -3317,6 +3320,7 @@
       overflow: hidden;
       backdrop-filter: blur(20px);
     }
+
     .xp-card::before {
       content: '';
       position: absolute;
@@ -3329,7 +3333,16 @@
       opacity: 0.1;
       z-index: -1;
     }
-    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     .xp-val {
       font-size: 5rem;
@@ -3342,6 +3355,7 @@
       line-height: 1;
       margin: 10px 0;
     }
+
     .xp-label {
       text-transform: uppercase;
       letter-spacing: 0.3em;
@@ -3349,19 +3363,22 @@
       font-weight: 800;
       color: var(--g);
     }
+
     .xp-progress-wrap {
       width: 100%;
       max-width: 400px;
       margin: 30px auto 10px;
       text-align: left;
     }
+
     .xp-bar-bg {
       height: 10px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 10px;
       overflow: hidden;
       border: 1px solid var(--bd);
     }
+
     .xp-bar-fill {
       height: 100%;
       background: linear-gradient(90deg, var(--g), var(--g2));
@@ -3369,6 +3386,7 @@
       transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 0 15px var(--g);
     }
+
     .watch-btn {
       width: 100%;
       max-width: 300px;
@@ -3377,10 +3395,11 @@
       margin-top: 20px;
       border-radius: 15px;
     }
+
     .store-promo {
       margin-top: 40px;
       padding: 24px;
-      background: rgba(255,255,255,0.02);
+      background: rgba(255, 255, 255, 0.02);
       border-radius: 20px;
       border: 1px dashed var(--bd2);
       display: flex;
@@ -3388,13 +3407,36 @@
       justify-content: space-between;
       gap: 20px;
     }
-    .store-promo-text { text-align: left; }
-    .store-promo h3 { font-family: 'Outfit', sans-serif; font-weight: 700; margin-bottom: 4px; }
-    .store-promo p { font-size: 0.85rem; color: var(--tx2); }
-    
-    .loot-table { width: 100%; border-collapse: collapse; }
-    .loot-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; }
-    .loot-table tr:last-child td { border: none; }
+
+    .store-promo-text {
+      text-align: left;
+    }
+
+    .store-promo h3 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .store-promo p {
+      font-size: 0.85rem;
+      color: var(--tx2);
+    }
+
+    .loot-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .loot-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+    }
+
+    .loot-table tr:last-child td {
+      border: none;
+    }
 
     /* ═══════ EVENT CAROUSEL ═══════ */
     .event-carousel {
@@ -4064,7 +4106,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .ad-progress > div {
+    .ad-progress>div {
       height: 100%;
       width: 0%;
       border-radius: inherit;
@@ -4253,6 +4295,7 @@
       0% {
         transform: translate3d(0, -20px, 0) rotate(0deg);
       }
+
       100% {
         transform: translate3d(var(--x-shift), 100vh, 0) rotate(540deg);
         opacity: 0;
@@ -4260,6 +4303,7 @@
     }
 
     @media (max-width: 1100px) {
+
       .xp-dashboard-grid,
       .rank-store-grid {
         grid-template-columns: 1fr;
@@ -4267,6 +4311,7 @@
     }
 
     @media (max-width: 720px) {
+
       .xp-dashboard-card,
       .rank-tier-card {
         border-radius: 18px;
@@ -4840,7 +4885,7 @@
               </svg> Forums</button>
           </div>
         </div>
-        
+
         <!-- Trial Offers Box -->
         <div id="TRIAL-BOX" style="margin-bottom:20px; display:none">
           <!-- Populated by JS -->
@@ -5043,10 +5088,12 @@
 
           <div id="ADM-REWARDS" style="display:none">
             <div class="p">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+              <div
+                style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
                 <div>
                   <div class="stitle" style="margin:0">Reward Controls</div>
-                  <p style="color:var(--tx2);font-size:.8rem;margin:6px 0 0 0">XP balances, ad access, account resets, and reward-side moderation.</p>
+                  <p style="color:var(--tx2);font-size:.8rem;margin:6px 0 0 0">XP balances, ad access, account resets,
+                    and reward-side moderation.</p>
                 </div>
               </div>
               <div class="fg" style="display:flex;gap:7px"><input id="ADM-R-SEARCH" class="inp"
@@ -5086,7 +5133,8 @@
               <div id="ADM-L-LIST"></div>
             </div>
             <div class="p" style="margin-top:15px">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px">
+              <div
+                style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:15px">
                 <div>
                   <div class="stitle" style="margin:0">Ad & Rank Reward Logs</div>
                   <p style="color:var(--tx2);font-size:.8rem">Recent ad watches and rank purchases with abuse flags.</p>
@@ -5205,12 +5253,17 @@
           <div id="ADM-TRIALS" style="display:none">
             <div class="p" style="margin-bottom:15px">
               <div class="stitle">Create Trial Offer</div>
-              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Configure a free rank trial for new verified users to claim.</p>
+              <p style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Configure a free rank trial for new
+                verified users to claim.</p>
               <div class="g2" style="margin-bottom:10px">
-                <div class="fg"><label>Offer Title</label><input type="text" id="ADM-TR-TITLE" class="inp" placeholder="e.g. 7-Day VIP+ Trial"></div>
-                <div class="fg"><label>Gamemode</label><input type="text" id="ADM-TR-GM" class="inp" placeholder="e.g. global"></div>
-                <div class="fg"><label>Rank Name</label><input type="text" id="ADM-TR-RANK" class="inp" placeholder="e.g. vip_plus"></div>
-                <div class="fg"><label>Duration (Days)</label><input type="number" id="ADM-TR-DAYS" class="inp" value="7"></div>
+                <div class="fg"><label>Offer Title</label><input type="text" id="ADM-TR-TITLE" class="inp"
+                    placeholder="e.g. 7-Day VIP+ Trial"></div>
+                <div class="fg"><label>Gamemode</label><input type="text" id="ADM-TR-GM" class="inp"
+                    placeholder="e.g. global"></div>
+                <div class="fg"><label>Rank Name</label><input type="text" id="ADM-TR-RANK" class="inp"
+                    placeholder="e.g. vip_plus"></div>
+                <div class="fg"><label>Duration (Days)</label><input type="number" id="ADM-TR-DAYS" class="inp"
+                    value="7"></div>
               </div>
               <button class="btn" onclick="admSaveTrial()">Create Trial Offer</button>
             </div>
@@ -5268,7 +5321,8 @@
           <p style="color:var(--tx2); margin-top:-10px">XP EARNED FROM AFK SESSIONS</p>
 
           <div class="xp-progress-wrap">
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; font-weight:600">
+            <div
+              style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px; font-weight:600">
               <span style="color:var(--tx2)">DAILY AFK PROGRESS</span>
               <span id="XP-PROGRESS-TEXT">0 / 60 XP</span>
             </div>
@@ -5278,12 +5332,17 @@
           </div>
 
           <button id="XP-WATCH-BTN" class="btn watch-btn" onclick="watchAd()">
-            <svg class="ic"><use href="#ic-play"/></svg> START AFK SESSION
+            <svg class="ic">
+              <use href="#ic-play" />
+            </svg> START AFK SESSION
           </button>
-          <button id="XP-RESUME-BTN" class="bto" style="width:100%;margin-top:10px;display:none" onclick="syncActiveAfkSessionFromProfile(true)">
-            <svg class="ic"><use href="#ic-history"/></svg> RESUME AFK SESSION
+          <button id="XP-RESUME-BTN" class="bto" style="width:100%;margin-top:10px;display:none"
+            onclick="syncActiveAfkSessionFromProfile(true)">
+            <svg class="ic">
+              <use href="#ic-history" />
+            </svg> RESUME AFK SESSION
           </button>
-          
+
           <div id="XP-TIMER" style="margin-top:15px; font-size:0.85rem; font-weight:700; color:var(--g); display:none">
             READY
           </div>
@@ -5293,15 +5352,19 @@
           <div class="mdl" style="max-width:320px; text-align:center">
             <div id="AD-STATUS-ICON" style="font-size:3rem; margin-bottom:15px">📺</div>
             <h3 id="AD-STATUS-TITLE">Ad in Progress...</h3>
-            <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the ad displays.</p>
-            
-            <div id="AD-PLACEMENT" style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; flex-direction:column; align-items:stretch; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
+            <p id="AD-STATUS-SUB" style="color:var(--tx2); font-size:0.9rem; margin-bottom:20px">Please wait while the
+              ad displays.</p>
+
+            <div id="AD-PLACEMENT"
+              style="min-height:250px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:20px; display:flex; flex-direction:column; align-items:stretch; justify-content:center; border:1px dashed var(--bd); overflow:hidden">
               <div id="AD-SCRIPT-HOST" style="width:100%; min-height:250px; display:none; background:#000;"></div>
               <div id="AD-TRACKER" style="display:none; border-top:1px solid rgba(255,255,255,0.06)"></div>
             </div>
 
-            <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s</div>
-            <button id="AD-CLAIM-BTN" class="btn" style="width:100%; display:none" onclick="finishAdClaim()">CLAIM REWARD</button>
+            <div id="AD-TIMER-BOX" style="font-size:1.5rem; font-weight:800; color:var(--g); margin-bottom:20px">15s
+            </div>
+            <button id="AD-CLAIM-BTN" class="btn" style="width:100%; display:none" onclick="finishAdClaim()">CLAIM
+              REWARD</button>
           </div>
         </div>
 
@@ -5315,12 +5378,17 @@
 
         <div style="margin-top:40px; text-align:left">
           <div class="stitle" style="text-align:left; font-size:1.2rem; margin-bottom:20px">
-            <svg class="ic" style="color:var(--g)"><use href="#ic-history"/></svg> RECENT XP EARNERS
+            <svg class="ic" style="color:var(--g)">
+              <use href="#ic-history" />
+            </svg> RECENT XP EARNERS
           </div>
-          <div class="p" style="padding:0; background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid var(--bd)">
+          <div class="p"
+            style="padding:0; background:rgba(255,255,255,0.03); border-radius:15px; border:1px solid var(--bd)">
             <table class="loot-table">
               <tbody id="XP-HISTORY">
-                <tr><td colspan="2" style="text-align:center; color:var(--tx3); padding:40px">Loading history...</td></tr>
+                <tr>
+                  <td colspan="2" style="text-align:center; color:var(--tx3); padding:40px">Loading history...</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -5738,7 +5806,8 @@
                 <tr>
                   <td style="color:var(--tx2);padding:4px 0">MC Name:</td>
                   <td id="PR-MC"></td>
-                  <td style="text-align:right"><button id="PR-UNLINK-BTN" class="btn bred bxs" style="display:none" onclick="doUnlink()">Unlink</button></td>
+                  <td style="text-align:right"><button id="PR-UNLINK-BTN" class="btn bred bxs" style="display:none"
+                      onclick="doUnlink()">Unlink</button></td>
                 </tr>
 
               </table>
@@ -5759,7 +5828,8 @@
             <div class="stitle"><svg class="ic">
                 <use href="#ic-gift" />
               </svg> Send a Gift</div>
-            <div style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Only admins can send rank gifts. Players receive the offer here and the rank command runs after they accept it.</div>
+            <div style="color:var(--tx2);font-size:.8rem;margin-bottom:12px">Only admins can send rank gifts. Players
+              receive the offer here and the rank command runs after they accept it.</div>
             <div class="g2">
               <div class="fg"><label>Recipient Username</label><input id="GFT-TO" class="inp" autocomplete="off"
                   placeholder="Hellcore username"></div>
@@ -6049,9 +6119,12 @@
           <div>Copy and run this command in-game:</div>
         </div>
 
-        <div id="VERIFY-CMD-WRAP" class="verify-code-box" style="cursor:pointer;position:relative" onclick="copyVerifyCmd()">
+        <div id="VERIFY-CMD-WRAP" class="verify-code-box" style="cursor:pointer;position:relative"
+          onclick="copyVerifyCmd()">
           <span style="color:var(--tx3)">/verify </span><span id="VERIFY-CODE-DISPLAY">HC-......</span>
-          <div style="position:absolute;right:15px;top:50%;transform:translateY(-50%);font-size:0.7rem;color:var(--tx3)">Click to Copy</div>
+          <div
+            style="position:absolute;right:15px;top:50%;transform:translateY(-50%);font-size:0.7rem;color:var(--tx3)">
+            Click to Copy</div>
         </div>
 
 
@@ -6064,9 +6137,9 @@
     <div id="CONFETTI"></div>
   </div><!-- #APP -->
 
-  <script>
+  <script data-ad-secret="{{ ad_completion_secret }}">
     'use strict';
-    const AD_COMPLETION_SECRET = {{ ad_completion_secret|tojson }};
+    const AD_COMPLETION_SECRET = document.currentScript.dataset.adSecret;
     // ════════════════════════════════════════════════════
     // STATE
     // ════════════════════════════════════════════════════
@@ -6425,7 +6498,7 @@
       // Map path back to ID
       // e.g. "store/free" -> "store-free"
       const id = path.replace(/\//g, '-');
-      
+
       // Redirect legacy store paths to the main store landing page
       if (path.startsWith('store/') && id !== 'store-free') {
         GO('store', false); return;
@@ -8355,7 +8428,7 @@
           document.body.appendChild(modal);
           modal.addEventListener('click', e => { if (e.target === modal) closeM(modalId); });
         }
-        
+
         I('USER-LOGS-CONTENT').innerHTML = `
           <div class="stitle" style="text-align:left;font-size:1.1rem;margin-bottom:10px">Admin Audit Logs</div>
           ${d.audit_logs.length ? `
@@ -8395,7 +8468,7 @@
             </div>
           ` : '<div class="empty" style="padding:20px">No store events for this user.</div>'}
         `;
-        
+
         openM(modalId);
       } catch (e) { toast('err', e.message); }
     }
@@ -8537,7 +8610,7 @@
         const res = await API('/api/trials');
         const available = res.filter(t => !t.claimed);
         if (!available.length) { el.style.display = 'none'; return; }
-        
+
         el.style.display = 'block';
         el.innerHTML = available.map(t => `
           <div class="p" style="border:1px solid var(--g); background:var(--accent-glow); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px">
@@ -9050,7 +9123,7 @@
         XP_STATE = { ...d }; // Sync with server state
         if (resumeBtn) resumeBtn.style.display = d.active_ad_in_progress ? 'inline-flex' : 'none';
         syncActiveAfkSessionFromProfile(I('pg-store-free')?.classList.contains('ON'));
-        
+
         if (d.next_ad) {
           const diff = Math.ceil((new Date(d.next_ad).getTime() - new Date().getTime()) / 1000);
           if (diff > 0) {
@@ -9062,7 +9135,7 @@
         } else {
           stopXpTimer();
         }
-      }).catch(e => {});
+      }).catch(e => { });
       loadXpHistory();
     }
 
@@ -9103,7 +9176,7 @@
               <td style="text-align:right"><span style="color:var(--grn);font-weight:700">+${x.xp_reward || 5} XP</span></td>
               <td style="text-align:right;color:var(--tx3);font-size:0.8rem">${fmtD(x.created_at)}</td>
           </tr>`).join('');
-      } catch(e) {}
+      } catch (e) { }
     }
 
     async function watchAd() { return await watchRewardAd(); }
@@ -9118,13 +9191,13 @@
       try {
         // Request token from backend
         const res = await API('/api/ads/request', { method: 'POST' });
-        
+
         // Show the ad
         // PropellerAds tag handles the display, we just wait a bit or listen for callback if they had one
         // Since it's a direct link or tag, we'll use a simulated wait for now or assume they clicked it
         let countdown = 30;
         btn.innerHTML = `Watching: ${countdown}s`;
-        
+
         if (AD_TIMER) clearInterval(AD_TIMER);
         AD_TIMER = setInterval(() => {
           countdown--;
@@ -9136,7 +9209,7 @@
             btn.innerHTML = `Watching: ${countdown}s`;
           }
         }, 1000);
-        
+
       } catch (e) {
         toast('err', e.message);
         stopXpTimer();
@@ -9145,15 +9218,15 @@
 
     async function completeXpAd(token) {
       try {
-        const d = await API('/api/ads/complete', { 
-          method: 'POST', 
-          body: JSON.stringify({ token }) 
+        const d = await API('/api/ads/complete', {
+          method: 'POST',
+          body: JSON.stringify({ token })
         });
         toast('success', `Earned ${d.xp_earned} XP!`);
         updateXpUI();
-      } catch (e) { 
-        toast('err', e.message); 
-        updateXpUI(); 
+      } catch (e) {
+        toast('err', e.message);
+        updateXpUI();
       }
     }
     function bwT(t) {
@@ -9578,11 +9651,11 @@
         ? `AFK Session ${fmtCountdown(activeRemaining)}`
         : serverLock
           ? 'Session Locked'
-        : cooldownLeft > 0
-          ? `Next Session In ${fmtCountdown(cooldownLeft)}`
-        : adsRemaining <= 0
-            ? 'Daily Cap Reached'
-            : 'Start AFK Session';
+          : cooldownLeft > 0
+            ? `Next Session In ${fmtCountdown(cooldownLeft)}`
+            : adsRemaining <= 0
+              ? 'Daily Cap Reached'
+              : 'Start AFK Session';
 
       el.innerHTML = `
         <div class="xp-dashboard-grid">
@@ -9669,7 +9742,7 @@
         await refreshRewardState();
         syncActiveAfkSessionFromProfile(I('AD-OVERLAY')?.classList.contains('OPEN'));
         renderRewardDashboard(XP_STATE.current_xp);
-      } catch {}
+      } catch { }
     }
 
     document.addEventListener('visibilitychange', () => {

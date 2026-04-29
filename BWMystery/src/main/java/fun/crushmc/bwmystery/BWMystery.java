@@ -45,6 +45,7 @@ public final class BWMystery extends JavaPlugin {
 
         // Commands
         register("gmysteryboxes", new MysteryBoxesCommand(this));
+        register("gmysterybox",  new MysteryBoxesCommand(this));
         register("mysterydust",   new MysteryDustCommand(this));
         register("mysterycoins",  new MysteryCoinsCommand(this));
 
