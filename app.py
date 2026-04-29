@@ -746,10 +746,10 @@ def main_static(f):
 def business_info_page():
     business_info = {
         "business_name": os.environ.get("STORE_BUSINESS_NAME", "Hellcore Network"),
-        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "井高 康弘"),
-        "representative_name": os.environ.get("STORE_REPRESENTATIVE_NAME", "井高 康弘"),
-        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "2 Chome-1-2 Takabana, 印西市, 千葉県 270-1354, Japan"),
-        "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "0476-47-3381"),
+        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "SUDIP GAUTAM"),
+        "representative_name": os.environ.get("STORE_REPRESENTATIVE_NAME", "SUDIP GAUTAM"),
+        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "1-22-3 Jinnan, Shibuya-ku, Tokyo 150-0041, Japan"),
+        "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "090-4231-5007"),
         "business_email": os.environ.get("STORE_BUSINESS_EMAIL", "support@hellcore.net"),
         "price_note": os.environ.get("STORE_PRICE_NOTE", "Prices are shown on each product page in the store."),
         "payment_methods": os.environ.get("STORE_PAYMENT_METHODS", "Stripe, card payments, and other payment methods shown at checkout."),
