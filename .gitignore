@@ -1,25 +1,16 @@
+<<<<<<< HEAD
 # Database
 hellcore.db
 *.sqlite3
 
-# Node
-node_modules/
-dist/
-dist-ssr/
-*.log
-
 # Python
-venv/
-env/
-.venv/
 __pycache__/
 *.py[cod]
-*.pyc
 *$py.class
-
-# Env files
+.venv/
+env/
+venv/
 .env
-*.env.local
 
 # Java / Maven
 target/
@@ -33,17 +24,38 @@ target/
 .settings/
 dependency-reduced-pom.xml
 
-# IDEs / OS
+# IDEs
 .vscode/
 .idea/
-.DS_Store
 *.swp
 *.swo
-*.sw?
+
+# Credentials (Just in case)
+.env
+secret.json
+=======
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.log
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Env files
+.env
+*.env.local
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-
-# Credentials
-secret.json
+*.sw?
+>>>>>>> da3fd72 (Add McStats frontend and Express backend)
