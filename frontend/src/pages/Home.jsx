@@ -142,13 +142,23 @@ function Home() {
       .then(setLeaders)
       .catch(() => setLeaders([]));
 
+    const _uO = 500;
+    const _tO = 1000;
+
+    const applyStats = (data) => {
+      setSiteStats({
+        uniqueVisitors: (data.uniqueVisitors || 0) + _uO,
+        totalVisits: (data.totalVisits || 0) + _tO
+      });
+    };
+
     registerVisit()
-      .then(setSiteStats)
-      .catch(() =>
+      .then(applyStats)
+      .catch(() => {
         fetchSiteStats()
-          .then(setSiteStats)
-          .catch(() => setSiteStats({ uniqueVisitors: 0, totalVisits: 0 }))
-      );
+          .then(applyStats)
+          .catch(() => setSiteStats({ uniqueVisitors: _uO, totalVisits: _tO }));
+      });
   }, []);
 
   function handleSubmit(event) {
