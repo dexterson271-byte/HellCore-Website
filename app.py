@@ -3723,6 +3723,34 @@ def admin_reward_logs():
         "ad_watches": ad_watches,
     })
 
+@app.route("/api/admin/audit-logs")
+def admin_audit_logs():
+    # Basic security: check for a secret key to prevent public access
+    api_key = request.headers.get("X-API-Key")
+    if api_key != os.environ.get("WEBSITE_API_KEY", "hellcore_secret_key"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    time_filter = request.args.get("time", "1day")
+    now = datetime.utcnow()
+    if time_filter == "1month":
+        since = now - timedelta(days=30)
+    else:
+        since = now - timedelta(days=1)
+    
+    db = get_db(); c = db_cursor(db)
+    # Check if table exists first
+    try:
+        c.execute(f"SELECT l.*, u.username as admin_name FROM hc_audit_logs l "
+                  f"LEFT JOIN hc_users u ON l.admin_id = u.id "
+                  f"WHERE l.created_at >= {ph()} "
+                  f"ORDER BY l.created_at DESC", (since,))
+        logs = to_list(c.fetchall())
+        for l in logs:
+            l["created_at"] = isoformat_utc(l.get("created_at"))
+        return jsonify(logs)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ═══════════════════════════════════════════════════════
 # ADS & REWARDS
 # ═══════════════════════════════════════════════════════
