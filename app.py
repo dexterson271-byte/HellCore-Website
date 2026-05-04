@@ -60,6 +60,68 @@ from shared_store import build_purchase_metadata, rank_payload, notify_discord_t
 # Load environment variables for local testing
 try:
     from dotenv import load_dotenv
+"""
+╔══════════════════════════════════════════════════════════════╗
+║          HELLCORE NETWORK — Flask Backend v7                ║
+║  pip install flask mysql-connector-python gunicorn requests║
+║  python app.py  →  http://localhost:5000                    ║
+╠══════════════════════════════════════════════════════════════╣
+║  DATABASE SETUP:                                            ║
+║  Option A — Local MySQL:                                    ║
+║    1. Run setup_mysql.sql in MySQL                          ║
+║    2. Set USE_MYSQL_LOCAL = True below                      ║
+║    3. Set LOCAL_MYSQL_* vars below                          ║
+║                                                             ║
+║  Option B — Aiven MySQL (cloud):                            ║
+║    1. Set USE_MYSQL_LOCAL = False                           ║
+║    2. Set AIVEN_* vars below                                ║
+║                                                             ║
+║  Option C — SQLite (zero setup, auto fallback):             ║
+║    Just run python app.py — works instantly                 ║
+╠══════════════════════════════════════════════════════════════╣
+║  MAKE YOURSELF FOUNDER AFTER REGISTERING:                   ║
+║  SQLite: sqlite3 hellcore.db                                ║
+║    UPDATE hc_users SET role='founder'                       ║
+║    WHERE username='YourName';                               ║
+║                                                             ║
+║  MySQL: UPDATE hc_users SET role='founder'                  ║
+║    WHERE username='YourName';                               ║
+╚══════════════════════════════════════════════════════════════╝
+"""
+
+import os
+import sqlite3
+import time
+import json
+import uuid
+import hashlib
+import hmac
+import re
+import traceback
+import secrets
+import io
+import base64
+import threading
+import random
+import datetime as dt
+from datetime import datetime, timedelta
+from collections import defaultdict, deque
+from functools import wraps
+import urllib.request
+import urllib.error
+import mysql.connector
+from mysql.connector import pooling
+import sys
+# Ensure store directory is in path for shared_store import
+store_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "store")
+if store_dir not in sys.path:
+    sys.path.append(store_dir)
+
+from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket
+
+# Load environment variables for local testing
+try:
+    from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
     pass
@@ -67,6 +129,489 @@ except ImportError:
 from flask import Flask, request, jsonify, render_template, send_from_directory, Response, redirect, g
 
 app = Flask(__name__)
+
+# ═══════════════════════════════════════════════════════════════════
+# ██████  DDoS PROTECTION SYSTEM  ██████████████████████████████████
+# ═══════════════════════════════════════════════════════════════════
+#
+#  Layers:
+#  1. Permanent IP ban list (manual + auto-escalated)
+#  2. Temporary IP ban (auto-triggered on threshold breach)
+#  3. Per-IP sliding-window rate limiter
+#  4. Global flood guard (total req/s across all IPs)
+#  5. Suspicious User-Agent / bot fingerprint blocking
+#  6. Progressive strike system (3 strikes → temp-ban)
+#
+# ═══════════════════════════════════════════════════════════════════
+
+import math
+
+# ── tunables ──────────────────────────────────────────────────────
+DDOS_ENABLED               = True   # master switch
+
+# Per-IP limits  (requests per window)
+DDOS_IP_LIMIT_SHORT        = 60     # max req in SHORT window
+DDOS_IP_WINDOW_SHORT       = 10     # seconds  (6 req/s sustained)
+DDOS_IP_LIMIT_LONG         = 600    # max req in LONG window
+DDOS_IP_WINDOW_LONG        = 60     # seconds  (10 req/s sustained)
+
+# Auto-temp-ban after N violations
+DDOS_STRIKE_THRESHOLD      = 3      # strikes before temp-ban
+DDOS_TEMP_BAN_SECONDS      = 300    # 5 min temp-ban per violation burst
+DDOS_TEMP_BAN_MAX_SECONDS  = 86400  # cap at 24h regardless of escalations
+
+# Global flood guard
+DDOS_GLOBAL_LIMIT          = 2000   # total req per global window
+DDOS_GLOBAL_WINDOW         = 5      # seconds
+
+# Whitelist — these IPs are NEVER rate-limited (add your server IPs here)
+DDOS_WHITELIST_IPS = set(os.environ.get("DDOS_WHITELIST_IPS", "127.0.0.1,::1").split(","))
+
+# Permanent ban list — loaded from env + runtime admin calls
+_DDOS_PERM_BANS_ENV = set(filter(None, os.environ.get("DDOS_PERM_BAN_IPS", "").split(",")))
+
+# Suspicious user-agents (exact substrings, case-insensitive)
+DDOS_BAD_UA_PATTERNS = [
+    "python-requests", "go-http-client", "libwww-perl", "curl/",
+    "java/", "masscan", "zgrab", "nikto", "sqlmap", "nmap",
+    "dirbuster", "wfuzz", "hydra", "burpsuite", "nuclei",
+    "scrapy", "wget/", "httpclient", "http_request",
+]
+
+# Paths that are public and explicitly excluded from strict limits
+DDOS_RELAXED_PREFIXES = ("/static/", "/favicon")
+
+# Discord webhook for attack alerts (falls back to STAFF_WEBHOOK if not set)
+DDOS_DISCORD_WEBHOOK = (
+    os.environ.get("DDOS_ALERT_WEBHOOK") or
+    os.environ.get("STAFF_WEBHOOK") or ""
+)
+# Cooldown between Discord alerts (seconds) — prevents spam
+DDOS_DISCORD_COOLDOWN   = 60
+_ddos_last_alert_ts     = 0.0   # last time we sent an alert
+_ddos_alert_lock        = threading.Lock()
+# Track attack state so we can send "attack ended" notice too
+_ddos_attack_active     = False
+_ddos_attack_start      = 0.0
+_ddos_attack_blk_start  = 0
+
+# ── internal state (in-memory, thread-safe) ───────────────────────
+_ddos_lock      = threading.Lock()
+
+# {ip: deque of timestamps}  — short window
+_ddos_short_win  = defaultdict(deque)
+# {ip: deque of timestamps}  — long window
+_ddos_long_win   = defaultdict(deque)
+# {ip: strike_count}
+_ddos_strikes    = defaultdict(int)
+# {ip: (ban_until_ts, reason)}  — temporary bans
+_ddos_temp_bans  = {}              # type: dict[str, tuple[float, str]]
+# {ip: reason}  — permanent bans (runtime)
+_ddos_perm_bans  = {ip: "env" for ip in _DDOS_PERM_BANS_ENV}
+# global flood window  (deque of timestamps)
+_ddos_global_win = deque()
+# audit log (last 500 events)
+_ddos_audit      = deque(maxlen=500)
+# total request counter
+_ddos_total_req  = 0
+# total blocked counter
+_ddos_total_blk  = 0
+
+# ── time-series tracking (for dashboard graph) — 60-min ring buffer ─
+# Each slot = one minute: {ts, total_req, blocked_req, unique_ips}
+_DDOS_SERIES_SLOTS   = 60   # keep last 60 minutes
+_ddos_series         = deque(maxlen=_DDOS_SERIES_SLOTS)
+_ddos_cur_minute     = -1   # epoch-minute of the current open slot
+_ddos_slot_req       = 0    # requests in current minute
+_ddos_slot_blk       = 0    # blocked in current minute
+_ddos_slot_ips: set  = set()
+
+
+def _ddos_now() -> float:
+    return time.time()
+
+
+def _ddos_log(event: str, ip: str, detail: str = ""):
+    """Append to the in-memory audit ring."""
+    _ddos_audit.append({
+        "ts": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "event": event,
+        "ip": ip,
+        "detail": detail,
+    })
+
+
+def _ddos_tick_series(ip: str, blocked: bool):
+    """Update per-minute time-series slot. Must be called inside _ddos_lock."""
+    global _ddos_cur_minute, _ddos_slot_req, _ddos_slot_blk, _ddos_slot_ips
+    now = _ddos_now()
+    minute = int(now // 60)
+    if minute != _ddos_cur_minute:
+        # seal old slot
+        if _ddos_cur_minute >= 0:
+            _ddos_series.append({
+                "ts":         datetime.utcfromtimestamp(_ddos_cur_minute * 60).strftime("%H:%M"),
+                "total":      _ddos_slot_req,
+                "blocked":    _ddos_slot_blk,
+                "unique_ips": len(_ddos_slot_ips),
+            })
+        _ddos_cur_minute = minute
+        _ddos_slot_req   = 0
+        _ddos_slot_blk   = 0
+        _ddos_slot_ips   = set()
+    _ddos_slot_req += 1
+    if blocked:
+        _ddos_slot_blk += 1
+    _ddos_slot_ips.add(ip)
+
+
+def _ddos_send_discord_alert(event_type: str, ip: str, detail: str):
+    """
+    Fire-and-forget Discord webhook alert.
+    Throttled to once per DDOS_DISCORD_COOLDOWN seconds.
+    """
+    global _ddos_last_alert_ts, _ddos_attack_active, _ddos_attack_start, _ddos_attack_blk_start
+    if not DDOS_DISCORD_WEBHOOK:
+        return
+    now = _ddos_now()
+    with _ddos_alert_lock:
+        since_last = now - _ddos_last_alert_ts
+        if since_last < DDOS_DISCORD_COOLDOWN:
+            return
+        _ddos_last_alert_ts = now
+        if not _ddos_attack_active:
+            _ddos_attack_active    = True
+            _ddos_attack_start     = now
+            _ddos_attack_blk_start = _ddos_total_blk
+
+    color_map = {
+        "rate_limit_short": 0xFF6B35,
+        "rate_limit_long":  0xFF4500,
+        "global_flood":     0xFF0000,
+        "temp_ban":         0xFFA500,
+        "perm_ban":         0x8B0000,
+        "bad_ua":           0xFFD700,
+    }
+    color = color_map.get(event_type, 0xFF512F)
+
+    attack_duration = int(now - _ddos_attack_start)
+    blk_this_attack = _ddos_total_blk - _ddos_attack_blk_start
+
+    payload = {
+        "username": "Hellcore Shield",
+        "avatar_url": "https://hellcore.net/static/logo.png",
+        "embeds": [{
+            "title": "🚨 DDoS Attack Detected!",
+            "color": color,
+            "description": (
+                f"**Hellcore Network** is under attack.\n"
+                f"The protection system is actively blocking requests."
+            ),
+            "fields": [
+                {"name": "🔍 Event",         "value": f"`{event_type}`",                  "inline": True},
+                {"name": "🌐 Attacker IP",   "value": f"`{ip}`",                           "inline": True},
+                {"name": "📋 Detail",         "value": detail[:200] or "—",                "inline": False},
+                {"name": "🛡 Blocked (attack)","value": str(blk_this_attack),              "inline": True},
+                {"name": "⏱ Attack Duration", "value": f"{attack_duration}s",             "inline": True},
+                {"name": "📊 Total Blocked",   "value": str(_ddos_total_blk),              "inline": True},
+            ],
+            "footer": {"text": "Hellcore Shield • DDoS Protection"},
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }]
+    }
+
+    def _post():
+        try:
+            data = json.dumps(payload).encode("utf-8")
+            req  = urllib.request.Request(
+                DDOS_DISCORD_WEBHOOK,
+                data=data,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as exc:
+            print(f"[DDoS] Discord alert failed: {exc}")
+
+    threading.Thread(target=_post, daemon=True).start()
+
+
+def _ddos_prune(dq: deque, cutoff: float):
+    """Remove entries older than cutoff from the left of the deque."""
+    while dq and dq[0] < cutoff:
+        dq.popleft()
+
+
+def _ddos_check_and_count(ip: str) -> tuple[bool, str]:
+    """
+    Core gate function.
+    Returns (allow: bool, reason: str).
+    Must be called inside _ddos_lock.
+    """
+    global _ddos_total_req, _ddos_total_blk
+    _ddos_total_req += 1
+    now = _ddos_now()
+
+    # 1. Permanent ban
+    if ip in _ddos_perm_bans:
+        _ddos_total_blk += 1
+        _ddos_tick_series(ip, True)
+        return False, f"IP permanently banned: {_ddos_perm_bans[ip]}"
+
+    # 2. Temporary ban
+    if ip in _ddos_temp_bans:
+        ban_until, reason = _ddos_temp_bans[ip]
+        if now < ban_until:
+            _ddos_total_blk += 1
+            remaining = int(ban_until - now)
+            _ddos_tick_series(ip, True)
+            return False, f"IP temporarily banned ({remaining}s remaining): {reason}"
+        else:
+            del _ddos_temp_bans[ip]   # expired
+
+    # 3. Global flood guard
+    cutoff_g = now - DDOS_GLOBAL_WINDOW
+    _ddos_prune(_ddos_global_win, cutoff_g)
+    _ddos_global_win.append(now)
+    if len(_ddos_global_win) > DDOS_GLOBAL_LIMIT:
+        _ddos_total_blk += 1
+        detail = f"{len(_ddos_global_win)} req in {DDOS_GLOBAL_WINDOW}s"
+        _ddos_log("global_flood", ip, detail)
+        _ddos_tick_series(ip, True)
+        threading.Thread(target=_ddos_send_discord_alert, args=("global_flood", ip, detail), daemon=True).start()
+        return False, "Server under high load — please retry in a moment"
+
+    # 4. Short-window per-IP limit
+    cutoff_s = now - DDOS_IP_WINDOW_SHORT
+    sw = _ddos_short_win[ip]
+    _ddos_prune(sw, cutoff_s)
+    sw.append(now)
+    if len(sw) > DDOS_IP_LIMIT_SHORT:
+        _ddos_total_blk += 1
+        _ddos_strikes[ip] += 1
+        detail = f"{len(sw)} req in {DDOS_IP_WINDOW_SHORT}s"
+        _maybe_temp_ban(ip, now, "short-window rate limit exceeded")
+        _ddos_log("rate_limit_short", ip, detail)
+        _ddos_tick_series(ip, True)
+        threading.Thread(target=_ddos_send_discord_alert, args=("rate_limit_short", ip, detail), daemon=True).start()
+        return False, "Too many requests — slow down"
+
+    # 5. Long-window per-IP limit
+    cutoff_l = now - DDOS_IP_WINDOW_LONG
+    lw = _ddos_long_win[ip]
+    _ddos_prune(lw, cutoff_l)
+    lw.append(now)
+    if len(lw) > DDOS_IP_LIMIT_LONG:
+        _ddos_total_blk += 1
+        _ddos_strikes[ip] += 1
+        detail = f"{len(lw)} req in {DDOS_IP_WINDOW_LONG}s"
+        _maybe_temp_ban(ip, now, "long-window rate limit exceeded")
+        _ddos_log("rate_limit_long", ip, detail)
+        _ddos_tick_series(ip, True)
+        threading.Thread(target=_ddos_send_discord_alert, args=("rate_limit_long", ip, detail), daemon=True).start()
+        return False, "Too many requests — slow down"
+
+    _ddos_tick_series(ip, False)
+    return True, ""
+
+
+def _maybe_temp_ban(ip: str, now: float, reason: str):
+    """Escalate to a temp-ban if the strike threshold is reached."""
+    strikes = _ddos_strikes[ip]
+    if strikes >= DDOS_STRIKE_THRESHOLD:
+        duration = min(
+            DDOS_TEMP_BAN_SECONDS * (2 ** (strikes - DDOS_STRIKE_THRESHOLD)),
+            DDOS_TEMP_BAN_MAX_SECONDS
+        )
+        ban_until = now + duration
+        _ddos_temp_bans[ip] = (ban_until, reason)
+        detail = f"{duration}s — strikes={strikes} — {reason}"
+        _ddos_log("temp_ban", ip, detail)
+        threading.Thread(target=_ddos_send_discord_alert, args=("temp_ban", ip, detail), daemon=True).start()
+
+
+def _ddos_check_ua(ua: str) -> bool:
+    """Return True if the UA is suspicious (should be blocked)."""
+    if not ua:
+        return False   # no UA — let other layers decide
+    ua_lower = ua.lower()
+    return any(pat in ua_lower for pat in DDOS_BAD_UA_PATTERNS)
+
+
+@app.before_request
+def ddos_protect():
+    """DDoS protection gate — runs before every request handler."""
+    if not DDOS_ENABLED:
+        return
+
+    # --- derive client IP (supports proxies / Cloudflare / Railway) ---
+    ip = get_client_ip()
+
+    # --- whitelist ---
+    if ip in DDOS_WHITELIST_IPS:
+        return
+
+    # --- bad user-agent fast-path ---
+    ua = request.headers.get("User-Agent", "")
+    if _ddos_check_ua(ua):
+        with _ddos_lock:
+            global _ddos_total_blk
+            _ddos_total_blk += 1
+            _ddos_log("bad_ua", ip, ua[:120])
+        return jsonify({"error": "Forbidden", "code": 403}), 403
+
+    # --- relaxed paths still go through global guard ─ handled inside ─
+    # --- rate limit check ---
+    with _ddos_lock:
+        allowed, reason = _ddos_check_and_count(ip)
+
+    if not allowed:
+        resp = jsonify({"error": reason, "code": 429})
+        resp.status_code = 429
+        resp.headers["Retry-After"] = "60"
+        return resp
+
+
+# ── DDoS Admin API (requires HC bot secret or founder session) ─────
+
+def _ddos_require_auth():
+    """Returns (ok, error_response). Auth via X-Bot-Secret header or founder session."""
+    bot_secret = os.environ.get("HC_BOT_SECRET", "")
+    provided   = request.headers.get("X-Bot-Secret", "")
+    if bot_secret and provided and hmac.compare_digest(provided, bot_secret):
+        return True, None
+    # Also allow logged-in founders via cookie
+    token = request.cookies.get("hc_token", "")
+    if token:
+        try:
+            db   = get_db()
+            cur  = db_cursor(db)
+            cur.execute(f"SELECT role FROM hc_users WHERE session_token={ph()}", (token,))
+            row  = to_dict(cur.fetchone())
+            if row and row.get("role") in ("founder", "admin"):
+                return True, None
+        except Exception:
+            pass
+    return False, (jsonify({"error": "Unauthorized"}), 401)
+
+
+@app.route("/api/ddos/stats")
+def ddos_stats():
+    """GET /api/ddos/stats — DDoS protection dashboard stats."""
+    ok, err = _ddos_require_auth()
+    if not ok:
+        return err
+
+    with _ddos_lock:
+        # merge current open slot into series snapshot
+        open_slot = {
+            "ts":         datetime.utcnow().strftime("%H:%M"),
+            "total":      _ddos_slot_req,
+            "blocked":    _ddos_slot_blk,
+            "unique_ips": len(_ddos_slot_ips),
+        }
+        series_snapshot = list(_ddos_series) + [open_slot]
+        stats = {
+            "enabled":        DDOS_ENABLED,
+            "total_requests": _ddos_total_req,
+            "total_blocked":  _ddos_total_blk,
+            "series":         series_snapshot,
+            "block_rate_pct": round(100 * _ddos_total_blk / max(_ddos_total_req, 1), 2),
+            "active_temp_bans": [
+                {"ip": ip, "until": datetime.utcfromtimestamp(ts).strftime("%Y-%m-%dT%H:%M:%SZ"), "reason": r}
+                for ip, (ts, r) in list(_ddos_temp_bans.items()) if ts > _ddos_now()
+            ],
+            "perm_bans": [
+                {"ip": ip, "reason": r} for ip, r in list(_ddos_perm_bans.items())
+            ],
+            "strikes": [
+                {"ip": ip, "count": c} for ip, c in sorted(_ddos_strikes.items(), key=lambda x: -x[1])[:50]
+            ],
+            "recent_audit": list(_ddos_audit)[-50:],
+            "limits": {
+                "short_window":  f"{DDOS_IP_LIMIT_SHORT} req / {DDOS_IP_WINDOW_SHORT}s per IP",
+                "long_window":   f"{DDOS_IP_LIMIT_LONG} req / {DDOS_IP_WINDOW_LONG}s per IP",
+                "global_window": f"{DDOS_GLOBAL_LIMIT} req / {DDOS_GLOBAL_WINDOW}s total",
+                "strike_threshold": DDOS_STRIKE_THRESHOLD,
+                "temp_ban_base":    f"{DDOS_TEMP_BAN_SECONDS}s",
+            }
+        }
+    return jsonify(stats)
+
+
+@app.route("/api/ddos/ban", methods=["POST"])
+def ddos_ban():
+    """POST /api/ddos/ban  {ip, reason?, permanent?} — ban an IP."""
+    ok, err = _ddos_require_auth()
+    if not ok:
+        return err
+    data      = request.get_json(force=True) or {}
+    ip        = (data.get("ip") or "").strip()
+    reason    = (data.get("reason") or "manual ban").strip()
+    permanent = bool(data.get("permanent", False))
+    if not ip:
+        return jsonify({"error": "ip required"}), 400
+    with _ddos_lock:
+        if permanent:
+            _ddos_perm_bans[ip] = reason
+            _ddos_log("perm_ban", ip, reason)
+        else:
+            _ddos_temp_bans[ip] = (_ddos_now() + DDOS_TEMP_BAN_SECONDS, reason)
+            _ddos_log("temp_ban", ip, reason)
+    return jsonify({"ok": True, "ip": ip, "permanent": permanent})
+
+
+@app.route("/api/ddos/unban", methods=["POST"])
+def ddos_unban():
+    """POST /api/ddos/unban  {ip} — remove temp + perm ban for an IP."""
+    ok, err = _ddos_require_auth()
+    if not ok:
+        return err
+    data = request.get_json(force=True) or {}
+    ip   = (data.get("ip") or "").strip()
+    if not ip:
+        return jsonify({"error": "ip required"}), 400
+    with _ddos_lock:
+        removed = []
+        if ip in _ddos_perm_bans:
+            del _ddos_perm_bans[ip]
+            removed.append("perm_ban")
+        if ip in _ddos_temp_bans:
+            del _ddos_temp_bans[ip]
+            removed.append("temp_ban")
+        if ip in _ddos_strikes:
+            del _ddos_strikes[ip]
+            removed.append("strikes")
+        _ddos_log("unban", ip, f"cleared: {removed}")
+    return jsonify({"ok": True, "ip": ip, "cleared": removed})
+
+
+@app.route("/api/ddos/whitelist", methods=["POST"])
+def ddos_whitelist_add():
+    """POST /api/ddos/whitelist  {ip} — add IP to whitelist at runtime."""
+    ok, err = _ddos_require_auth()
+    if not ok:
+        return err
+    data = request.get_json(force=True) or {}
+    ip   = (data.get("ip") or "").strip()
+    if not ip:
+        return jsonify({"error": "ip required"}), 400
+    DDOS_WHITELIST_IPS.add(ip)
+    _ddos_log("whitelist_add", ip)
+    return jsonify({"ok": True, "ip": ip})
+
+
+@app.route("/admin/ddos")
+def ddos_dashboard():
+    """Serve the DDoS protection admin dashboard."""
+    ok, err = _ddos_require_auth()
+    if not ok:
+        return Response("<h2 style='font-family:sans-serif;text-align:center;margin-top:20vh'>401 — Unauthorized</h2>", status=401, mimetype="text/html")
+    return render_template("ddos_dashboard.html")
+
+# ── end DDoS protection ────────────────────────────────────────────
+
+
 
 AFK_XP_PER_SESSION = 5
 AFK_SESSION_SECONDS = 300
