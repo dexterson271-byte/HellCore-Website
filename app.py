@@ -2476,6 +2476,23 @@ def bot_ranks():
         
     return jsonify(results)
 
+@app.route("/api/bot/unlink", methods=["POST"])
+def bot_unlink():
+    """Endpoint for Discord bot to unlink a discord_id from any user."""
+    data = request.get_json() or {}
+    secret = request.headers.get("X-Bot-Secret")
+    if secret != os.environ.get("HC_BOT_SECRET", "hellcore-secret-123"):
+        return jsonify({"error": "Forbidden"}), 403
+        
+    discord_id = data.get("discord_id")
+    if not discord_id:
+        return jsonify({"error": "Missing params"}), 400
+        
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_users SET discord_id='' WHERE discord_id={ph()}", (str(discord_id),))
+    db.commit()
+    return jsonify({"ok": True})
+
 @app.route("/api/metrics/update")
 def metrics_update():
     """Receives heartbeats from the Minecraft plugin to show live status."""
