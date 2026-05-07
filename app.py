@@ -798,6 +798,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_users(
   username VARCHAR(50) UNIQUE NOT NULL,
   mc_username VARCHAR(50) DEFAULT '',
   is_verified INTEGER DEFAULT 0,
+  discord_id VARCHAR(50) DEFAULT '',
   password_hash VARCHAR(100) NOT NULL,
   session_token VARCHAR(120),
   role VARCHAR(30) DEFAULT 'player',
@@ -1143,6 +1144,10 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         pass
     try:
         c.execute("ALTER TABLE hc_users ADD COLUMN ads_blocked_until DATETIME")
+    except:
+        pass
+    try:
+        c.execute("ALTER TABLE hc_users ADD COLUMN discord_id VARCHAR(50) DEFAULT ''")
     except:
         pass
     try:
@@ -2422,6 +2427,54 @@ def verify_confirm():
               (uuid, username, u["id"]))
     db.commit()
     return f"Successfully verified {username} on website!", 200
+
+@app.route("/api/bot/verify", methods=["POST"])
+def bot_verify():
+    """Endpoint for Discord bot to link discord_id to a user using their verification code."""
+    data = request.get_json() or {}
+    secret = request.headers.get("X-Bot-Secret")
+    if secret != os.environ.get("HC_BOT_SECRET", "hellcore-secret-123"):
+        return jsonify({"error": "Forbidden"}), 403
+    
+    code = data.get("code")
+    discord_id = data.get("discord_id")
+    if not code or not discord_id:
+        return jsonify({"error": "Missing params"}), 400
+        
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT id, username FROM hc_users WHERE verification_code={ph()}", (code,))
+    row = to_dict(c.fetchone())
+    if not row:
+        return jsonify({"error": "Invalid or expired code"}), 404
+        
+    c.execute(f"UPDATE hc_users SET discord_id={ph()}, verification_code=NULL WHERE id={ph()}", (str(discord_id), row["id"]))
+    db.commit()
+    return jsonify({"ok": True, "username": row["username"]})
+
+@app.route("/api/bot/ranks")
+def bot_ranks():
+    """Endpoint for Discord bot to fetch all verified users and their ranks."""
+    secret = request.headers.get("X-Bot-Secret")
+    if secret != os.environ.get("HC_BOT_SECRET", "hellcore-secret-123"):
+        return jsonify({"error": "Forbidden"}), 403
+        
+    db = get_db(); c = db_cursor(db)
+    # Get all users who have a discord_id linked
+    c.execute("SELECT id, username, discord_id FROM hc_users WHERE discord_id != ''")
+    users = to_list(c.fetchall())
+    
+    results = []
+    for u in users:
+        # Get ranks for this user
+        c.execute(f"SELECT gamemode, rank_name FROM hc_ranks WHERE user_id={ph()}", (u["id"],))
+        ranks = to_list(c.fetchall())
+        results.append({
+            "username": u["username"],
+            "discord_id": u["discord_id"],
+            "ranks": {r["gamemode"]: r["rank_name"] for r in ranks}
+        })
+        
+    return jsonify(results)
 
 @app.route("/api/metrics/update")
 def metrics_update():

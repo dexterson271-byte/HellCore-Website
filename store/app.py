@@ -197,6 +197,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_users(
   email VARCHAR(200) UNIQUE NOT NULL,
   username VARCHAR(50) UNIQUE NOT NULL,
   mc_username VARCHAR(50) DEFAULT '',
+  discord_id VARCHAR(50) DEFAULT '',
   password_hash VARCHAR(100) NOT NULL,
   session_token VARCHAR(120),
   role VARCHAR(30) DEFAULT 'player',
@@ -324,6 +325,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_command_queue(
         "ALTER TABLE hc_ticket_msgs ADD COLUMN image_url VARCHAR(255) DEFAULT ''",
         "ALTER TABLE hc_store_products ADD COLUMN xp_price INTEGER DEFAULT 0",
         "ALTER TABLE hc_users ADD COLUMN current_xp INTEGER DEFAULT 0",
+        "ALTER TABLE hc_users ADD COLUMN discord_id VARCHAR(50) DEFAULT ''",
         "ALTER TABLE hc_command_queue ADD COLUMN target VARCHAR(20) DEFAULT 'proxy'",
     ]:
         try: c.execute(sql)
