@@ -194,6 +194,30 @@ def add_header(r):
     r.headers["Expires"] = "0"
     return r
 
+@app.route("/rbw")
+def rbw_redirect():
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hellcore Network RBW</title>
+    <meta name="description" content="Click to join the RBW Discord server.">
+    <meta property="og:title" content="Hellcore Network RBW">
+    <meta property="og:description" content="Click here to join the RBW Discord server!">
+    <meta property="og:image" content="https://hellcore.net/static/logo.png">
+    <meta property="og:url" content="https://hellcore.net/rbw">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#FF512F">
+    <meta http-equiv="refresh" content="0; url=https://discord.gg/nnBrfme7Wk">
+    <script>window.location.href = "https://discord.gg/nnBrfme7Wk";</script>
+</head>
+<body style="background:#09090b; color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh;">
+    <p>Redirecting to Discord... <a href="https://discord.gg/nnBrfme7Wk" style="color:#FF512F;">Click here</a> if not redirected.</p>
+</body>
+</html>"""
+    return Response(html, mimetype="text/html")
+
 @app.route("/discord")
 def discord_redirect():
     html = """<!DOCTYPE html>
