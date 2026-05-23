@@ -814,6 +814,7 @@ def init_db():
     AI  = "AUTO_INCREMENT" if mysql else "AUTOINCREMENT"
     DT  = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
     UNQ = "UNIQUE KEY uq" if mysql else "UNIQUE"
+    HTML_TEXT = "LONGTEXT" if mysql else "TEXT"
 
     tables = [
 f"""CREATE TABLE IF NOT EXISTS hc_users(
@@ -975,6 +976,28 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_activity(
   action VARCHAR(50) NOT NULL,
   details TEXT,
   created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_ticket_transcripts(
+  id INTEGER PRIMARY KEY {AI},
+  public_id VARCHAR(80) UNIQUE NOT NULL,
+  guild_id VARCHAR(40) DEFAULT '',
+  guild_name VARCHAR(200) DEFAULT '',
+  channel_id VARCHAR(40) DEFAULT '',
+  channel_name VARCHAR(120) DEFAULT '',
+  owner_id VARCHAR(40) DEFAULT '',
+  ticket_type VARCHAR(80) DEFAULT '',
+  ticket_type_label VARCHAR(120) DEFAULT '',
+  claimed_staff_id VARCHAR(40) DEFAULT '',
+  status VARCHAR(40) DEFAULT '',
+  priority VARCHAR(40) DEFAULT '',
+  created_time VARCHAR(80) DEFAULT '',
+  requested_by_id VARCHAR(40) DEFAULT '',
+  requested_by_name VARCHAR(120) DEFAULT '',
+  reason TEXT,
+  filename VARCHAR(200) DEFAULT '',
+  html {HTML_TEXT} NOT NULL,
+  created_at {DT},
+  updated_at {DT})""",
 
 f"""CREATE TABLE IF NOT EXISTS hc_ads(
   id INTEGER PRIMARY KEY {AI},
@@ -2516,6 +2539,92 @@ def bot_unlink():
     c.execute(f"UPDATE hc_users SET discord_id='' WHERE discord_id={ph()}", (str(discord_id),))
     db.commit()
     return jsonify({"ok": True})
+
+@app.route("/api/bot/tickets/transcripts", methods=["POST"])
+def bot_ticket_transcript_upload():
+    """Store a Discord ticket transcript and return a public hellcore.net link."""
+    bot_secret = os.environ.get("HC_BOT_SECRET", "hellcore-secret-123")
+    website_key = os.environ.get("WEBSITE_API_KEY", "hellcore_secret_key")
+    provided_secret = request.headers.get("X-Bot-Secret", "")
+    provided_key = request.headers.get("X-API-Key", "")
+    secret_ok = bool(bot_secret and provided_secret and hmac.compare_digest(provided_secret, bot_secret))
+    key_ok = bool(website_key and provided_key and hmac.compare_digest(provided_key, website_key))
+    if not (secret_ok or key_ok):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.get_json(silent=True) or {}
+    ticket_id = str(data.get("ticket_id") or data.get("channel_id") or "").strip()
+    html_body = str(data.get("html") or "")
+    if not ticket_id or not html_body:
+        return jsonify({"error": "Missing ticket_id or html"}), 400
+    if not re.fullmatch(r"[A-Za-z0-9_-]{3,80}", ticket_id):
+        return jsonify({"error": "Invalid ticket_id"}), 400
+
+    fields = {
+        "public_id": ticket_id,
+        "guild_id": str(data.get("guild_id") or ""),
+        "guild_name": str(data.get("guild_name") or "")[:200],
+        "channel_id": str(data.get("channel_id") or ""),
+        "channel_name": str(data.get("channel_name") or "")[:120],
+        "owner_id": str(data.get("owner_id") or ""),
+        "ticket_type": str(data.get("ticket_type") or "")[:80],
+        "ticket_type_label": str(data.get("ticket_type_label") or "")[:120],
+        "claimed_staff_id": str(data.get("claimed_staff_id") or ""),
+        "status": str(data.get("status") or "")[:40],
+        "priority": str(data.get("priority") or "")[:40],
+        "created_time": str(data.get("created_time") or "")[:80],
+        "requested_by_id": str(data.get("requested_by_id") or ""),
+        "requested_by_name": str(data.get("requested_by_name") or "")[:120],
+        "reason": str(data.get("reason") or ""),
+        "filename": str(data.get("filename") or f"{ticket_id}-transcript.html")[:200],
+        "html": html_body,
+    }
+
+    db = get_db(); c = db_cursor(db)
+    now = datetime.now()
+    if _DB_MODE == "sqlite":
+        cols = list(fields.keys()) + ["created_at", "updated_at"]
+        vals = list(fields.values()) + [now, now]
+        update_cols = [col for col in fields.keys() if col != "public_id"] + ["updated_at"]
+        update_sql = ", ".join(f"{col}=excluded.{col}" for col in update_cols)
+        c.execute(
+            f"INSERT INTO hc_ticket_transcripts ({','.join(cols)}) VALUES ({phs(len(cols))}) "
+            f"ON CONFLICT(public_id) DO UPDATE SET {update_sql}",
+            vals,
+        )
+    else:
+        cols = list(fields.keys()) + ["created_at", "updated_at"]
+        vals = list(fields.values()) + [now, now]
+        update_cols = [col for col in fields.keys() if col != "public_id"] + ["updated_at"]
+        update_sql = ", ".join(f"{col}=VALUES({col})" for col in update_cols)
+        c.execute(
+            f"INSERT INTO hc_ticket_transcripts ({','.join(cols)}) VALUES ({phs(len(cols))}) "
+            f"ON DUPLICATE KEY UPDATE {update_sql}",
+            vals,
+        )
+    db.commit()
+
+    url = f"{request.host_url.rstrip('/')}/tickets/{ticket_id}"
+    return jsonify({"ok": True, "ticket_id": ticket_id, "url": url, "transcript_url": url})
+
+@app.route("/tickets/<ticket_id>")
+@app.route("/ticket/<ticket_id>")
+@app.route("/ticket-<ticket_id>")
+def ticket_transcript_view(ticket_id):
+    """Public read-only transcript page."""
+    ticket_id = str(ticket_id or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{3,80}", ticket_id):
+        return Response("Invalid ticket id", status=400, mimetype="text/plain")
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT html FROM hc_ticket_transcripts WHERE public_id={ph()}", (ticket_id,))
+    row = to_dict(c.fetchone())
+    if not row:
+        return Response("Ticket transcript not found.", status=404, mimetype="text/plain")
+
+    response = Response(row["html"], mimetype="text/html; charset=utf-8")
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
 
 @app.route("/api/metrics/update")
 def metrics_update():
