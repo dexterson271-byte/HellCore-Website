@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hellcore API Review</title>
+  <style>
+    :root {
+      --bg: #080808;
+      --panel: #121214;
+      --panel2: #18181b;
+      --line: #2a2a30;
+      --text: #f5f5f5;
+      --muted: #a1a1aa;
+      --accent: #ff512f;
+      --good: #35d07f;
+      --warn: #f5b84b;
+      --bad: #ff5c5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    main { max-width: 1320px; margin: 0 auto; padding: 28px 18px 48px; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    p { color: var(--muted); margin: 0 0 18px; }
+    .login {
+      max-width: 420px;
+      margin: 12vh auto 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+    }
+    .bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+    input, select, button, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+    }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(430px, 0.9fr) minmax(0, 1.1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      font-size: 13px;
+      vertical-align: top;
+    }
+    th { color: var(--muted); background: var(--panel2); font-size: 12px; }
+    tr { cursor: pointer; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+    }
+    .solid { color: var(--good); }
+    .needs { color: var(--warn); }
+    .weak { color: var(--bad); }
+    .detail { padding: 16px; }
+    .kv {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+    }
+    .k { color: var(--muted); }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #09090b;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      max-height: 360px;
+      overflow: auto;
+      color: #e8e8e8;
+    }
+    .section-title {
+      margin: 18px 0 8px;
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .empty { padding: 22px; color: var(--muted); }
+    .err { color: var(--bad); margin-top: 8px; }
+    @media (max-width: 980px) {
+      .bar, .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+{% if not authorized %}
+  <form class="login" method="post">
+    <h1>API Review</h1>
+    <p>Enter the review password.</p>
+    <input name="password" type="password" placeholder="Password" autofocus>
+    <button style="margin-top:10px" type="submit">Open</button>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  </form>
+{% else %}
+  <main>
+    <h1>API Review</h1>
+    <p>Search immutable Discord ticket uploads and inspect integration quality evidence.</p>
+    <div class="bar">
+      <input id="ticket_id" placeholder="Ticket ID">
+      <input id="user_id" placeholder="User ID">
+      <input id="username" placeholder="Username">
+      <input id="staff_id" placeholder="Staff ID">
+      <input id="category" placeholder="Category">
+      <input id="keyword" placeholder="Transcript keyword">
+      <input id="date_from" type="date">
+      <input id="date_to" type="date">
+      <select id="quality_level">
+        <option value="">All quality levels</option>
+        <option value="solid">Solid</option>
+        <option value="needs review">Needs review</option>
+        <option value="weak">Weak</option>
+      </select>
+      <button onclick="loadTickets()">Search</button>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <table>
+          <thead>
+            <tr><th>Ticket</th><th>User</th><th>Category</th><th>Quality</th><th>Uploaded</th></tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div id="detail" class="detail empty">Select a ticket upload.</div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const fmt = s => s ? new Date(s).toLocaleString() : '';
+    const cls = level => level === 'weak' ? 'weak' : (level === 'needs review' ? 'needs' : 'solid');
+
+    function query() {
+      const params = new URLSearchParams();
+      ['ticket_id','user_id','username','staff_id','category','keyword','date_from','date_to','quality_level'].forEach(id => {
+        const value = $(id).value.trim();
+        if (value) params.set(id, value);
+      });
+      return params.toString();
+    }
+
+    async function loadTickets() {
+      $('rows').innerHTML = '<tr><td colspan="5" class="empty">Loading...</td></tr>';
+      const res = await fetch('/api/apies/tickets?' + query());
+      const data = await res.json();
+      if (!res.ok) {
+        $('rows').innerHTML = `<tr><td colspan="5" class="empty">${esc(data.error || 'Failed to load')}</td></tr>`;
+        return;
+      }
+      if (!data.length) {
+        $('rows').innerHTML = '<tr><td colspan="5" class="empty">No uploads found.</td></tr>';
+        return;
+      }
+      $('rows').innerHTML = data.map(row => `
+        <tr onclick="openTicket(${row.id})">
+          <td><strong>${esc(row.ticket_id)}</strong><br><span style="color:var(--muted)">${esc(row.channel_id)}</span></td>
+          <td>${esc(row.username)}<br><span style="color:var(--muted)">${esc(row.user_id)}</span></td>
+          <td>${esc(row.category)}</td>
+          <td><span class="pill ${cls(row.quality_level)}">${esc(row.quality_score)} ${esc(row.quality_level)}</span></td>
+          <td>${esc(fmt(row.created_at))}</td>
+        </tr>
+      `).join('');
+    }
+
+    function kv(label, value) {
+      return `<div class="kv"><div class="k">${esc(label)}</div><div>${esc(value)}</div></div>`;
+    }
+
+    async function openTicket(id) {
+      $('detail').innerHTML = 'Loading...';
+      const res = await fetch('/api/apies/tickets/' + id);
+      const row = await res.json();
+      if (!res.ok) {
+        $('detail').innerHTML = `<div class="empty">${esc(row.error || 'Failed to load')}</div>`;
+        return;
+      }
+      $('detail').innerHTML = `
+        <h2 style="margin:0 0 8px">${esc(row.ticket_id)}</h2>
+        <div class="pill ${cls(row.quality_level)}">${esc(row.quality_score)} ${esc(row.quality_level)}</div>
+        ${kv('Username', row.username)}
+        ${kv('User ID', row.user_id)}
+        ${kv('Staff ID', row.staff_id)}
+        ${kv('Channel ID', row.channel_id)}
+        ${kv('Category', row.category)}
+        ${kv('Opened', row.opened_at)}
+        ${kv('Closed', row.closed_at)}
+        ${kv('Close reason', row.close_reason)}
+        ${kv('Uploader IP', row.uploader_ip)}
+        ${kv('User-Agent', row.user_agent)}
+        ${kv('Uploaded', fmt(row.created_at))}
+        <div class="section-title">Quality Notes</div>
+        <pre>${esc(row.quality_notes || '')}</pre>
+        <div class="section-title">Transcript</div>
+        <pre>${esc(row.transcript || '')}</pre>
+        <div class="section-title">Attachments</div>
+        <pre>${esc(JSON.stringify(row.attachments || [], null, 2))}</pre>
+        <div class="section-title">Headers</div>
+        <pre>${esc(JSON.stringify(row.headers || {}, null, 2))}</pre>
+        <div class="section-title">Raw Body</div>
+        <pre>${esc(row.raw_body || '')}</pre>
+        <div class="section-title">Rejected / Duplicate Attempts</div>
+        <pre>${esc(JSON.stringify(row.attempts || [], null, 2))}</pre>
+      `;
+    }
+
+    document.querySelectorAll('input,select').forEach(el => {
+      el.addEventListener('keydown', ev => { if (ev.key === 'Enter') loadTickets(); });
+    });
+    loadTickets();
+  </script>
+{% endif %}
+</body>
+</html>

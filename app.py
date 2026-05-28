@@ -45,6 +45,7 @@ import datetime as dt
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
 from functools import wraps
+from html import escape as html_escape
 import urllib.request
 import urllib.error
 import mysql.connector
@@ -503,6 +504,217 @@ def get_client_ip():
     if forwarded:
         return forwarded.split(",")[0].strip()
     return (request.remote_addr or "unknown").strip() or "unknown"
+
+
+TICKET_UPLOAD_FIELDS = {
+    "ticket_id",
+    "user_id",
+    "username",
+    "staff_id",
+    "channel_id",
+    "category",
+    "opened_at",
+    "closed_at",
+    "transcript",
+    "attachments",
+    "close_reason",
+}
+
+
+def ticket_upload_auth_status():
+    bot_secret = os.environ.get("HC_BOT_SECRET", "hellcore-secret-123")
+    website_key = os.environ.get("WEBSITE_API_KEY", "hellcore_secret_key")
+    provided_secret = request.headers.get("X-Bot-Secret", "")
+    provided_key = request.headers.get("X-API-Key", "")
+    secret_ok = bool(bot_secret and provided_secret and hmac.compare_digest(provided_secret, bot_secret))
+    key_ok = bool(website_key and provided_key and hmac.compare_digest(provided_key, website_key))
+    return {
+        "ok": secret_ok or key_ok,
+        "method": "bot_secret" if secret_ok else ("api_key" if key_ok else ""),
+        "provided_any": bool(provided_secret or provided_key),
+        "provided_both": bool(provided_secret and provided_key),
+    }
+
+
+def public_headers_snapshot():
+    sensitive = {"authorization", "cookie", "x-api-key", "x-bot-secret"}
+    out = {}
+    for key, value in request.headers.items():
+        if key.lower() in sensitive:
+            out[key] = "[redacted]"
+        else:
+            out[key] = str(value)[:1000]
+    return out
+
+
+def valid_isoish_datetime(value):
+    raw = str(value or "").strip()
+    if not raw:
+        return False
+    try:
+        datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        return True
+    except Exception:
+        return False
+
+
+def ticket_quality_level(score):
+    score = max(0, min(100, int(score)))
+    if score <= 30:
+        return "weak"
+    if score <= 70:
+        return "needs review"
+    return "solid"
+
+
+def score_ticket_upload_payload(data, auth_status):
+    score = 100
+    notes = []
+    errors = []
+
+    if not isinstance(data, dict):
+        return 0, "weak", ["Request body must be a JSON object."], ["Request body must be a JSON object."]
+
+    missing = [field for field in TICKET_UPLOAD_FIELDS if field not in data]
+    if missing:
+        score -= min(60, 15 * len(missing))
+        msg = "Missing required fields: " + ", ".join(sorted(missing))
+        notes.append(msg)
+        errors.append(msg)
+
+    unexpected = sorted(set(data.keys()) - TICKET_UPLOAD_FIELDS)
+    if unexpected:
+        score -= min(25, 5 * len(unexpected))
+        notes.append("Unexpected fields: " + ", ".join(unexpected[:12]))
+
+    ticket_id = str(data.get("ticket_id") or "").strip()
+    if "ticket_id" in data and not ticket_id:
+        score -= 15
+        errors.append("ticket_id cannot be empty.")
+        notes.append("Empty ticket_id.")
+    elif ticket_id and not re.fullmatch(r"[A-Za-z0-9_.:-]{3,100}", ticket_id):
+        score -= 20
+        errors.append("ticket_id must be 3-100 stable characters.")
+        notes.append("Invalid ticket_id format.")
+
+    for field in ("user_id", "staff_id", "channel_id"):
+        value = str(data.get(field) or "").strip()
+        if field in data and not value:
+            score -= 10
+            errors.append(f"{field} cannot be empty.")
+            notes.append(f"Empty {field}.")
+        elif value and not re.fullmatch(r"[0-9]{3,32}", value):
+            score -= 8
+            notes.append(f"{field} is not a normal Discord snowflake-style ID.")
+
+    username = str(data.get("username") or "").strip()
+    if "username" in data and not username:
+        score -= 10
+        errors.append("username cannot be empty.")
+        notes.append("Empty username.")
+
+    category = str(data.get("category") or "").strip()
+    if "category" in data and not category:
+        score -= 8
+        errors.append("category cannot be empty.")
+        notes.append("Empty category.")
+
+    transcript = str(data.get("transcript") or "").strip()
+    if "transcript" in data and not transcript:
+        score -= 25
+        errors.append("transcript cannot be empty.")
+        notes.append("Empty transcript.")
+
+    if "close_reason" in data and not str(data.get("close_reason") or "").strip():
+        score -= 8
+        notes.append("Missing close reason.")
+
+    for field in ("opened_at", "closed_at"):
+        if field in data and not valid_isoish_datetime(data.get(field)):
+            score -= 15
+            errors.append(f"{field} must be an ISO timestamp.")
+            notes.append(f"Invalid {field} timestamp.")
+
+    attachments = data.get("attachments")
+    if "attachments" in data:
+        if not isinstance(attachments, list):
+            score -= 20
+            errors.append("attachments must be a JSON array.")
+            notes.append("Malformed attachments; expected array.")
+        else:
+            for idx, item in enumerate(attachments[:20]):
+                if not isinstance(item, (dict, str)):
+                    score -= 5
+                    notes.append(f"Attachment #{idx + 1} has an unusual shape.")
+                    break
+
+    ua = request.headers.get("User-Agent", "").strip()
+    if not ua:
+        score -= 10
+        notes.append("Missing user-agent.")
+    elif re.search(r"(chatgpt|openai|copilot|generated|ai-tool|curl|python-requests)", ua, re.I):
+        score -= 15
+        notes.append("Unusual/generated-looking user-agent.")
+
+    if not auth_status.get("provided_any"):
+        score -= 30
+        notes.append("No auth header supplied.")
+    elif auth_status.get("provided_both"):
+        score -= 5
+        notes.append("Both API key and bot secret were sent; one auth method is enough.")
+
+    score = max(0, min(100, score))
+    if not notes:
+        notes.append("Clean upload shape.")
+    return score, ticket_quality_level(score), notes, errors
+
+
+def record_ticket_upload_attempt(ticket_id, raw_body, headers_json, outcome, score, level, notes):
+    try:
+        db = get_db(); c = db_cursor(db)
+        c.execute(
+            f"INSERT INTO hc_discord_ticket_upload_attempts(ticket_id,uploader_ip,user_agent,headers_json,raw_body,outcome,quality_score,quality_level,quality_notes) VALUES({phs(9)})",
+            (
+                str(ticket_id or "")[:100],
+                get_client_ip(),
+                request.headers.get("User-Agent", "")[:255],
+                headers_json,
+                raw_body,
+                outcome,
+                int(score),
+                level,
+                "\n".join(notes or []),
+            ),
+        )
+        db.commit()
+    except Exception as e:
+        print(f"[WARN] Failed to record ticket upload attempt: {e}")
+
+
+def apies_required(f):
+    @wraps(f)
+    def w(*a, **k):
+        if session.get("apies_authorized"):
+            return f(*a, **k)
+        return jsonify({"error": "API review password required"}), 403
+    return w
+
+
+def serialize_discord_ticket_row(row):
+    d = to_dict(row)
+    if not d:
+        return None
+    d["created_at"] = isoformat_utc(d.get("created_at"))
+    try:
+        d["attachments"] = json.loads(d.get("attachments") or "[]")
+    except Exception:
+        d["attachments"] = []
+    try:
+        d["headers"] = json.loads(d.get("headers_json") or "{}")
+    except Exception:
+        d["headers"] = {}
+    d.pop("headers_json", None)
+    return d
 
 
 def sign_ad_token(token_uuid):
@@ -999,6 +1211,41 @@ f"""CREATE TABLE IF NOT EXISTS hc_ticket_transcripts(
   created_at {DT},
   updated_at {DT})""",
 
+f"""CREATE TABLE IF NOT EXISTS hc_discord_ticket_logs(
+  id INTEGER PRIMARY KEY {AI},
+  ticket_id VARCHAR(100) UNIQUE NOT NULL,
+  user_id VARCHAR(60) NOT NULL,
+  username VARCHAR(120) NOT NULL,
+  staff_id VARCHAR(60) NOT NULL,
+  channel_id VARCHAR(60) NOT NULL,
+  category VARCHAR(80) NOT NULL,
+  opened_at VARCHAR(80) NOT NULL,
+  closed_at VARCHAR(80) NOT NULL,
+  transcript {HTML_TEXT} NOT NULL,
+  attachments TEXT,
+  close_reason TEXT,
+  uploader_ip VARCHAR(80) DEFAULT '',
+  user_agent VARCHAR(255) DEFAULT '',
+  headers_json TEXT,
+  raw_body {HTML_TEXT},
+  quality_score INTEGER DEFAULT 100,
+  quality_level VARCHAR(30) DEFAULT 'solid',
+  quality_notes TEXT,
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_discord_ticket_upload_attempts(
+  id INTEGER PRIMARY KEY {AI},
+  ticket_id VARCHAR(100) DEFAULT '',
+  uploader_ip VARCHAR(80) DEFAULT '',
+  user_agent VARCHAR(255) DEFAULT '',
+  headers_json TEXT,
+  raw_body {HTML_TEXT},
+  outcome VARCHAR(40) DEFAULT '',
+  quality_score INTEGER DEFAULT 0,
+  quality_level VARCHAR(30) DEFAULT 'weak',
+  quality_notes TEXT,
+  created_at {DT})""",
+
 f"""CREATE TABLE IF NOT EXISTS hc_ads(
   id INTEGER PRIMARY KEY {AI},
   user_id INTEGER NOT NULL,
@@ -1212,6 +1459,19 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         "ALTER TABLE hc_store_orders ADD COLUMN details_json TEXT",
         "ALTER TABLE hc_store_orders ADD COLUMN rank_snapshot TEXT",
         "ALTER TABLE hc_command_queue ADD COLUMN target VARCHAR(20) DEFAULT 'proxy'"
+    ]:
+        try:
+            c.execute(sql)
+        except:
+            pass
+    for sql in [
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN quality_score INTEGER DEFAULT 100",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN quality_level VARCHAR(30) DEFAULT 'solid'",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN quality_notes TEXT",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN headers_json TEXT",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN raw_body TEXT",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN uploader_ip VARCHAR(80) DEFAULT ''",
+        "ALTER TABLE hc_discord_ticket_logs ADD COLUMN user_agent VARCHAR(255) DEFAULT ''"
     ]:
         try:
             c.execute(sql)
@@ -2062,7 +2322,7 @@ def cors(r):
     else:
         r.headers["Access-Control-Allow-Origin"] = "*"
         
-    r.headers["Access-Control-Allow-Headers"] = "Content-Type,X-Auth-Token,Authorization"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type,X-Auth-Token,Authorization,X-API-Key,X-Bot-Secret"
     r.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
     r.headers["Access-Control-Allow-Credentials"] = "true"
     return r
@@ -2606,6 +2866,200 @@ def bot_ticket_transcript_upload():
 
     url = f"{request.host_url.rstrip('/')}/tickets/{ticket_id}"
     return jsonify({"ok": True, "ticket_id": ticket_id, "url": url, "transcript_url": url})
+
+
+@app.route("/api/tickets/upload", methods=["POST"])
+def discord_ticket_log_upload():
+    """Immutable Discord ticket-log upload endpoint for bot integrations."""
+    raw_body = request.get_data(cache=True, as_text=True) or ""
+    headers_json = json.dumps(public_headers_snapshot(), sort_keys=True)
+    auth_status = ticket_upload_auth_status()
+    if not auth_status["ok"]:
+        record_ticket_upload_attempt("", raw_body, headers_json, "unauthorized", 0, "weak", ["Invalid or missing API authentication."])
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True)
+    score, level, notes, errors = score_ticket_upload_payload(data, auth_status)
+    ticket_id = str((data or {}).get("ticket_id") or "").strip() if isinstance(data, dict) else ""
+    if errors:
+        record_ticket_upload_attempt(ticket_id, raw_body, headers_json, "invalid", score, level, notes)
+        return jsonify({"error": "Invalid ticket upload", "details": errors}), 400
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT id FROM hc_discord_ticket_logs WHERE ticket_id={ph()}", (ticket_id,))
+    if c.fetchone():
+        dup_notes = list(notes) + ["Duplicate upload attempt; original ticket log was not changed."]
+        dup_score = min(score, 60)
+        record_ticket_upload_attempt(ticket_id, raw_body, headers_json, "duplicate", dup_score, ticket_quality_level(dup_score), dup_notes)
+        return jsonify({"error": "Ticket log already uploaded", "ticket_id": ticket_id}), 409
+
+    attachments_json = json.dumps(data.get("attachments") or [], ensure_ascii=False)
+    values = (
+        ticket_id,
+        str(data.get("user_id") or "").strip(),
+        str(data.get("username") or "").strip()[:120],
+        str(data.get("staff_id") or "").strip(),
+        str(data.get("channel_id") or "").strip(),
+        str(data.get("category") or "").strip()[:80],
+        str(data.get("opened_at") or "").strip(),
+        str(data.get("closed_at") or "").strip(),
+        str(data.get("transcript") or ""),
+        attachments_json,
+        str(data.get("close_reason") or ""),
+        get_client_ip(),
+        request.headers.get("User-Agent", "")[:255],
+        headers_json,
+        raw_body,
+        score,
+        level,
+        "\n".join(notes),
+    )
+    c.execute(
+        f"INSERT INTO hc_discord_ticket_logs(ticket_id,user_id,username,staff_id,channel_id,category,opened_at,closed_at,transcript,attachments,close_reason,uploader_ip,user_agent,headers_json,raw_body,quality_score,quality_level,quality_notes) VALUES({phs(18)})",
+        values,
+    )
+    db.commit()
+    return jsonify({"ok": True, "ticket_id": ticket_id}), 201
+
+
+@app.route("/api/tickets/docs")
+def discord_ticket_upload_docs():
+    base_url = request.host_url.rstrip("/")
+    sample = {
+        "ticket_id": "ticket-12345",
+        "user_id": "123456789012345678",
+        "username": "PlayerName",
+        "staff_id": "234567890123456789",
+        "channel_id": "345678901234567890",
+        "category": "support",
+        "opened_at": "2026-05-28T12:00:00Z",
+        "closed_at": "2026-05-28T12:30:00Z",
+        "transcript": "Ticket transcript text or HTML",
+        "attachments": [{"name": "proof.png", "url": "https://example.com/proof.png"}],
+        "close_reason": "Resolved",
+    }
+    html = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hellcore Ticket Upload API</title>
+<style>
+body{{margin:0;background:#080808;color:#f5f5f5;font-family:Inter,Arial,sans-serif;line-height:1.5}}
+main{{max-width:900px;margin:0 auto;padding:42px 18px}}
+h1,h2{{font-family:Arial,sans-serif}}code,pre{{background:#151515;border:1px solid #2b2b2b;border-radius:8px}}
+code{{padding:2px 5px}}pre{{padding:16px;overflow:auto}}.ok{{color:#35d07f}}.err{{color:#ff6b6b}}
+</style></head><body><main>
+<h1>Hellcore Ticket Upload API</h1>
+<p>Use this endpoint to upload a completed Discord ticket log to Hellcore.</p>
+<h2>Endpoint</h2>
+<pre>POST {html_escape(base_url)}/api/tickets/upload</pre>
+<h2>Authentication</h2>
+<p>Send one authentication header with each request:</p>
+<pre>X-API-Key: YOUR_API_KEY</pre>
+<h2>Required JSON Fields</h2>
+<p><code>{'</code>, <code>'.join(sorted(TICKET_UPLOAD_FIELDS))}</code></p>
+<h2>Example Request Body</h2>
+<pre>{html_escape(json.dumps(sample, indent=2))}</pre>
+<h2>Responses</h2>
+<pre class="ok">201 Created: {{"ok": true, "ticket_id": "ticket-12345"}}</pre>
+<pre class="err">400 Bad Request: invalid or missing fields
+401 Unauthorized: missing or invalid API key
+409 Conflict: ticket_id was already uploaded</pre>
+<h2>Production Notes</h2>
+<p>Use stable ticket IDs, ISO timestamps, a JSON array for attachments, complete transcripts, and handle duplicate uploads without retry loops.</p>
+</main></body></html>"""
+    return Response(html, mimetype="text/html; charset=utf-8")
+
+
+@app.route("/apies", methods=["GET", "POST"])
+def apies_panel():
+    error = ""
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if hmac.compare_digest(password, "kqhere"):
+            session["apies_authorized"] = True
+            return redirect("/apies")
+        error = "Invalid password"
+    return render_template("apies.html", authorized=bool(session.get("apies_authorized")), error=error)
+
+
+@app.route("/api/apies/tickets")
+@apies_required
+def apies_tickets_list():
+    filters = []
+    params = []
+
+    filter_map = {
+        "ticket_id": "ticket_id",
+        "user_id": "user_id",
+        "username": "username",
+        "staff_id": "staff_id",
+        "category": "category",
+        "quality_level": "quality_level",
+    }
+    for arg, col in filter_map.items():
+        val = request.args.get(arg, "").strip()
+        if val:
+            if arg in ("username", "category"):
+                filters.append(f"{col} LIKE {ph()}")
+                params.append(f"%{val}%")
+            else:
+                filters.append(f"{col}={ph()}")
+                params.append(val)
+
+    keyword = request.args.get("keyword", "").strip()
+    if keyword:
+        filters.append(f"transcript LIKE {ph()}")
+        params.append(f"%{keyword}%")
+
+    date_from = request.args.get("date_from", "").strip()
+    if date_from:
+        filters.append(f"created_at >= {ph()}")
+        params.append(date_from)
+
+    date_to = request.args.get("date_to", "").strip()
+    if date_to:
+        filters.append(f"created_at <= {ph()}")
+        params.append(date_to + " 23:59:59" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_to) else date_to)
+
+    where = " WHERE " + " AND ".join(filters) if filters else ""
+    db = get_db(); c = db_cursor(db)
+    c.execute(
+        "SELECT id,ticket_id,user_id,username,staff_id,channel_id,category,opened_at,closed_at,"
+        "close_reason,uploader_ip,user_agent,quality_score,quality_level,quality_notes,created_at "
+        f"FROM hc_discord_ticket_logs{where} ORDER BY created_at DESC LIMIT 200",
+        tuple(params),
+    )
+    rows = []
+    for row in to_list(c.fetchall()):
+        row["created_at"] = isoformat_utc(row.get("created_at"))
+        rows.append(row)
+    return jsonify(rows)
+
+
+@app.route("/api/apies/tickets/<int:log_id>")
+@apies_required
+def apies_ticket_detail(log_id):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_discord_ticket_logs WHERE id={ph()}", (log_id,))
+    ticket = serialize_discord_ticket_row(c.fetchone())
+    if not ticket:
+        return jsonify({"error": "Ticket log not found"}), 404
+
+    c.execute(
+        f"SELECT id,ticket_id,uploader_ip,user_agent,headers_json,raw_body,outcome,quality_score,quality_level,quality_notes,created_at "
+        f"FROM hc_discord_ticket_upload_attempts WHERE ticket_id={ph()} ORDER BY created_at DESC LIMIT 50",
+        (ticket["ticket_id"],),
+    )
+    attempts = []
+    for row in to_list(c.fetchall()):
+        row["created_at"] = isoformat_utc(row.get("created_at"))
+        try:
+            row["headers"] = json.loads(row.get("headers_json") or "{}")
+        except Exception:
+            row["headers"] = {}
+        row.pop("headers_json", None)
+        attempts.append(row)
+    ticket["attempts"] = attempts
+    return jsonify(ticket)
 
 @app.route("/tickets/<ticket_id>")
 @app.route("/ticket/<ticket_id>")
