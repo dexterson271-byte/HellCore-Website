@@ -697,7 +697,7 @@ def apies_required(f):
     def w(*a, **k):
         if session.get("apies_authorized"):
             return f(*a, **k)
-        return jsonify({"error": "API review password required"}), 403
+        return jsonify({"error": "Ticket panel password required"}), 403
     return w
 
 
@@ -2917,11 +2917,12 @@ def discord_ticket_log_upload():
     )
     c.execute(
         f"INSERT INTO hc_discord_ticket_logs(ticket_id,user_id,username,staff_id,channel_id,category,opened_at,closed_at,transcript,attachments,close_reason,uploader_ip,user_agent,headers_json,raw_body,quality_score,quality_level,quality_notes) VALUES({phs(18)})",
-        values,
+        values[:15] + (100, "approved", "Auto approved."),
     )
     db.commit()
-    review_url = f"{request.host_url.rstrip('/')}/apies?ticket_id={urllib.parse.quote(ticket_id)}"
-    return jsonify({"ok": True, "ticket_id": ticket_id, "review_url": review_url}), 201
+    public_base = os.environ.get("WEBSITE_PUBLIC_URL", "https://hellcore.net").rstrip("/")
+    ticket_url = f"{public_base}/?ticket_id={urllib.parse.quote(ticket_id)}"
+    return jsonify({"ok": True, "ticket_id": ticket_id, "url": ticket_url, "ticket_url": ticket_url}), 201
 
 
 @app.route("/api/tickets/docs")
@@ -2961,7 +2962,7 @@ code{{padding:2px 5px}}pre{{padding:16px;overflow:auto}}.ok{{color:#35d07f}}.err
 <h2>Example Request Body</h2>
 <pre>{html_escape(json.dumps(sample, indent=2))}</pre>
 <h2>Responses</h2>
-<pre class="ok">201 Created: {{"ok": true, "ticket_id": "ticket-12345"}}</pre>
+<pre class="ok">201 Created: {{"ok": true, "ticket_id": "ticket-12345", "ticket_url": "https://hellcore.net/?ticket_id=ticket-12345"}}</pre>
 <pre class="err">400 Bad Request: invalid or missing fields
 401 Unauthorized: missing or invalid API key
 409 Conflict: ticket_id was already uploaded</pre>
@@ -2995,7 +2996,6 @@ def apies_tickets_list():
         "username": "username",
         "staff_id": "staff_id",
         "category": "category",
-        "quality_level": "quality_level",
     }
     for arg, col in filter_map.items():
         val = request.args.get(arg, "").strip()
@@ -3026,7 +3026,7 @@ def apies_tickets_list():
     db = get_db(); c = db_cursor(db)
     c.execute(
         "SELECT id,ticket_id,user_id,username,staff_id,channel_id,category,opened_at,closed_at,"
-        "close_reason,uploader_ip,user_agent,quality_score,quality_level,quality_notes,created_at "
+        "close_reason,uploader_ip,user_agent,created_at "
         f"FROM hc_discord_ticket_logs{where} ORDER BY created_at DESC LIMIT 200",
         tuple(params),
     )
@@ -3046,21 +3046,6 @@ def apies_ticket_detail(log_id):
     if not ticket:
         return jsonify({"error": "Ticket log not found"}), 404
 
-    c.execute(
-        f"SELECT id,ticket_id,uploader_ip,user_agent,headers_json,raw_body,outcome,quality_score,quality_level,quality_notes,created_at "
-        f"FROM hc_discord_ticket_upload_attempts WHERE ticket_id={ph()} ORDER BY created_at DESC LIMIT 50",
-        (ticket["ticket_id"],),
-    )
-    attempts = []
-    for row in to_list(c.fetchall()):
-        row["created_at"] = isoformat_utc(row.get("created_at"))
-        try:
-            row["headers"] = json.loads(row.get("headers_json") or "{}")
-        except Exception:
-            row["headers"] = {}
-        row.pop("headers_json", None)
-        attempts.append(row)
-    ticket["attempts"] = attempts
     return jsonify(ticket)
 
 @app.route("/tickets/<ticket_id>")

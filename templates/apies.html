@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Hellcore API Review</title>
+  <title>Hellcore Ticket Logs</title>
   <style>
     :root {
       --bg: #080808;
@@ -130,16 +130,16 @@
 <body>
 {% if not authorized %}
   <form class="login" method="post">
-    <h1>API Review</h1>
-    <p>Enter the review password.</p>
+    <h1>Ticket Logs</h1>
+    <p>Enter the panel password.</p>
     <input name="password" type="password" placeholder="Password" autofocus>
     <button style="margin-top:10px" type="submit">Open</button>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
   </form>
 {% else %}
   <main>
-    <h1>API Review</h1>
-    <p>Search immutable Discord ticket uploads and inspect integration quality evidence.</p>
+    <h1>Ticket Logs</h1>
+    <p>Search uploaded Discord ticket logs and open ticket details.</p>
     <div class="bar">
       <input id="ticket_id" placeholder="Ticket ID">
       <input id="user_id" placeholder="User ID">
@@ -149,19 +149,13 @@
       <input id="keyword" placeholder="Transcript keyword">
       <input id="date_from" type="date">
       <input id="date_to" type="date">
-      <select id="quality_level">
-        <option value="">All quality levels</option>
-        <option value="solid">Solid</option>
-        <option value="needs review">Needs review</option>
-        <option value="weak">Weak</option>
-      </select>
       <button onclick="loadTickets()">Search</button>
     </div>
     <div class="grid">
       <div class="panel">
         <table>
           <thead>
-            <tr><th>Ticket</th><th>User</th><th>Category</th><th>Quality</th><th>Uploaded</th></tr>
+            <tr><th>Ticket</th><th>User</th><th>Category</th><th>Staff</th><th>Uploaded</th></tr>
           </thead>
           <tbody id="rows"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody>
         </table>
@@ -175,11 +169,9 @@
     const $ = id => document.getElementById(id);
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const fmt = s => s ? new Date(s).toLocaleString() : '';
-    const cls = level => level === 'weak' ? 'weak' : (level === 'needs review' ? 'needs' : 'solid');
-
     function query() {
       const params = new URLSearchParams();
-      ['ticket_id','user_id','username','staff_id','category','keyword','date_from','date_to','quality_level'].forEach(id => {
+      ['ticket_id','user_id','username','staff_id','category','keyword','date_from','date_to'].forEach(id => {
         const value = $(id).value.trim();
         if (value) params.set(id, value);
       });
@@ -203,7 +195,7 @@
           <td><strong>${esc(row.ticket_id)}</strong><br><span style="color:var(--muted)">${esc(row.channel_id)}</span></td>
           <td>${esc(row.username)}<br><span style="color:var(--muted)">${esc(row.user_id)}</span></td>
           <td>${esc(row.category)}</td>
-          <td><span class="pill ${cls(row.quality_level)}">${esc(row.quality_score)} ${esc(row.quality_level)}</span></td>
+          <td>${esc(row.staff_id)}</td>
           <td>${esc(fmt(row.created_at))}</td>
         </tr>
       `).join('');
@@ -223,7 +215,6 @@
       }
       $('detail').innerHTML = `
         <h2 style="margin:0 0 8px">${esc(row.ticket_id)}</h2>
-        <div class="pill ${cls(row.quality_level)}">${esc(row.quality_score)} ${esc(row.quality_level)}</div>
         ${kv('Username', row.username)}
         ${kv('User ID', row.user_id)}
         ${kv('Staff ID', row.staff_id)}
@@ -235,23 +226,15 @@
         ${kv('Uploader IP', row.uploader_ip)}
         ${kv('User-Agent', row.user_agent)}
         ${kv('Uploaded', fmt(row.created_at))}
-        <div class="section-title">Quality Notes</div>
-        <pre>${esc(row.quality_notes || '')}</pre>
         <div class="section-title">Transcript</div>
         <pre>${esc(row.transcript || '')}</pre>
         <div class="section-title">Attachments</div>
         <pre>${esc(JSON.stringify(row.attachments || [], null, 2))}</pre>
-        <div class="section-title">Headers</div>
-        <pre>${esc(JSON.stringify(row.headers || {}, null, 2))}</pre>
-        <div class="section-title">Raw Body</div>
-        <pre>${esc(row.raw_body || '')}</pre>
-        <div class="section-title">Rejected / Duplicate Attempts</div>
-        <pre>${esc(JSON.stringify(row.attempts || [], null, 2))}</pre>
       `;
     }
 
     const initialParams = new URLSearchParams(location.search);
-    ['ticket_id','user_id','username','staff_id','category','keyword','date_from','date_to','quality_level'].forEach(id => {
+    ['ticket_id','user_id','username','staff_id','category','keyword','date_from','date_to'].forEach(id => {
       if (initialParams.has(id)) $(id).value = initialParams.get(id);
     });
 
