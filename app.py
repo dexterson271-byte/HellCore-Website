@@ -48,6 +48,7 @@ from functools import wraps
 from html import escape as html_escape
 import urllib.request
 import urllib.error
+import urllib.parse
 import mysql.connector
 from mysql.connector import pooling
 import sys
@@ -2919,7 +2920,8 @@ def discord_ticket_log_upload():
         values,
     )
     db.commit()
-    return jsonify({"ok": True, "ticket_id": ticket_id}), 201
+    review_url = f"{request.host_url.rstrip('/')}/apies?ticket_id={urllib.parse.quote(ticket_id)}"
+    return jsonify({"ok": True, "ticket_id": ticket_id, "review_url": review_url}), 201
 
 
 @app.route("/api/tickets/docs")
