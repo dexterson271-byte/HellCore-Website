@@ -2334,9 +2334,31 @@ def opts(p): return jsonify({}), 200
 # ═══════════════════════════════════════════════════════
 # FRONTEND
 # ═══════════════════════════════════════════════════════
-# Serves index.html for the root path
+# Serves index.html for the root path, or a Discord ticket log when ticket_id is provided.
 @app.route("/")
-def index(): return render_template("index.html", ad_completion_secret=AD_PROOF_SECRET)
+def index():
+    ticket_id = request.args.get("ticket_id", "").strip()
+    if ticket_id:
+        if not re.fullmatch(r"[A-Za-z0-9_.:-]{3,100}", ticket_id):
+            return Response("Invalid ticket id", status=400, mimetype="text/plain")
+        db = get_db(); c = db_cursor(db)
+        c.execute(f"SELECT transcript FROM hc_discord_ticket_logs WHERE ticket_id={ph()}", (ticket_id,))
+        row = to_dict(c.fetchone())
+        if not row:
+            return Response("Ticket log not found.", status=404, mimetype="text/plain")
+        transcript = str(row.get("transcript") or "")
+        if "<html" not in transcript[:500].lower():
+            transcript = (
+                "<!doctype html><html><head><meta charset=\"utf-8\"><title>Ticket "
+                + html_escape(ticket_id)
+                + "</title></head><body><pre>"
+                + html_escape(transcript)
+                + "</pre></body></html>"
+            )
+        response = Response(transcript, mimetype="text/html; charset=utf-8")
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return response
+    return render_template("index.html", ad_completion_secret=AD_PROOF_SECRET)
 
 @app.route("/static/<path:f>")
 def static_f(f): return send_from_directory("static", f)
