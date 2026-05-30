@@ -1391,10 +1391,17 @@ f"""CREATE TABLE IF NOT EXISTS hc_tournament_members(
   team_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   discord_id VARCHAR(50) NOT NULL,
+  discord_input VARCHAR(120) DEFAULT '',
   minecraft_ign_snapshot VARCHAR(50) NOT NULL,
   minecraft_ign_lc VARCHAR(50) NOT NULL,
   rbw_uuid VARCHAR(80) DEFAULT '',
   rbw_source VARCHAR(80) DEFAULT 'hc_users',
+  verification_code VARCHAR(4) DEFAULT '',
+  verification_status VARCHAR(30) DEFAULT 'pending',
+  verified_user_id INTEGER DEFAULT 0,
+  verified_at DATETIME,
+  code_used_at DATETIME,
+  code_expires_at DATETIME,
   role VARCHAR(20) DEFAULT 'member',
   joined_at {DT})""",
 
@@ -1493,7 +1500,14 @@ f"""CREATE TABLE IF NOT EXISTS hc_tournament_settings(
         "ALTER TABLE hc_tournament_teams ADD COLUMN updated_at DATETIME",
         "ALTER TABLE hc_tournament_members ADD COLUMN minecraft_ign_lc VARCHAR(50) DEFAULT ''",
         "ALTER TABLE hc_tournament_members ADD COLUMN rbw_uuid VARCHAR(80) DEFAULT ''",
-        "ALTER TABLE hc_tournament_members ADD COLUMN rbw_source VARCHAR(80) DEFAULT 'hc_users'"
+        "ALTER TABLE hc_tournament_members ADD COLUMN rbw_source VARCHAR(80) DEFAULT 'hc_users'",
+        "ALTER TABLE hc_tournament_members ADD COLUMN discord_input VARCHAR(120) DEFAULT ''",
+        "ALTER TABLE hc_tournament_members ADD COLUMN verification_code VARCHAR(4) DEFAULT ''",
+        "ALTER TABLE hc_tournament_members ADD COLUMN verification_status VARCHAR(30) DEFAULT 'pending'",
+        "ALTER TABLE hc_tournament_members ADD COLUMN verified_user_id INTEGER DEFAULT 0",
+        "ALTER TABLE hc_tournament_members ADD COLUMN verified_at DATETIME",
+        "ALTER TABLE hc_tournament_members ADD COLUMN code_used_at DATETIME",
+        "ALTER TABLE hc_tournament_members ADD COLUMN code_expires_at DATETIME"
     ]:
         try:
             c.execute(sql)
@@ -2940,10 +2954,17 @@ def ensure_tournament_schema():
           team_id INTEGER NOT NULL,
           user_id INTEGER NOT NULL,
           discord_id VARCHAR(50) NOT NULL,
+          discord_input VARCHAR(120) DEFAULT '',
           minecraft_ign_snapshot VARCHAR(50) NOT NULL,
           minecraft_ign_lc VARCHAR(50) NOT NULL,
           rbw_uuid VARCHAR(80) DEFAULT '',
           rbw_source VARCHAR(80) DEFAULT 'hc_users',
+          verification_code VARCHAR(4) DEFAULT '',
+          verification_status VARCHAR(30) DEFAULT 'pending',
+          verified_user_id INTEGER DEFAULT 0,
+          verified_at DATETIME,
+          code_used_at DATETIME,
+          code_expires_at DATETIME,
           role VARCHAR(20) DEFAULT 'member',
           joined_at {DT})""")
         c.execute(f"""CREATE TABLE IF NOT EXISTS hc_tournament_logs(
@@ -2969,6 +2990,13 @@ def ensure_tournament_schema():
             "ALTER TABLE hc_tournament_members ADD COLUMN minecraft_ign_lc VARCHAR(50) DEFAULT ''",
             "ALTER TABLE hc_tournament_members ADD COLUMN rbw_uuid VARCHAR(80) DEFAULT ''",
             "ALTER TABLE hc_tournament_members ADD COLUMN rbw_source VARCHAR(80) DEFAULT 'hc_users'",
+            "ALTER TABLE hc_tournament_members ADD COLUMN discord_input VARCHAR(120) DEFAULT ''",
+            "ALTER TABLE hc_tournament_members ADD COLUMN verification_code VARCHAR(4) DEFAULT ''",
+            "ALTER TABLE hc_tournament_members ADD COLUMN verification_status VARCHAR(30) DEFAULT 'pending'",
+            "ALTER TABLE hc_tournament_members ADD COLUMN verified_user_id INTEGER DEFAULT 0",
+            "ALTER TABLE hc_tournament_members ADD COLUMN verified_at DATETIME",
+            "ALTER TABLE hc_tournament_members ADD COLUMN code_used_at DATETIME",
+            "ALTER TABLE hc_tournament_members ADD COLUMN code_expires_at DATETIME",
         ]:
             try:
                 c.execute(sql)
@@ -3054,6 +3082,84 @@ def user_rbw_profile(user):
     }
 
 
+def clean_minecraft_ign(value):
+    ign = str(value or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_]{3,16}", ign):
+        return ""
+    return ign
+
+
+def clean_discord_ref(value):
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) < 2 or len(text) > 120:
+        return ""
+    if not re.fullmatch(r"[A-Za-z0-9_.#@\- ]{2,120}", text):
+        return ""
+    return text
+
+
+def generate_tournament_code(cursor):
+    for _ in range(100):
+        code = f"{secrets.randbelow(10000):04d}"
+        cursor.execute(
+            f"""SELECT id FROM hc_tournament_members
+                WHERE verification_code={ph()} AND verification_status!='verified'""",
+            (code,),
+        )
+        if not cursor.fetchone():
+            return code
+    return f"{secrets.randbelow(10000):04d}"
+
+
+def parse_tournament_roster(data, captain_user):
+    raw_players = data.get("players")
+    if not isinstance(raw_players, list):
+        raw_players = []
+    profile = user_rbw_profile(captain_user) or {}
+    captain_discord = str(
+        captain_user.get("discord_username")
+        or captain_user.get("discord_global_name")
+        or captain_user.get("discord_id")
+        or ""
+    ).strip()
+    fallback = [{
+        "minecraft_ign": profile.get("minecraft_ign") or captain_user.get("username") or "",
+        "discord": captain_discord,
+        "role": "captain",
+    }]
+    source = (raw_players or fallback)[:4]
+    roster = []
+    for idx in range(4):
+        raw = source[idx] if idx < len(source) and isinstance(source[idx], dict) else {}
+        ign = clean_minecraft_ign(raw.get("minecraft_ign") or raw.get("ign") or raw.get("username"))
+        discord_ref = clean_discord_ref(raw.get("discord") or raw.get("discord_input") or raw.get("discord_username") or raw.get("discord_id"))
+        role = "captain" if idx == 0 else "member"
+        roster.append({
+            "slot": idx + 1,
+            "minecraft_ign": ign,
+            "minecraft_ign_lc": ign.lower(),
+            "discord_input": discord_ref,
+            "role": role,
+        })
+    return roster
+
+
+def validate_tournament_roster(roster):
+    if len(roster) != 4:
+        return "Exactly 4 players are required."
+    if any(not p["minecraft_ign"] for p in roster):
+        return "All 4 Minecraft IGNs are required and must be valid Minecraft usernames."
+    if any(not p["discord_input"] for p in roster):
+        return "All 4 Discord usernames or IDs are required."
+    igns = [p["minecraft_ign_lc"] for p in roster]
+    if len(set(igns)) != len(igns):
+        return "Duplicate Minecraft IGNs are not allowed."
+    discords = [p["discord_input"].lower() for p in roster]
+    if len(set(discords)) != len(discords):
+        return "Duplicate Discord usernames or IDs are not allowed."
+    return ""
+
+
 def tournament_user_blocker(user):
     if not user:
         return "You must log in before registering for the tournament."
@@ -3126,8 +3232,8 @@ def get_user_tournament_member(user_id, cursor=None):
         f"""SELECT m.*, t.team_name, t.invite_token, t.status, t.captain_user_id
             FROM hc_tournament_members m
             JOIN hc_tournament_teams t ON t.id=m.team_id
-            WHERE m.user_id={ph()}""",
-        (user_id,),
+            WHERE m.user_id={ph()} OR m.verified_user_id={ph()}""",
+        (user_id, user_id),
     )
     return to_dict(c.fetchone())
 
@@ -3139,10 +3245,14 @@ def recalc_team_status(team_id, cursor=None):
     team = to_dict(c.fetchone())
     if not team:
         return "incomplete"
-    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (team_id,))
+    c.execute(
+        f"""SELECT COUNT(*) cnt FROM hc_tournament_members
+            WHERE team_id={ph()} AND verification_status='verified'""",
+        (team_id,),
+    )
     count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
     if count < limits["team_size"]:
-        status = "incomplete"
+        status = "pending verification"
     elif team.get("status") == "confirmed":
         status = "confirmed"
     else:
@@ -3178,32 +3288,44 @@ def serialize_tournament_team(team_id=None, public=False, cursor=None):
         members = to_list(c.fetchall())
         safe_members = []
         for m in members:
+            verification_status = str(m.get("verification_status") or "pending").strip().lower()
             safe = {
                 "role": m.get("role") or "member",
                 "minecraft_ign": m.get("minecraft_ign_snapshot") or "",
-                "discord_username": m.get("discord_username") or m.get("discord_global_name") or m.get("discord_id") or "",
+                "verification_status": "Verified" if verification_status == "verified" else "Pending",
+                "verified": verification_status == "verified",
             }
             if not public:
                 safe.update({
                     "id": m["id"],
                     "user_id": m["user_id"],
+                    "verified_user_id": m.get("verified_user_id") or 0,
                     "website_username": m.get("website_username") or "",
                     "discord_id": m.get("discord_id") or "",
-                    "discord_username": m.get("discord_username") or m.get("discord_global_name") or m.get("discord_id") or "",
+                    "discord_input": m.get("discord_input") or "",
+                    "discord_username": m.get("discord_input") or m.get("discord_username") or m.get("discord_global_name") or m.get("discord_id") or "",
                     "discord_global_name": m.get("discord_global_name") or "",
                     "rbw_uuid": m.get("rbw_uuid") or "",
                     "rbw_source": m.get("rbw_source") or "hc_users.mc_username",
+                    "verification_code": m.get("verification_code") or "",
+                    "code_status": "used" if verification_status == "verified" else "active",
+                    "verified_at": isoformat_utc(m.get("verified_at")),
+                    "code_expires_at": isoformat_utc(m.get("code_expires_at")),
                     "joined_at": isoformat_utc(m.get("joined_at")),
                 })
             safe_members.append(safe)
+        verified_count = sum(1 for m in safe_members if m.get("verified"))
         item = {
             "team_name": t["team_name"],
             "logo_url": t.get("logo_url") or "",
-            "status": t.get("status") or "incomplete",
+            "status": t.get("status") or "pending verification",
             "player_count": len(members),
             "team_size": limits["team_size"],
+            "registered_slots": len(members),
+            "verified_count": verified_count,
             "captain": next((m["minecraft_ign"] for m in safe_members if m["role"] == "captain"), t.get("captain_mc") or ""),
             "members": safe_members,
+            "players": safe_members,
         }
         if not public:
             item.update({
@@ -3386,6 +3508,11 @@ def tournament_status_api():
         team_count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
         member = get_user_tournament_member(user["id"], c) if user else None
         team = serialize_tournament_team(member["team_id"], public=False, cursor=c) if member else None
+        if team and user and team.get("captain_user_id") != user["id"] and user.get("role") not in STAFF_ROLES:
+            for roster_member in team.get("members", []):
+                roster_member.pop("verification_code", None)
+            for roster_member in team.get("players", []):
+                roster_member.pop("verification_code", None)
         blocker = tournament_user_blocker(user) if user else "You must log in before registering for the tournament."
         return jsonify({
             "title": TOURNAMENT_TITLE,
@@ -3414,9 +3541,11 @@ def tournament_public_teams_api():
         status_filter = request.args.get("status", "all").strip().lower()
         all_teams = serialize_tournament_team(public=True)
         teams = list(all_teams)
-        if status_filter in ("complete", "incomplete", "confirmed"):
+        if status_filter in ("complete", "incomplete", "pending", "pending verification", "confirmed", "disqualified"):
             if status_filter == "complete":
                 teams = [t for t in teams if t["status"] in ("complete", "confirmed")]
+            elif status_filter in ("pending", "pending verification", "incomplete"):
+                teams = [t for t in teams if t["status"] in ("pending verification", "incomplete", "pending")]
             else:
                 teams = [t for t in teams if t["status"] == status_filter]
         if q:
@@ -3450,23 +3579,86 @@ def tournament_create_team_api():
     if not name:
         return jsonify({"error": "Team name must be 3-40 characters."}), 400
     logo_url = clean_logo_url(data.get("logo_url"))
+    roster = parse_tournament_roster(data, user)
+    roster_error = validate_tournament_roster(roster)
+    if roster_error:
+        return jsonify({"error": roster_error}), 400
     profile = user_rbw_profile(user)
     db = get_db(); c = db_cursor(db)
+    for player in roster:
+        c.execute(
+            f"""SELECT m.id, t.team_name FROM hc_tournament_members m
+                JOIN hc_tournament_teams t ON t.id=m.team_id
+                WHERE m.minecraft_ign_lc={ph()}""",
+            (player["minecraft_ign_lc"],),
+        )
+        existing = to_dict(c.fetchone())
+        if existing:
+            return jsonify({"error": f"{player['minecraft_ign']} is already registered on another tournament team."}), 400
+        c.execute(
+            f"""SELECT m.id FROM hc_tournament_members m
+                WHERE LOWER(COALESCE(m.discord_input, m.discord_id, ''))={ph()}""",
+            (player["discord_input"].lower(),),
+        )
+        if c.fetchone():
+            return jsonify({"error": f"{player['discord_input']} is already registered on another tournament team."}), 400
     token = secrets.token_urlsafe(18)
     now = datetime.now()
+    expires = now + timedelta(days=14)
     c.execute(
         f"INSERT INTO hc_tournament_teams(team_name,logo_url,captain_user_id,invite_token,status,created_at,updated_at) VALUES({phs(7)})",
-        (name, logo_url, user["id"], token, "incomplete", now, now),
+        (name, logo_url, user["id"], token, "pending verification", now, now),
     )
     team_id = c.lastrowid
-    c.execute(
-        f"""INSERT INTO hc_tournament_members(team_id,user_id,discord_id,minecraft_ign_snapshot,
-            minecraft_ign_lc,rbw_uuid,rbw_source,role,joined_at) VALUES({phs(9)})""",
-        (team_id, user["id"], str(user.get("discord_id") or ""), profile["minecraft_ign"], profile["minecraft_ign"].lower(), profile["rbw_uuid"], profile["rbw_source"], "captain", now),
-    )
+    created_codes = []
+    for player in roster:
+        is_captain = player["role"] == "captain"
+        code = generate_tournament_code(c)
+        c.execute(
+            f"""INSERT INTO hc_tournament_members(
+                team_id,user_id,discord_id,discord_input,minecraft_ign_snapshot,
+                minecraft_ign_lc,rbw_uuid,rbw_source,verification_code,
+                verification_status,verified_user_id,code_expires_at,role,joined_at
+            ) VALUES({phs(14)})""",
+            (
+                team_id,
+                user["id"] if is_captain else 0,
+                str(user.get("discord_id") or "") if is_captain else "",
+                player["discord_input"],
+                player["minecraft_ign"],
+                player["minecraft_ign_lc"],
+                profile["rbw_uuid"] if is_captain else "",
+                profile["rbw_source"] if is_captain else "captain_roster",
+                code,
+                "pending",
+                0,
+                expires,
+                player["role"],
+                now,
+            ),
+        )
+        created_codes.append({"minecraft_ign": player["minecraft_ign"], "discord": player["discord_input"], "verification_code": code})
     db.commit()
-    log_tournament_action("team_created", user_id=user["id"], team_id=team_id, details={"team_name": name, "minecraft_ign": profile["minecraft_ign"]})
-    return jsonify({"ok": True, "team": serialize_tournament_team(team_id), "invite_url": f"{public_base_url()}/tournament/join/{token}"})
+    for item in created_codes:
+        log_tournament_action(
+            "player_verification_code_generated",
+            user_id=user["id"],
+            team_id=team_id,
+            details={"team_name": name, "minecraft_ign": item["minecraft_ign"], "discord": item["discord"]},
+        )
+    log_tournament_action(
+        "team_created_with_4_players",
+        user_id=user["id"],
+        team_id=team_id,
+        details={"team_name": name, "players": created_codes},
+    )
+    team_payload = serialize_tournament_team(team_id)
+    return jsonify({
+        "ok": True,
+        "team": team_payload,
+        "players": team_payload.get("players", []),
+        "verification_codes": created_codes,
+    })
 
 
 @app.route("/api/tournament/join/<invite_token>", methods=["POST"])
@@ -3500,6 +3692,89 @@ def tournament_join_team_api(invite_token):
     if status == "complete":
         log_tournament_action("team_full", team_id=team["id"], details={"team_name": team["team_name"]})
     return jsonify({"ok": True, "team": serialize_tournament_team(team["id"])})
+
+
+@app.route("/api/tournament/verify", methods=["POST"])
+@optional_auth
+def tournament_verify_slot_api():
+    ensure_tournament_schema()
+    data = require_json()
+    ign = clean_minecraft_ign(data.get("minecraft_ign") or data.get("username"))
+    code = str(data.get("code") or "").strip()
+    if not ign or not re.fullmatch(r"[0-9]{4}", code):
+        return jsonify({"error": "Invalid username or code."}), 400
+    limits = tournament_limits()
+    if not limits["registration_open"]:
+        return jsonify({"error": "Registration closed if backend blocks verification."}), 400
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(
+        f"""SELECT m.*, t.team_name, t.status team_status
+            FROM hc_tournament_members m
+            JOIN hc_tournament_teams t ON t.id=m.team_id
+            WHERE m.minecraft_ign_lc={ph()}""",
+        (ign.lower(),),
+    )
+    member = to_dict(c.fetchone())
+    if not member:
+        log_tournament_action("invalid_verification_attempt", details={"minecraft_ign": ign, "ip_address": get_client_ip(), "reason": "unknown_player"})
+        return jsonify({"error": "Invalid username or code."}), 404
+    if str(member.get("verification_status") or "").lower() == "verified":
+        return jsonify({"error": "Player already verified."}), 400
+    if str(member.get("verification_code") or "") != code:
+        log_tournament_action(
+            "invalid_verification_attempt",
+            team_id=member.get("team_id"),
+            details={"minecraft_ign": ign, "ip_address": get_client_ip(), "reason": "wrong_code"},
+        )
+        return jsonify({"error": "Invalid username or code."}), 400
+    expires_at = parse_db_datetime(member.get("code_expires_at"))
+    if expires_at and expires_at < datetime.now():
+        return jsonify({"error": "Code expired."}), 400
+    if str(member.get("team_status") or "").lower() in ("deleted", "removed"):
+        return jsonify({"error": "Team was deleted."}), 404
+
+    user = request.cu
+    if user and user.get("role") not in STAFF_ROLES:
+        profile = user_rbw_profile(user) or {}
+        if str(profile.get("minecraft_ign") or "").strip().lower() != ign.lower():
+            return jsonify({"error": "A logged-in account can only verify its own Minecraft IGN."}), 403
+    now = datetime.now()
+    c.execute(
+        f"""UPDATE hc_tournament_members
+            SET verification_status='verified',
+                verified_user_id={ph()},
+                user_id=CASE WHEN user_id=0 THEN {ph()} ELSE user_id END,
+                discord_id=CASE WHEN discord_id='' THEN {ph()} ELSE discord_id END,
+                verified_at={ph()},
+                code_used_at={ph()}
+            WHERE id={ph()}""",
+        (
+            user["id"] if user else 0,
+            user["id"] if user else 0,
+            str((user or {}).get("discord_id") or ""),
+            now,
+            now,
+            member["id"],
+        ),
+    )
+    status = recalc_team_status(member["team_id"], c)
+    db.commit()
+    log_tournament_action(
+        "player_verified",
+        user_id=user["id"] if user else None,
+        team_id=member["team_id"],
+        details={"minecraft_ign": ign, "team_name": member["team_name"], "ip_address": get_client_ip()},
+    )
+    if status == "complete":
+        log_tournament_action("team_completed_verification", team_id=member["team_id"], details={"team_name": member["team_name"]})
+    return jsonify({
+        "ok": True,
+        "minecraft_ign": member["minecraft_ign_snapshot"],
+        "team_name": member["team_name"],
+        "team": serialize_tournament_team(member["team_id"]),
+        "discord_required": not bool(user and user_discord_linked(user)),
+    })
 
 
 @app.route("/api/tournament/leave", methods=["POST"])
@@ -3556,10 +3831,14 @@ def staff_tournament_rename_api(team_id):
 @staff_required
 def staff_tournament_confirm_api(team_id):
     db = get_db(); c = db_cursor(db)
-    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (team_id,))
+    c.execute(
+        f"""SELECT COUNT(*) cnt FROM hc_tournament_members
+            WHERE team_id={ph()} AND verification_status='verified'""",
+        (team_id,),
+    )
     count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
     if count < tournament_limits()["team_size"]:
-        return jsonify({"error": "Only full teams can be confirmed."}), 400
+        return jsonify({"error": "Only fully verified teams can be confirmed."}), 400
     c.execute(f"UPDATE hc_tournament_teams SET status='confirmed', updated_at={ph()} WHERE id={ph()}", (datetime.now(), team_id))
     db.commit()
     log_tournament_action("team_confirmed", staff_user_id=request.cu["id"], team_id=team_id)
