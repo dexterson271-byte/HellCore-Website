@@ -44,29 +44,29 @@
     <div class="card">
       <h2>Account & Team</h2>
       <div id="statusBox"><div class="msg">Loading status...</div></div>
-      <h3>My Team</h3>
-      <div id="teamBox"><div class="msg">Loading team...</div></div>
-      <div id="actions" class="actions"></div>
-    </div>
-    <div class="card">
-      <h2>Registration</h2>
       <div class="stack">
         {% if page == 'create' %}
+          <h3>Registration</h3>
           <p class="muted">Choose a team name. Your Discord and Minecraft IGN come from your linked accounts.</p>
           <input id="teamName" placeholder="Team name">
           <input id="teamLogo" placeholder="Team logo URL (optional)">
           <button class="btn" onclick="createTeam()">Create Team</button>
         {% elif page == 'join' %}
+          <h3>Registration</h3>
           <p class="muted">You are joining from an invite link. Your account details will be verified automatically.</p>
           <button class="btn" onclick="joinTeam()">Join Team</button>
         {% elif page == 'link' %}
+          <h3>Registration</h3>
           <p class="muted">Link Discord before creating or joining a team.</p>
           <a class="btn" href="/auth/discord/start">Link Discord</a>
-        {% else %}
-          <p class="muted">Use the actions below to create a team, link Discord, or review the registered teams.</p>
         {% endif %}
       </div>
       <div id="formMsg" class="msg hidden"></div>
+      <div id="actions" class="actions"></div>
+    </div>
+    <div class="card">
+      <h2>My Team</h2>
+      <div id="teamBox"><div class="msg">Loading team...</div></div>
     </div>
   </section>
 
