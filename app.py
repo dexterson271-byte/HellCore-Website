@@ -2912,20 +2912,108 @@ def bot_unlink():
 # -------------------------------------------------------
 TOURNAMENT_TITLE = "HELLCORE 4v4 RBW TOURNAMENT"
 TOURNAMENT_DATE = "31 May 2026"
+_TOURNAMENT_SCHEMA_CHECKED = False
+
+
+def ensure_tournament_schema():
+    """Create/repair tournament tables when production boot migrations were skipped."""
+    global _TOURNAMENT_SCHEMA_CHECKED
+    if _TOURNAMENT_SCHEMA_CHECKED:
+        return
+    db = get_db()
+    c = db_cursor(db)
+    mysql = _DB_MODE != "sqlite"
+    AI = "AUTO_INCREMENT" if mysql else "AUTOINCREMENT"
+    DT = "DATETIME DEFAULT CURRENT_TIMESTAMP" if mysql else "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+    try:
+        c.execute(f"""CREATE TABLE IF NOT EXISTS hc_tournament_teams(
+          id INTEGER PRIMARY KEY {AI},
+          team_name VARCHAR(80) NOT NULL,
+          logo_url VARCHAR(500) DEFAULT '',
+          captain_user_id INTEGER NOT NULL,
+          invite_token VARCHAR(80) UNIQUE NOT NULL,
+          status VARCHAR(30) DEFAULT 'incomplete',
+          created_at {DT},
+          updated_at {DT})""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS hc_tournament_members(
+          id INTEGER PRIMARY KEY {AI},
+          team_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          discord_id VARCHAR(50) NOT NULL,
+          minecraft_ign_snapshot VARCHAR(50) NOT NULL,
+          minecraft_ign_lc VARCHAR(50) NOT NULL,
+          rbw_uuid VARCHAR(80) DEFAULT '',
+          rbw_source VARCHAR(80) DEFAULT 'hc_users',
+          role VARCHAR(20) DEFAULT 'member',
+          joined_at {DT})""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS hc_tournament_logs(
+          id INTEGER PRIMARY KEY {AI},
+          action_type VARCHAR(80) NOT NULL,
+          user_id INTEGER,
+          staff_user_id INTEGER,
+          team_id INTEGER,
+          details_json TEXT,
+          created_at {DT})""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS hc_tournament_settings(
+          setting_key VARCHAR(80) PRIMARY KEY,
+          setting_value VARCHAR(255) NOT NULL,
+          updated_at {DT})""")
+        for sql in [
+            "ALTER TABLE hc_users ADD COLUMN discord_username VARCHAR(120) DEFAULT ''",
+            "ALTER TABLE hc_users ADD COLUMN discord_global_name VARCHAR(120) DEFAULT ''",
+            "ALTER TABLE hc_users ADD COLUMN discord_avatar VARCHAR(255) DEFAULT ''",
+            "ALTER TABLE hc_users ADD COLUMN discord_linked_at DATETIME",
+            "ALTER TABLE hc_tournament_teams ADD COLUMN logo_url VARCHAR(500) DEFAULT ''",
+            "ALTER TABLE hc_tournament_teams ADD COLUMN status VARCHAR(30) DEFAULT 'incomplete'",
+            "ALTER TABLE hc_tournament_teams ADD COLUMN updated_at DATETIME",
+            "ALTER TABLE hc_tournament_members ADD COLUMN minecraft_ign_lc VARCHAR(50) DEFAULT ''",
+            "ALTER TABLE hc_tournament_members ADD COLUMN rbw_uuid VARCHAR(80) DEFAULT ''",
+            "ALTER TABLE hc_tournament_members ADD COLUMN rbw_source VARCHAR(80) DEFAULT 'hc_users'",
+        ]:
+            try:
+                c.execute(sql)
+            except Exception:
+                pass
+        for key, value in [
+            ("tournament_registration_open", "1"),
+            ("tournament_max_teams", "12"),
+            ("tournament_team_size", "4"),
+        ]:
+            if _DB_MODE == "sqlite":
+                c.execute("INSERT OR IGNORE INTO hc_tournament_settings(setting_key,setting_value) VALUES(?,?)", (key, value))
+            else:
+                c.execute("INSERT IGNORE INTO hc_tournament_settings(setting_key,setting_value) VALUES(%s,%s)", (key, value))
+        db.commit()
+        _TOURNAMENT_SCHEMA_CHECKED = True
+    finally:
+        try:
+            c.close()
+        except Exception:
+            pass
 
 
 def tournament_setting(key, default=""):
-    db = get_db(); c = db_cursor(db)
-    c.execute(f"SELECT setting_value FROM hc_tournament_settings WHERE setting_key={ph()}", (key,))
-    row = to_dict(c.fetchone())
-    return str((row or {}).get("setting_value") or default)
+    try:
+        ensure_tournament_schema()
+        db = get_db(); c = db_cursor(db)
+        c.execute(f"SELECT setting_value FROM hc_tournament_settings WHERE setting_key={ph()}", (key,))
+        row = to_dict(c.fetchone())
+        return str((row or {}).get("setting_value") or default)
+    except Exception:
+        traceback.print_exc()
+        return str(default)
 
 
 def tournament_limits():
+    def as_int(value, fallback):
+        try:
+            return int(value)
+        except Exception:
+            return fallback
     return {
         "registration_open": tournament_setting("tournament_registration_open", "1") == "1",
-        "max_teams": int(tournament_setting("tournament_max_teams", "12") or 12),
-        "team_size": int(tournament_setting("tournament_team_size", "4") or 4),
+        "max_teams": as_int(tournament_setting("tournament_max_teams", "12") or 12, 12),
+        "team_size": as_int(tournament_setting("tournament_team_size", "4") or 4, 4),
     }
 
 
@@ -3283,58 +3371,70 @@ def staff_tournament_logs_page():
 @app.route("/api/tournament/status")
 @optional_auth
 def tournament_status_api():
-    user = request.cu
-    db = get_db(); c = db_cursor(db)
-    limits = tournament_limits()
-    c.execute("SELECT COUNT(*) cnt FROM hc_tournament_teams")
-    team_count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
-    member = get_user_tournament_member(user["id"], c) if user else None
-    team = serialize_tournament_team(member["team_id"], public=False, cursor=c) if member else None
-    blocker = tournament_user_blocker(user) if user else "You must log in before registering for the tournament."
-    return jsonify({
-        "title": TOURNAMENT_TITLE,
-        "date": TOURNAMENT_DATE,
-        "registration_open": limits["registration_open"],
-        "max_teams": limits["max_teams"],
-        "team_size": limits["team_size"],
-        "team_count": team_count,
-        "logged_in": bool(user),
-        "discord_linked": user_discord_linked(user),
-        "minecraft_profile": user_rbw_profile(user),
-        "blocker": blocker,
-        "my_team": team,
-        "is_staff": bool(user and user.get("role") in STAFF_ROLES),
-    })
+    try:
+        ensure_tournament_schema()
+        user = request.cu
+        db = get_db(); c = db_cursor(db)
+        limits = tournament_limits()
+        c.execute("SELECT COUNT(*) cnt FROM hc_tournament_teams")
+        team_count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+        member = get_user_tournament_member(user["id"], c) if user else None
+        team = serialize_tournament_team(member["team_id"], public=False, cursor=c) if member else None
+        blocker = tournament_user_blocker(user) if user else "You must log in before registering for the tournament."
+        return jsonify({
+            "title": TOURNAMENT_TITLE,
+            "date": TOURNAMENT_DATE,
+            "registration_open": limits["registration_open"],
+            "max_teams": limits["max_teams"],
+            "team_size": limits["team_size"],
+            "team_count": team_count,
+            "logged_in": bool(user),
+            "discord_linked": user_discord_linked(user),
+            "minecraft_profile": user_rbw_profile(user),
+            "blocker": blocker,
+            "my_team": team,
+            "is_staff": bool(user and user.get("role") in STAFF_ROLES),
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Tournament status unavailable: {e}"}), 500
 
 
 @app.route("/api/tournament/teams")
 def tournament_public_teams_api():
-    q = request.args.get("q", "").strip().lower()
-    status_filter = request.args.get("status", "all").strip().lower()
-    teams = serialize_tournament_team(public=True)
-    if status_filter in ("complete", "incomplete", "confirmed"):
-        if status_filter == "complete":
-            teams = [t for t in teams if t["status"] in ("complete", "confirmed")]
-        else:
-            teams = [t for t in teams if t["status"] == status_filter]
-    if q:
-        teams = [
-            t for t in teams
-            if q in t["team_name"].lower() or any(q in m["minecraft_ign"].lower() for m in t["members"])
-        ]
-    limits = tournament_limits()
-    return jsonify({
-        "teams": teams,
-        "registration_open": limits["registration_open"],
-        "max_teams": limits["max_teams"],
-        "team_size": limits["team_size"],
-        "registered_teams": len(serialize_tournament_team(public=True)),
-    })
+    try:
+        ensure_tournament_schema()
+        q = request.args.get("q", "").strip().lower()
+        status_filter = request.args.get("status", "all").strip().lower()
+        all_teams = serialize_tournament_team(public=True)
+        teams = list(all_teams)
+        if status_filter in ("complete", "incomplete", "confirmed"):
+            if status_filter == "complete":
+                teams = [t for t in teams if t["status"] in ("complete", "confirmed")]
+            else:
+                teams = [t for t in teams if t["status"] == status_filter]
+        if q:
+            teams = [
+                t for t in teams
+                if q in t["team_name"].lower() or any(q in m["minecraft_ign"].lower() for m in t["members"])
+            ]
+        limits = tournament_limits()
+        return jsonify({
+            "teams": teams,
+            "registration_open": limits["registration_open"],
+            "max_teams": limits["max_teams"],
+            "team_size": limits["team_size"],
+            "registered_teams": len(all_teams),
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Tournament teams unavailable: {e}", "teams": []}), 500
 
 
 @app.route("/api/tournament/team", methods=["POST"])
 @auth_required
 def tournament_create_team_api():
+    ensure_tournament_schema()
     user = request.cu
     error = assert_tournament_joinable(user)
     if error:
@@ -3366,6 +3466,7 @@ def tournament_create_team_api():
 @app.route("/api/tournament/join/<invite_token>", methods=["POST"])
 @auth_required
 def tournament_join_team_api(invite_token):
+    ensure_tournament_schema()
     user = request.cu
     db = get_db(); c = db_cursor(db)
     c.execute(f"SELECT * FROM hc_tournament_teams WHERE invite_token={ph()}", (invite_token,))

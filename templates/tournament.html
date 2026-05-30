@@ -10,6 +10,7 @@
     body:before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(rgba(8,9,11,.74),rgba(8,9,11,.96)),url("/static/background.png") center/cover no-repeat}
     body:after{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 20% 0%,rgba(255,90,47,.22),transparent 34%),linear-gradient(180deg,rgba(8,9,11,.08),#08090b 72%)}
     main{width:min(1180px,100%);margin:0 auto;padding:26px 18px 56px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);font-weight:900}.brand img{width:42px;height:42px;border-radius:8px;object-fit:cover}.nav{display:flex;gap:8px;flex-wrap:wrap}.nav a,.btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:rgba(17,19,25,.88);color:var(--text);padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:800;font-size:14px;cursor:pointer}.nav a:hover,.btn.secondary:hover{border-color:#465064}.btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}.btn.secondary{background:var(--panel2);border-color:var(--line)}.hidden{display:none!important}
+    .btn:disabled{opacity:.62;cursor:not-allowed}
     .hero{display:grid;grid-template-columns:minmax(0,1.35fr) 300px;gap:20px;align-items:end;padding:26px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(135deg,rgba(17,19,25,.94),rgba(13,15,20,.86));border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.35)}.eyebrow{color:#ffbe8f;font-weight:900;text-transform:uppercase;font-size:12px}.hero h1{font-size:58px;line-height:1;margin:9px 0 12px}.hero p{max-width:760px;color:var(--soft);line-height:1.58;margin:0}.prize{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:8px;padding:16px}.prize b{display:block;font-size:28px;margin-bottom:4px}.prize span{color:var(--muted)}
     .grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:16px;margin-top:16px}.card{background:rgba(17,19,25,.92);border:1px solid var(--line);border-radius:8px;padding:18px}.card h2{margin:0 0 14px;font-size:18px}.card h3{margin:18px 0 8px;font-size:14px;color:var(--muted);text-transform:uppercase}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);padding:11px 0}.row:last-child{border-bottom:0}.label,.muted{color:var(--muted)}.value{font-weight:900;text-align:right}.status-good{color:var(--good)}.status-bad{color:var(--bad)}input{width:100%;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px 13px;font:inherit;outline:none}input:focus{border-color:#59667c}.msg{margin-top:12px;padding:12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--soft)}.err{border-color:rgba(255,95,103,.34);color:#ffadb2}.ok{border-color:rgba(61,220,132,.34);color:#a8f3ca}.team-member{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}.team-member:last-child{border-bottom:0}.team-member img{width:34px;height:34px;border-radius:6px;image-rendering:pixelated}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.stack{display:flex;flex-direction:column;gap:10px}
     @media(max-width:860px){.topbar{align-items:flex-start;flex-direction:column}.hero,.grid{grid-template-columns:1fr}.hero h1{font-size:38px}.prize{max-width:none}.nav a,.btn{flex:1 1 auto}.hero{padding:20px}}
@@ -54,7 +55,7 @@
         {% elif page == 'join' %}
           <h3>Registration</h3>
           <p class="muted">You are joining from an invite link. Your account details will be verified automatically.</p>
-          <button class="btn" onclick="joinTeam()">Join Team</button>
+          <button id="joinBtn" class="btn" onclick="joinTeam()">Join Team</button>
         {% elif page == 'link' %}
           <h3>Registration</h3>
           <p class="muted">Link Discord before creating or joining a team.</p>
@@ -86,6 +87,7 @@ function showMsg(text, ok=false){const el=$('formMsg');el.className='msg '+(ok?'
 async function loadStatus(){
   const s = await api('/api/tournament/status').catch(e=>({error:e.message, logged_in:false}));
   if(s.is_staff) $('staffLink').classList.remove('hidden');
+  if(s.error) showMsg(s.error);
   $('statusBox').innerHTML = `
     <div class="row"><span class="label">Registration</span><span class="value ${s.registration_open?'status-good':'status-bad'}">${s.registration_open?'Open':'Closed'}</span></div>
     <div class="row"><span class="label">Registered Teams</span><span class="value">${s.team_count||0}/${s.max_teams||12}</span></div>
@@ -98,6 +100,26 @@ async function loadStatus(){
   if(s.logged_in && !s.my_team && s.registration_open) buttons.push('<a class="btn" href="/tournament/create">Create Team</a>');
   buttons.push('<a class="btn secondary" href="/tournament/teams">View Teams</a>');
   $('actions').innerHTML = buttons.join('');
+  const joinBtn = $('joinBtn');
+  if(joinBtn){
+    if(!s.logged_in){
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Log In First';
+      joinBtn.classList.add('secondary');
+    }else if(!s.discord_linked){
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Link Discord First';
+      joinBtn.classList.add('secondary');
+    }else if(s.my_team){
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Already Registered';
+      joinBtn.classList.add('secondary');
+    }else if(!s.registration_open){
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Registration Closed';
+      joinBtn.classList.add('secondary');
+    }
+  }
   renderTeam(s.my_team);
 }
 function renderTeam(team){
