@@ -3149,12 +3149,10 @@ def validate_tournament_roster(roster):
         return "Exactly 4 players are required."
     if any(not p["minecraft_ign"] for p in roster):
         return "All 4 Minecraft IGNs are required and must be valid Minecraft usernames."
-    if any(not p["discord_input"] for p in roster):
-        return "All 4 Discord usernames or IDs are required."
     igns = [p["minecraft_ign_lc"] for p in roster]
     if len(set(igns)) != len(igns):
         return "Duplicate Minecraft IGNs are not allowed."
-    discords = [p["discord_input"].lower() for p in roster]
+    discords = [p["discord_input"].lower() for p in roster if p["discord_input"]]
     if len(set(discords)) != len(discords):
         return "Duplicate Discord usernames or IDs are not allowed."
     return ""
@@ -3163,8 +3161,6 @@ def validate_tournament_roster(roster):
 def tournament_user_blocker(user):
     if not user:
         return "You must log in before registering for the tournament."
-    if not user_discord_linked(user):
-        return "You must link your Discord account before registering for the tournament."
     return ""
 
 
@@ -3595,13 +3591,14 @@ def tournament_create_team_api():
         existing = to_dict(c.fetchone())
         if existing:
             return jsonify({"error": f"{player['minecraft_ign']} is already registered on another tournament team."}), 400
-        c.execute(
-            f"""SELECT m.id FROM hc_tournament_members m
-                WHERE LOWER(COALESCE(m.discord_input, m.discord_id, ''))={ph()}""",
-            (player["discord_input"].lower(),),
-        )
-        if c.fetchone():
-            return jsonify({"error": f"{player['discord_input']} is already registered on another tournament team."}), 400
+        if player["discord_input"]:
+            c.execute(
+                f"""SELECT m.id FROM hc_tournament_members m
+                    WHERE LOWER(COALESCE(m.discord_input, m.discord_id, ''))={ph()}""",
+                (player["discord_input"].lower(),),
+            )
+            if c.fetchone():
+                return jsonify({"error": f"{player['discord_input']} is already registered on another tournament team."}), 400
     token = secrets.token_urlsafe(18)
     now = datetime.now()
     expires = now + timedelta(days=14)
@@ -3735,10 +3732,6 @@ def tournament_verify_slot_api():
         return jsonify({"error": "Team was deleted."}), 404
 
     user = request.cu
-    if user and user.get("role") not in STAFF_ROLES:
-        profile = user_rbw_profile(user) or {}
-        if str(profile.get("minecraft_ign") or "").strip().lower() != ign.lower():
-            return jsonify({"error": "A logged-in account can only verify its own Minecraft IGN."}), 403
     now = datetime.now()
     c.execute(
         f"""UPDATE hc_tournament_members
@@ -3773,7 +3766,7 @@ def tournament_verify_slot_api():
         "minecraft_ign": member["minecraft_ign_snapshot"],
         "team_name": member["team_name"],
         "team": serialize_tournament_team(member["team_id"]),
-        "discord_required": not bool(user and user_discord_linked(user)),
+        "discord_required": False,
     })
 
 

@@ -35,11 +35,11 @@
     <div>
       <div class="eyebrow">{{ date }} - 4v4 RBW - Double Elimination</div>
       <h1>{{ title }}</h1>
-      <p>Captains register all four players at once. Each player verifies later with their own Minecraft IGN and private 4-digit code.</p>
+      <p>Captain creates the team, gets four private codes, and gives each teammate their own code.</p>
     </div>
     <aside class="prize">
       <b>12 Teams</b>
-      <span>Four players per team. Teams become complete after all four registered players verify their slots.</span>
+      <span>Four players per team. A team is complete when all four codes are verified.</span>
     </aside>
   </section>
 
@@ -70,7 +70,7 @@
     <div id="createdCard" class="card wide hidden"></div>
     {% elif page == 'verify' %}
     <div class="card">
-      <h2>Verify Tournament Registration</h2>
+      <h2>Verify Player Code</h2>
       <p class="muted">Enter your Minecraft IGN and 4-digit code to verify your spot in the tournament.</p>
       <div class="stack">
         <div class="field">
@@ -87,8 +87,8 @@
     </div>
     {% elif page == 'join' %}
     <div class="card">
-      <h2>Verify Instead</h2>
-      <p class="muted">Tournament registration now uses player verification codes instead of invite links.</p>
+      <h2>Use A Code</h2>
+      <p class="muted">Ask your captain for your 4-digit code, then verify your Minecraft IGN.</p>
       <div class="actions">
         <a class="btn" href="/tournament/verify">Verify Registration</a>
         <a class="btn secondary" href="/tournament/create">Create Full Team</a>
@@ -96,9 +96,9 @@
     </div>
     {% else %}
     <div class="card">
-      <h2>Registration Flow</h2>
-      <div class="row"><span class="label">Captain</span><span class="value">Creates 4-player roster</span></div>
-      <div class="row"><span class="label">Players</span><span class="value">Verify with 4-digit code</span></div>
+      <h2>Simple Flow</h2>
+      <div class="row"><span class="label">Captain</span><span class="value">Creates team and gets all codes</span></div>
+      <div class="row"><span class="label">Teammates</span><span class="value">Verify IGN + code</span></div>
       <div class="row"><span class="label">Team</span><span class="value">Complete at 4/4 verified</span></div>
       <div class="actions">
         <a class="btn" href="/tournament/create">Create Team</a>
@@ -132,7 +132,6 @@ function showMsg(text, ok=false, warn=false){const el=$('formMsg'); if(!el)retur
 function statusClass(status){const s=norm(status).replace(/\s+/g,'-');return s || 'pending'}
 function isVerified(m){return Boolean(m?.verified || norm(m?.verification_status)==='verified' || norm(m?.status)==='verified' || norm(m?.code_status)==='used')}
 function playerIgn(m){return m?.minecraft_ign || m?.minecraft_ign_snapshot || m?.ign || m?.username || ''}
-function playerDiscord(m){return m?.discord_display || m?.discord_username || m?.discord_global_name || m?.discord || m?.discord_id || ''}
 function playerStatus(m){if(isVerified(m))return 'Verified'; return m?.verification_status || m?.code_status || m?.status || 'Pending Verification'}
 function playerCode(m){return m?.verification_code || m?.code || m?.player_code || ''}
 function teamMembers(team){return team?.players || team?.members || team?.roster || []}
@@ -148,7 +147,6 @@ function renderCaptainCard(s){
     <img src="${esc(avatar)}" alt="">
     <div>
       <b>${esc(s?.username || s?.user?.username || 'Website account')}</b>
-      <div class="muted">Discord: ${esc(s?.discord_username || s?.discord_global_name || (s?.discord_linked ? 'Linked' : 'Not linked'))}</div>
       <div class="muted">RBW IGN: ${esc(s?.minecraft_profile?.minecraft_ign || 'Not found')}</div>
     </div>`;
 }
@@ -156,7 +154,6 @@ function renderCaptainCard(s){
 function buildPlayerSlots(s){
   const host=$('playerSlots'); if(!host)return;
   const captainIgn = s?.minecraft_profile?.minecraft_ign || '';
-  const captainDiscord = s?.discord_username || s?.discord_global_name || '';
   host.innerHTML = [1,2,3,4].map(i=>`
     <section class="slot">
       <div class="slot-head">
@@ -168,10 +165,7 @@ function buildPlayerSlots(s){
           <label for="p${i}Ign">Minecraft IGN</label>
           <input id="p${i}Ign" autocomplete="off" placeholder="Minecraft IGN" value="${esc(i===1 ? captainIgn : '')}">
         </div>
-        <div class="field">
-          <label for="p${i}Discord">Discord username / ID</label>
-          <input id="p${i}Discord" autocomplete="off" placeholder="Discord username or ID" value="${esc(i===1 ? captainDiscord : '')}">
-        </div>
+        <div class="msg warn">Code will appear after team creation.</div>
       </div>
     </section>`).join('');
 }
@@ -180,17 +174,14 @@ function collectRoster(){
   const players = [1,2,3,4].map(i=>({
     slot: i,
     minecraft_ign: $(`p${i}Ign`).value.trim(),
-    discord: $(`p${i}Discord`).value.trim(),
+    discord: '',
     role: i === 1 ? 'captain' : 'member',
   }));
   const teamName = $('teamName').value.trim();
   if(!teamName) throw new Error('Team name is required.');
   if(players.some(p=>!p.minecraft_ign)) throw new Error('All 4 Minecraft IGNs are required.');
-  if(players.some(p=>!p.discord)) throw new Error('All 4 Discord usernames or IDs are required.');
   const igns = players.map(p=>norm(p.minecraft_ign));
-  const discords = players.map(p=>norm(p.discord));
   if(new Set(igns).size !== igns.length) throw new Error('Duplicate Minecraft IGNs are not allowed.');
-  if(new Set(discords).size !== discords.length) throw new Error('Duplicate Discord usernames or IDs are not allowed.');
   return {team_name: teamName, players};
 }
 
@@ -207,19 +198,18 @@ function renderCreated(team, players=[]){
     <div class="row"><span class="label">Players</span><span class="value">${verified}/4 Verified</span></div>
     <div class="row"><span class="label">Registered slots</span><span class="value">4/4 Players Added</span></div>
     <table class="table">
-      <thead><tr><th>Player IGN</th><th>Discord</th><th>Code</th><th>Status</th><th>Action</th></tr></thead>
+      <thead><tr><th>Player IGN</th><th>Code</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>${members.map((m,i)=>{
         const code = playerCode(m);
         return `<tr>
           <td>${esc(playerIgn(m) || m.minecraft_ign || '')}</td>
-          <td>${esc(playerDiscord(m) || m.discord || '')}</td>
           <td><b>${esc(code || 'Awaiting backend')}</b></td>
           <td><span class="badge ${statusClass(playerStatus(m))}">${esc(playerStatus(m))}</span></td>
           <td><button class="btn secondary" ${code ? '' : 'disabled'} onclick="copyText('${esc(code)}','Code copied.')">Copy Code</button></td>
         </tr>`;
       }).join('')}</tbody>
     </table>
-    <div class="msg warn">Give each player only their own verification code. Do not share all codes publicly.</div>
+    <div class="msg warn">Captain: send each teammate only their own code.</div>
     <div class="actions">
       <button class="btn secondary" onclick="copyAllCodes()">Copy All Codes</button>
       <a class="btn" href="/tournament/my-team">View My Team</a>
@@ -252,7 +242,6 @@ async function verifySlot(){
       <b>You have successfully verified your tournament registration.</b>
       <div>Player: ${esc(d.minecraft_ign || ign)}</div>
       <div>Team: ${esc(d.team_name || d.team?.team_name || 'Tournament team')}</div>
-      ${d.discord_required ? '<div class="actions"><a class="btn" href="/auth/discord/start">Link Discord</a></div>' : ''}
     </div>`;
   }catch(e){out.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}
   finally{const btn=$('verifyBtn'); if(btn){btn.disabled=false; btn.textContent='Verify';}}
@@ -273,11 +262,11 @@ function renderTeam(team){
     <div class="progress" aria-label="Verification progress"><span style="width:${Math.min(100, Math.round((verified/Math.max(size,1))*100))}%"></span></div>
     <h3>Players</h3>
     <table class="table">
-      <thead><tr><th>IGN</th><th>Discord</th><th>Verification Status</th><th>Role</th><th>Actions</th></tr></thead>
+      <thead><tr><th>IGN</th><th>Code</th><th>Verification Status</th><th>Role</th><th>Actions</th></tr></thead>
       <tbody>${members.map(m=>`
         <tr>
           <td>${esc(playerIgn(m))}</td>
-          <td>${esc(playerDiscord(m) || 'Pending')}</td>
+          <td>${playerCode(m) ? `<b>${esc(playerCode(m))}</b>` : '<span class="muted">Hidden</span>'}</td>
           <td><span class="badge ${statusClass(playerStatus(m))}">${esc(playerStatus(m))}</span></td>
           <td>${esc(m.role || 'member')}</td>
           <td>${playerCode(m) ? `<button class="btn secondary" onclick="copyText('${esc(playerCode(m))}','Code copied.')">Copy Code</button>` : '<span class="muted">No action</span>'}</td>
@@ -297,12 +286,10 @@ async function loadStatus(){
   $('statusBox').innerHTML = `
     <div class="row"><span class="label">Registration</span><span class="value ${s.registration_open?'status-good':'status-bad'}">${s.registration_open?'Open':'Closed'}</span></div>
     <div class="row"><span class="label">Registered Teams</span><span class="value">${s.team_count||0}/${s.max_teams||12}</span></div>
-    <div class="row"><span class="label">Discord</span><span class="value">${s.discord_linked?'Linked':'Not linked'}</span></div>
     <div class="row"><span class="label">Minecraft IGN</span><span class="value">${s.minecraft_profile?.minecraft_ign || 'Not found'}</span></div>
     ${s.blocker ? `<div class="msg err">${esc(s.blocker)}</div>` : '<div class="msg ok">Ready for tournament actions.</div>'}`;
   const buttons = [];
   if(!s.logged_in) buttons.push('<a class="btn" href="https://hellcore.net">Log In</a>');
-  if(s.logged_in && !s.discord_linked) buttons.push('<a class="btn" href="/auth/discord/start">Link Discord</a>');
   if(s.logged_in && !s.my_team && s.registration_open) buttons.push('<a class="btn" href="/tournament/create">Create Team</a>');
   buttons.push('<a class="btn secondary" href="/tournament/verify">Verify Slot</a>');
   buttons.push('<a class="btn secondary" href="/tournament/teams">View Teams</a>');
