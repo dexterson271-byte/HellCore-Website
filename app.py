@@ -3339,6 +3339,12 @@ def tournament_create_page():
     return render_template("tournament.html", page="create", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
 
 
+@app.route("/tournament/verify")
+@optional_auth
+def tournament_verify_page():
+    return render_template("tournament.html", page="verify", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
 @app.route("/tournament/my-team")
 @optional_auth
 def tournament_my_team_page():

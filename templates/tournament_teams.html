@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Registered Teams - {{ title }}</title>
   <style>
-    :root{--bg:#08090b;--panel:#111319;--panel2:#171a22;--line:#2a2f3a;--text:#f7f7fb;--muted:#a5adbb;--accent:#ff5a2f;--good:#3ddc84;--warn:#f6bf53}
-    *{box-sizing:border-box}body{margin:0;background:#08090b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(8,9,11,.78),#08090b 76%),url("/static/modern_bg.png") center/cover no-repeat}
+    :root{--bg:#08090b;--panel:#111319;--panel2:#171a22;--line:#2a2f3a;--text:#f7f7fb;--muted:#a5adbb;--accent:#ff5a2f;--good:#3ddc84;--warn:#f6bf53;--bad:#ff5f67}
+    *{box-sizing:border-box}body{margin:0;background:#08090b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;letter-spacing:0}body:before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(8,9,11,.78),#08090b 76%),url("/static/modern_bg.png") center/cover no-repeat}
     main{width:min(1180px,100%);margin:0 auto;padding:28px 18px 58px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;font-weight:900}.brand img{width:42px;height:42px;border-radius:8px;object-fit:cover}.btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#e2355b);border:0;color:var(--text);border-radius:8px;padding:10px 14px;font-weight:900;text-decoration:none;cursor:pointer}.btn.secondary{background:var(--panel2);border:1px solid var(--line)}
-    .top{padding:24px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:linear-gradient(135deg,rgba(17,19,25,.94),rgba(17,19,25,.82))}.eyebrow{color:#ffbe8f;font-weight:900;text-transform:uppercase;font-size:12px}h1{font-size:50px;line-height:1;margin:8px 0 10px}p{color:var(--muted);line-height:1.55}.controls{display:grid;grid-template-columns:1fr 190px 150px;gap:10px;margin:18px 0}input,select{min-height:42px;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;outline:none}input:focus,select:focus{border-color:#59667c}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:8px;background:rgba(17,19,25,.93);padding:16px}.team-head{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;margin-bottom:12px}.team-logo{width:58px;height:58px;border-radius:8px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,90,47,.28),rgba(226,53,91,.16));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:900;font-size:20px}.team-logo img{width:100%;height:100%;object-fit:cover}.card h2{font-size:20px;margin:0 0 8px}.stats{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.status,.count{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:900;text-transform:uppercase}.complete,.confirmed{color:var(--good)}.incomplete{color:var(--warn)}.member{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}.member img{width:32px;height:32px;border-radius:6px;image-rendering:pixelated}.member b{display:block}.muted{color:var(--muted)}.empty{border:1px dashed var(--line);border-radius:8px;padding:20px;color:var(--muted);background:rgba(17,19,25,.65)}
+    .top{padding:24px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:linear-gradient(135deg,rgba(17,19,25,.94),rgba(17,19,25,.82))}.eyebrow{color:#ffbe8f;font-weight:900;text-transform:uppercase;font-size:12px}h1{font-size:50px;line-height:1;margin:8px 0 10px}p{color:var(--muted);line-height:1.55}.controls{display:grid;grid-template-columns:1fr 210px 150px;gap:10px;margin:18px 0}input,select{min-height:42px;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;outline:none}input:focus,select:focus{border-color:#59667c}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:8px;background:rgba(17,19,25,.93);padding:16px}.team-head{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;margin-bottom:12px}.team-logo{width:58px;height:58px;border-radius:8px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,90,47,.28),rgba(226,53,91,.16));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:900;font-size:20px}.team-logo img{width:100%;height:100%;object-fit:cover}.card h2{font-size:20px;margin:0 0 8px}.stats{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.status,.count{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:900;text-transform:uppercase}.complete,.confirmed,.verified{color:var(--good)}.pending,.pending-verification,.incomplete{color:var(--warn)}.disqualified,.failed,.removed{color:var(--bad)}.progress{height:9px;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#0b0d12;margin:12px 0}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--good))}
+    .member{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}.member img{width:32px;height:32px;border-radius:6px;image-rendering:pixelated}.member b{display:block}.muted{color:var(--muted)}.empty{border:1px dashed var(--line);border-radius:8px;padding:20px;color:var(--muted);background:rgba(17,19,25,.65)}
     @media(max-width:740px){.topbar{align-items:flex-start;flex-direction:column}h1{font-size:34px}.controls{grid-template-columns:1fr}.btn{width:100%}}
   </style>
 </head>
@@ -17,10 +18,13 @@
 <main>
   <header class="topbar">
     <a class="brand" href="/"><img src="/static/logo.png" alt=""><span>HELLCORE</span></a>
-    <a class="btn secondary" href="/tournament">Tournament Home</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn secondary" href="/tournament">Tournament Home</a>
+      <a class="btn" href="/tournament/verify">Verify Slot</a>
+    </div>
   </header>
   <section class="top">
-    <div class="eyebrow">31 May 2026 - 4v4 RBW - Double Elimination</div>
+    <div class="eyebrow">{{ date }} - 4v4 RBW - Double Elimination</div>
     <h1>Registered Teams</h1>
     <p id="summary">Loading tournament roster...</p>
     <div id="registerAction"></div>
@@ -29,8 +33,10 @@
     <input id="q" placeholder="Search team or Minecraft IGN">
     <select id="status">
       <option value="all">All teams</option>
+      <option value="pending">Pending verification</option>
       <option value="complete">Complete teams</option>
-      <option value="incomplete">Incomplete teams</option>
+      <option value="confirmed">Confirmed teams</option>
+      <option value="disqualified">Disqualified teams</option>
     </select>
     <button class="btn" onclick="loadTeams()">Search</button>
   </div>
@@ -38,26 +44,41 @@
 </main>
 <script>
 const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function initials(name){return String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
+const norm=s=>String(s||'').trim().toLowerCase();function initials(name){return String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}
+function statusClass(status){return norm(status).replace(/\s+/g,'-') || 'pending'}
 function teamLogo(t){return t.logo_url?`<div class="team-logo"><img src="${esc(t.logo_url)}" alt=""></div>`:`<div class="team-logo">${esc(initials(t.team_name))}</div>`}
+function members(t){return t.players || t.members || t.roster || []}
+function playerIgn(m){return m.minecraft_ign || m.minecraft_ign_snapshot || m.ign || m.username || ''}
+function verified(m){return Boolean(m.verified || norm(m.verification_status)==='verified' || norm(m.status)==='verified')}
+function playerStatus(m){return verified(m) ? 'Verified' : (m.public_status || m.verification_status || m.status || 'Pending')}
+function verifiedCount(t){const list=members(t);return Number(t.verified_count ?? t.verified_players ?? list.filter(verified).length)}
+function teamSize(t,d){return Number(t.team_size || d.team_size || 4)}
 async function loadTeams(){
   const p=new URLSearchParams(); if($('q').value.trim())p.set('q',$('q').value.trim()); p.set('status',$('status').value);
   const res=await fetch('/api/tournament/teams?'+p); const d=await res.json();
-  $('summary').textContent=`${d.registered_teams}/${d.max_teams} teams registered. Team size: ${d.team_size}.`;
+  let teams = d.teams || [];
+  const statusFilter=$('status').value;
+  if(statusFilter==='pending') teams=teams.filter(t=>['pending','pending verification','incomplete'].includes(norm(t.status)));
+  if(statusFilter==='confirmed') teams=teams.filter(t=>norm(t.status)==='confirmed');
+  if(statusFilter==='disqualified') teams=teams.filter(t=>norm(t.status)==='disqualified');
+  $('summary').textContent=`${d.registered_teams}/${d.max_teams} teams registered. Public roster shows verification progress only.`;
   $('registerAction').innerHTML=d.registration_open?'<a class="btn" href="/tournament/create">Register Your Team</a>':'<p>Registration is currently closed.</p>';
-  if(!d.teams.length){$('teams').innerHTML='<div class="empty">No teams match this view.</div>';return;}
-  $('teams').innerHTML=d.teams.map(t=>`
-    <article class="card">
+  if(!teams.length){$('teams').innerHTML='<div class="empty">No teams match this view.</div>';return;}
+  $('teams').innerHTML=teams.map(t=>{
+    const list=members(t); const size=teamSize(t,d); const vc=verifiedCount(t); const pct=Math.min(100,Math.round((vc/Math.max(size,1))*100));
+    return `<article class="card">
       <div class="team-head">
         ${teamLogo(t)}
         <div>
           <h2>${esc(t.team_name)}</h2>
-          <div class="stats"><span class="status ${esc(t.status)}">${esc(t.status)}</span><span class="count">${t.player_count}/${t.team_size} players</span></div>
+          <div class="stats"><span class="status ${statusClass(t.status)}">${esc(t.status || 'Pending Verification')}</span><span class="count">${vc}/${size} Verified</span></div>
         </div>
       </div>
-      <p><b>Captain:</b> ${esc(t.captain || 'TBD')}</p>
-      ${t.members.map(m=>`<div class="member"><img src="/api/skin/head/${encodeURIComponent(m.minecraft_ign)}/32" alt=""><div><b>${esc(m.minecraft_ign)}</b><span class="muted">${esc(m.discord_username || 'Discord not shown')}${m.role==='captain'?' - Captain':''}</span></div></div>`).join('')}
-    </article>`).join('');
+      <div class="progress" aria-label="Verification progress"><span style="width:${pct}%"></span></div>
+      <p><b>Captain:</b> ${esc(t.captain || list.find(m=>m.role==='captain')?.minecraft_ign || 'TBD')}</p>
+      ${list.map(m=>`<div class="member"><img src="/api/skin/head/${encodeURIComponent(playerIgn(m))}/32" alt=""><div><b>${esc(playerIgn(m))}</b><span class="muted">${m.role==='captain'?'Captain':'Player'}</span></div><span class="status ${statusClass(playerStatus(m))}">${esc(playerStatus(m))}</span></div>`).join('')}
+    </article>`;
+  }).join('');
 }
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')loadTeams()});$('status').addEventListener('change',loadTeams);loadTeams();
 </script>

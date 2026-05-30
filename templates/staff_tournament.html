@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Staff Tournament - {{ title }}</title>
   <style>
-    :root{--bg:#08090b;--panel:#111319;--panel2:#171a22;--line:#2a2f3a;--text:#f7f7fb;--muted:#a5adbb;--accent:#ff5a2f;--bad:#ff5f67}
-    *{box-sizing:border-box}body{margin:0;background:#08090b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}main{width:min(1280px,100%);margin:0 auto;padding:26px 18px 60px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;font-weight:900}.brand img{width:40px;height:40px;border-radius:8px;object-fit:cover}h1{font-size:40px;margin:0}.muted{color:var(--muted)}
-    .nav,.actions{display:flex;gap:8px;flex-wrap:wrap}.nav a,.btn{min-height:38px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 12px;text-decoration:none;font-weight:800;cursor:pointer}.btn.hot{background:linear-gradient(135deg,var(--accent),#e2355b);border-color:transparent}.btn.danger{color:#ffd1d4;border-color:rgba(255,95,103,.4)}
-    .toolbar,.card{background:var(--panel);border:1px solid var(--line);border-radius:8px}.toolbar{display:grid;grid-template-columns:minmax(220px,460px) auto 1fr;align-items:center;gap:10px;padding:14px;margin:16px 0}.card{padding:16px;margin:12px 0}.team-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}.team-head h2{margin:0 0 5px}.pill{display:inline-flex;align-items:center;min-height:24px;border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:12px;font-weight:900;text-transform:uppercase}.member{display:grid;grid-template-columns:1.1fr 1fr 1fr auto;gap:10px;align-items:center;border-top:1px solid rgba(255,255,255,.08);padding:10px 0}.member:first-of-type{margin-top:10px}input{width:100%;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;outline:none}input:focus{border-color:#59667c}pre{white-space:pre-wrap;background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:10px;color:#dce3ef}.empty{padding:18px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
-    @media(max-width:900px){.topbar{align-items:flex-start;flex-direction:column}h1{font-size:30px}.toolbar{grid-template-columns:1fr}.member{grid-template-columns:1fr}.nav a,.btn{flex:1 1 auto}}
+    :root{--bg:#08090b;--panel:#111319;--panel2:#171a22;--line:#2a2f3a;--text:#f7f7fb;--muted:#a5adbb;--accent:#ff5a2f;--good:#3ddc84;--warn:#f6bf53;--bad:#ff5f67}
+    *{box-sizing:border-box}body{margin:0;background:#08090b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;letter-spacing:0}main{width:min(1280px,100%);margin:0 auto;padding:26px 18px 60px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.brand{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;font-weight:900}.brand img{width:40px;height:40px;border-radius:8px;object-fit:cover}h1{font-size:40px;margin:0}.muted{color:var(--muted)}
+    .nav,.actions{display:flex;gap:8px;flex-wrap:wrap}.nav a,.btn{min-height:38px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 12px;text-decoration:none;font-weight:800;cursor:pointer}.btn.hot{background:linear-gradient(135deg,var(--accent),#e2355b);border-color:transparent}.btn.danger{color:#ffd1d4;border-color:rgba(255,95,103,.4);background:#251217}.btn:disabled{opacity:.62;cursor:not-allowed}
+    .toolbar,.card,.metric{background:var(--panel);border:1px solid var(--line);border-radius:8px}.toolbar{display:grid;grid-template-columns:minmax(220px,460px) auto 1fr;align-items:center;gap:10px;padding:14px;margin:16px 0}.card{padding:16px;margin:12px 0}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:16px 0}.metric{padding:14px}.metric span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;font-weight:900}.metric b{font-size:28px}.team-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}.team-head h2{margin:0 0 5px}.pill{display:inline-flex;align-items:center;min-height:24px;border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:12px;font-weight:900;text-transform:uppercase}.verified,.complete,.confirmed{color:var(--good)}.pending,.pending-verification,.incomplete{color:var(--warn)}.failed,.removed,.disqualified{color:var(--bad)}
+    .progress{height:9px;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#0b0d12;margin:10px 0}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--good))}.table-wrap{overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;margin-top:12px}.table{width:100%;border-collapse:collapse;min-width:820px}.table th,.table td{text-align:left;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 8px;vertical-align:middle}.table th{font-size:12px;color:var(--muted);text-transform:uppercase}.table tr:last-child td{border-bottom:0}input,select{width:100%;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;outline:none}input:focus,select:focus{border-color:#59667c}pre{white-space:pre-wrap;background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:10px;color:#dce3ef}.empty{padding:18px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.toast{position:fixed;right:18px;bottom:18px;max-width:360px;padding:12px 14px;background:#171a22;border:1px solid var(--line);border-radius:8px;box-shadow:0 15px 45px rgba(0,0,0,.35)}.toast.ok{border-color:rgba(61,220,132,.4)}.toast.err{border-color:rgba(255,95,103,.4)}
+    @media(max-width:900px){.topbar{align-items:flex-start;flex-direction:column}h1{font-size:30px}.toolbar{grid-template-columns:1fr}.nav a,.btn{flex:1 1 auto}}
   </style>
 </head>
 <body>
@@ -29,47 +30,80 @@
     <a href="/tournament/teams">Public Page</a>
   </nav>
   <div class="toolbar">
-    <input id="q" placeholder="Search team, user, Discord, IGN">
+    <input id="q" placeholder="Search team, player, Discord, IGN">
     <div class="actions">
       <button class="btn hot" onclick="loadTeams()">Search</button>
       <button id="toggleReg" class="btn" onclick="toggleRegistration()">Toggle Registration</button>
     </div>
     <span id="settings" class="muted"></span>
   </div>
-  <section id="teams"></section>
+  <section id="dashboard"></section>
+  <section id="teams" {% if page == 'logs' %}style="display:none"{% endif %}></section>
   <section id="logs" {% if page != 'logs' %}style="display:none"{% endif %}></section>
 </main>
+<div id="toast" class="toast hidden"></div>
 <script>
 const PAGE={{ page|tojson }};const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let SETTINGS={};
+const norm=s=>String(s||'').trim().toLowerCase();function statusClass(s){return norm(s).replace(/\s+/g,'-') || 'pending'}
+function members(t){return t.players || t.members || t.roster || []}function ign(m){return m.minecraft_ign || m.minecraft_ign_snapshot || m.ign || m.username || ''}
+function discord(m){return m.discord_display || m.discord_username || m.discord_global_name || m.discord || m.discord_id || ''}
+function code(m){return m.verification_code || m.code || m.player_code || ''}function verified(m){return Boolean(m.verified || norm(m.verification_status)==='verified' || norm(m.status)==='verified' || norm(m.code_status)==='used')}
+function pStatus(m){return verified(m)?'Verified':(m.verification_status || m.code_status || m.status || 'Pending Verification')}
+function vCount(t){const list=members(t);return Number(t.verified_count ?? t.verified_players ?? list.filter(verified).length)}function tSize(t){return Number(t.team_size || SETTINGS.team_size || 4)}
 async function api(url,opt={}){const r=await fetch(url,{method:opt.method||'GET',credentials:'include',headers:{'Content-Type':'application/json'},body:opt.body?JSON.stringify(opt.body):undefined});const d=await r.json().catch(()=>({error:'Request failed'}));if(!r.ok)throw new Error(d.error||'Request failed');return d}
+function toast(msg,ok=true){const el=$('toast');el.className='toast '+(ok?'ok':'err');el.textContent=msg;setTimeout(()=>el.classList.add('hidden'),2800)}
+function metric(label,value){return `<div class="metric"><span>${esc(label)}</span><b>${esc(value)}</b></div>`}
+function renderDashboard(teams){
+  const allMembers=teams.flatMap(members); const total=teams.length; const pending=teams.filter(t=>['pending','pending verification','incomplete'].includes(norm(t.status))).length; const complete=teams.filter(t=>norm(t.status)==='complete').length; const confirmed=teams.filter(t=>norm(t.status)==='confirmed').length; const disq=teams.filter(t=>norm(t.status)==='disqualified').length; const verifiedPlayers=allMembers.filter(verified).length; const pendingPlayers=Math.max(0,allMembers.length-verifiedPlayers);
+  const warnings=[];
+  teams.filter(t=>vCount(t)<tSize(t)).slice(0,5).forEach(t=>warnings.push(`${t.team_name}: ${vCount(t)}/${tSize(t)} verified`));
+  $('dashboard').innerHTML=`<div class="metrics">
+    ${metric('Total teams',total)}${metric('Pending teams',pending)}${metric('Complete teams',complete)}${metric('Confirmed',confirmed)}${metric('Disqualified',disq)}${metric('Total players',allMembers.length)}${metric('Verified players',verifiedPlayers)}${metric('Pending players',pendingPlayers)}
+  </div>
+  <div class="card"><h2>Warnings</h2>${warnings.length?warnings.map(w=>`<div class="pill pending">${esc(w)}</div>`).join(' '):'<div class="muted">No verification warnings in this view.</div>'}</div>`;
+}
 async function loadTeams(){
   const p=new URLSearchParams();if($('q').value.trim())p.set('q',$('q').value.trim());
-  const d=await api('/api/staff/tournament/teams?'+p);SETTINGS=d.settings;$('settings').textContent=`Registration: ${SETTINGS.registration_open?'Open':'Closed'} - Team size ${SETTINGS.team_size} - Max ${SETTINGS.max_teams}`;
-  $('teams').innerHTML=d.teams.map(t=>`
-    <article class="card">
+  const d=await api('/api/staff/tournament/teams?'+p);SETTINGS=d.settings || {};$('settings').textContent=`Registration: ${SETTINGS.registration_open?'Open':'Closed'} - Team size ${SETTINGS.team_size || 4} - Max ${SETTINGS.max_teams || 12}`;
+  const teams=d.teams || []; renderDashboard(teams);
+  $('teams').innerHTML=teams.map(t=>{const list=members(t);const vc=vCount(t);const size=tSize(t);const pct=Math.min(100,Math.round((vc/Math.max(size,1))*100));
+    return `<article class="card">
       <div class="team-head">
-        <div><h2>${esc(t.team_name)}</h2><span class="pill">${esc(t.status)}</span> <span class="muted">${t.player_count}/${t.team_size} players - Invite: ${esc(t.invite_url)}</span></div>
+        <div><h2>${esc(t.team_name)}</h2><span class="pill ${statusClass(t.status)}">${esc(t.status || 'Pending Verification')}</span> <span class="muted">${vc}/${size} verified - Created ${esc(t.created_at || '-')} - Updated ${esc(t.updated_at || '-')}</span></div>
         <div class="actions">
           <button class="btn" onclick="renameTeam(${t.id}, '${esc(t.team_name)}')">Rename</button>
           <button class="btn" onclick="confirmTeam(${t.id})">Confirm</button>
           <button class="btn danger" onclick="deleteTeam(${t.id})">Delete</button>
         </div>
       </div>
-      <h3>Players</h3>
-      ${t.members.map(m=>`<div class="member">
-        <div><b>${esc(m.minecraft_ign)}</b><div class="muted">${esc(m.role)} - ${esc(m.rbw_source)}</div></div>
-        <div>${esc(m.website_username)}<div class="muted">User ID ${esc(m.user_id)}</div></div>
-        <div>${esc(m.discord_username || m.discord_global_name || '-')}<div class="muted">${esc(m.discord_id)}</div></div>
-        <button class="btn danger" onclick="removeMember(${m.id})">Remove</button>
-      </div>`).join('') || '<div class="empty">No players on this team.</div>'}
-    </article>`).join('') || '<div class="empty">No teams yet.</div>';
+      <div class="progress" aria-label="Verification progress"><span style="width:${pct}%"></span></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>IGN</th><th>Discord</th><th>Code</th><th>Code Status</th><th>Verified</th><th>Role</th><th>Actions</th></tr></thead>
+        <tbody>${list.map(m=>`<tr>
+          <td><b>${esc(ign(m))}</b><div class="muted">${esc(m.rbw_source || '')}</div></td>
+          <td>${esc(discord(m) || '-')}<div class="muted">${esc(m.discord_id || '')}</div></td>
+          <td><b>${esc(code(m) || 'Not returned')}</b></td>
+          <td><span class="pill ${statusClass(pStatus(m))}">${esc(pStatus(m))}</span></td>
+          <td>${verified(m)?'Yes':'No'}</td>
+          <td>${esc(m.role || 'member')}</td>
+          <td><div class="actions">
+            <button class="btn" ${code(m)?'':'disabled'} onclick="copyCode('${esc(code(m))}')">Copy</button>
+            <button class="btn" onclick="staffAction('regenerate code', '${esc(ign(m))}')">Regenerate</button>
+            <button class="btn" onclick="staffAction('replace player', '${esc(ign(m))}')">Replace</button>
+            <button class="btn danger" onclick="removeMember(${m.id || 0})">Remove</button>
+          </div></td>
+        </tr>`).join('') || '<tr><td colspan="7" class="muted">No players on this team.</td></tr>'}</tbody>
+      </table></div>
+    </article>`}).join('') || '<div class="empty">No teams yet.</div>';
 }
-async function renameTeam(id,name){const n=prompt('New team name',name);if(!n)return;try{await api(`/api/staff/tournament/teams/${id}/rename`,{method:'POST',body:{team_name:n}});loadTeams();}catch(e){alert(e.message)}}
-async function confirmTeam(id){try{await api(`/api/staff/tournament/teams/${id}/confirm`,{method:'POST'});loadTeams();}catch(e){alert(e.message)}}
-async function deleteTeam(id){if(!confirm('Delete team?'))return;try{await api(`/api/staff/tournament/teams/${id}`,{method:'DELETE'});loadTeams();}catch(e){alert(e.message)}}
-async function removeMember(id){if(!confirm('Remove player?'))return;try{await api(`/api/staff/tournament/members/${id}`,{method:'DELETE'});loadTeams();}catch(e){alert(e.message)}}
-async function toggleRegistration(){try{await api('/api/staff/tournament/settings',{method:'POST',body:{registration_open:!SETTINGS.registration_open}});loadTeams();}catch(e){alert(e.message)}}
-async function loadLogs(){const d=await api('/api/staff/tournament/logs');$('logs').innerHTML='<h2>Logs</h2>'+d.map(l=>`<div class="card"><b>${esc(l.action_type)}</b> <span class="muted">${esc(l.created_at)}</span><div>User: ${esc(l.user_name||'-')} - Staff: ${esc(l.staff_name||'-')} - Team: ${esc(l.team_name||'-')}</div><pre>${esc(JSON.stringify(l.details,null,2))}</pre></div>`).join('') || '<div class="empty">No logs yet.</div>'}
+function copyCode(value){if(!value)return; navigator.clipboard.writeText(value); toast('Verification code copied.')}
+function staffAction(action, player){toast(`${action} UI is ready for ${player}. Backend endpoint needed.`, false)}
+async function renameTeam(id,name){const n=prompt('New team name',name);if(!n)return;try{await api(`/api/staff/tournament/teams/${id}/rename`,{method:'POST',body:{team_name:n}});toast('Team renamed.');loadTeams();}catch(e){toast(e.message,false)}}
+async function confirmTeam(id){try{await api(`/api/staff/tournament/teams/${id}/confirm`,{method:'POST'});toast('Team confirmed.');loadTeams();}catch(e){toast(e.message,false)}}
+async function deleteTeam(id){if(!confirm('Delete this team? This cannot be undone.'))return;try{await api(`/api/staff/tournament/teams/${id}`,{method:'DELETE'});toast('Team deleted.');loadTeams();}catch(e){toast(e.message,false)}}
+async function removeMember(id){if(!id){toast('Member ID unavailable.',false);return}if(!confirm('Remove this player from the team?'))return;try{await api(`/api/staff/tournament/members/${id}`,{method:'DELETE'});toast('Player removed.');loadTeams();}catch(e){toast(e.message,false)}}
+async function toggleRegistration(){try{await api('/api/staff/tournament/settings',{method:'POST',body:{registration_open:!SETTINGS.registration_open}});toast('Registration setting updated.');loadTeams();}catch(e){toast(e.message,false)}}
+async function loadLogs(){const d=await api('/api/staff/tournament/logs');const wanted=['team_created_with_4_players','player_verification_code_generated','player_verification_attempt','player_verified','invalid_verification_attempt','code_regenerated','player_replaced','player_removed','team_completed_verification','team_confirmed','team_disqualified'];$('logs').innerHTML='<h2>Staff Logs</h2><div class="table-wrap"><table class="table"><thead><tr><th>Time</th><th>Action Type</th><th>Team Name</th><th>Player IGN</th><th>Discord</th><th>Staff User</th><th>Details</th><th>IP</th></tr></thead><tbody>'+d.map(l=>{const details=l.details||{};return `<tr><td>${esc(l.created_at)}</td><td><span class="pill ${wanted.includes(norm(l.action_type))?'pending':''}">${esc(l.action_type)}</span></td><td>${esc(l.team_name||details.team_name||'-')}</td><td>${esc(details.minecraft_ign||details.player_ign||'-')}</td><td>${esc(details.discord||details.discord_id||'-')}</td><td>${esc(l.staff_name||'-')}</td><td><pre>${esc(JSON.stringify(details,null,2))}</pre></td><td>${esc(details.ip_address||'-')}</td></tr>`}).join('')+'</tbody></table></div>'}
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')loadTeams()});loadTeams();if(PAGE==='logs')loadLogs();
 </script>
 </body>
