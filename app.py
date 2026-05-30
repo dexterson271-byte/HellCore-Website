@@ -1375,6 +1375,41 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
   user_id INTEGER NOT NULL,
   trial_id INTEGER NOT NULL,
   claimed_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_tournament_teams(
+  id INTEGER PRIMARY KEY {AI},
+  team_name VARCHAR(80) NOT NULL,
+  captain_user_id INTEGER NOT NULL,
+  invite_token VARCHAR(80) UNIQUE NOT NULL,
+  status VARCHAR(30) DEFAULT 'incomplete',
+  created_at {DT},
+  updated_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_tournament_members(
+  id INTEGER PRIMARY KEY {AI},
+  team_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  discord_id VARCHAR(50) NOT NULL,
+  minecraft_ign_snapshot VARCHAR(50) NOT NULL,
+  minecraft_ign_lc VARCHAR(50) NOT NULL,
+  rbw_uuid VARCHAR(80) DEFAULT '',
+  rbw_source VARCHAR(80) DEFAULT 'hc_users',
+  role VARCHAR(20) DEFAULT 'member',
+  joined_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_tournament_logs(
+  id INTEGER PRIMARY KEY {AI},
+  action_type VARCHAR(80) NOT NULL,
+  user_id INTEGER,
+  staff_user_id INTEGER,
+  team_id INTEGER,
+  details_json TEXT,
+  created_at {DT})""",
+
+f"""CREATE TABLE IF NOT EXISTS hc_tournament_settings(
+  setting_key VARCHAR(80) PRIMARY KEY,
+  setting_value VARCHAR(255) NOT NULL,
+  updated_at {DT})""",
     ]
 
     for sql in tables:
@@ -1445,6 +1480,23 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
         c.execute("ALTER TABLE hc_users ADD COLUMN discord_id VARCHAR(50) DEFAULT ''")
     except:
         pass
+    for sql in [
+        "ALTER TABLE hc_users ADD COLUMN mc_uuid VARCHAR(80) DEFAULT ''",
+        "ALTER TABLE hc_users ADD COLUMN verification_code VARCHAR(30) DEFAULT ''",
+        "ALTER TABLE hc_users ADD COLUMN discord_username VARCHAR(120) DEFAULT ''",
+        "ALTER TABLE hc_users ADD COLUMN discord_global_name VARCHAR(120) DEFAULT ''",
+        "ALTER TABLE hc_users ADD COLUMN discord_avatar VARCHAR(255) DEFAULT ''",
+        "ALTER TABLE hc_users ADD COLUMN discord_linked_at DATETIME",
+        "ALTER TABLE hc_tournament_teams ADD COLUMN status VARCHAR(30) DEFAULT 'incomplete'",
+        "ALTER TABLE hc_tournament_teams ADD COLUMN updated_at DATETIME",
+        "ALTER TABLE hc_tournament_members ADD COLUMN minecraft_ign_lc VARCHAR(50) DEFAULT ''",
+        "ALTER TABLE hc_tournament_members ADD COLUMN rbw_uuid VARCHAR(80) DEFAULT ''",
+        "ALTER TABLE hc_tournament_members ADD COLUMN rbw_source VARCHAR(80) DEFAULT 'hc_users'"
+    ]:
+        try:
+            c.execute(sql)
+        except:
+            pass
     try:
         c.execute("ALTER TABLE hc_ranks ADD COLUMN expires_at DATETIME")
     except:
@@ -1478,6 +1530,19 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
             c.execute(sql)
         except:
             pass
+    db.commit()
+    for key, value in [
+        ("tournament_registration_open", "1"),
+        ("tournament_max_teams", "12"),
+        ("tournament_team_size", "4"),
+    ]:
+        try:
+            if _DB_MODE == "sqlite":
+                c.execute("INSERT OR IGNORE INTO hc_tournament_settings(setting_key,setting_value) VALUES(?,?)", (key, value))
+            else:
+                c.execute("INSERT IGNORE INTO hc_tournament_settings(setting_key,setting_value) VALUES(%s,%s)", (key, value))
+        except Exception as e:
+            print(f"  [DB WARN] Tournament setting init failed: {e}")
     db.commit()
     print(f"  [DB INFO] Migrations committed.")
 
@@ -1604,6 +1669,15 @@ def optional_auth(f):
         request.cu = get_user_by_token(token)
         return f(*a, **k)
     return w
+
+
+def current_user_optional():
+    token = request.cookies.get("hc_token", "")
+    return get_user_by_token(token)
+
+
+def require_json():
+    return request.get_json(silent=True) or {}
 
 
 def get_rank_payload_for_user(user_id, cursor=None):
@@ -2776,9 +2850,13 @@ def bot_verify():
     row = to_dict(c.fetchone())
     if not row:
         return jsonify({"error": "Invalid or expired code"}), 404
-        
+    c.execute(f"SELECT id FROM hc_users WHERE discord_id={ph()} AND id!={ph()}", (str(discord_id), row["id"]))
+    if c.fetchone():
+        return jsonify({"error": "That Discord account is already linked to another website account."}), 409
+
     c.execute(f"UPDATE hc_users SET discord_id={ph()}, verification_code=NULL WHERE id={ph()}", (str(discord_id), row["id"]))
     db.commit()
+    log_tournament_action("discord_linked", user_id=row["id"], details={"discord_id": str(discord_id), "source": "bot_verify"})
     return jsonify({"ok": True, "username": row["username"]})
 
 @app.route("/api/bot/ranks")
@@ -2819,9 +2897,627 @@ def bot_unlink():
         return jsonify({"error": "Missing params"}), 400
         
     db = get_db(); c = db_cursor(db)
-    c.execute(f"UPDATE hc_users SET discord_id='' WHERE discord_id={ph()}", (str(discord_id),))
+    c.execute(
+        f"UPDATE hc_users SET discord_id='', discord_username='', discord_global_name='', discord_avatar='', discord_linked_at=NULL WHERE discord_id={ph()}",
+        (str(discord_id),)
+    )
     db.commit()
     return jsonify({"ok": True})
+
+
+# -------------------------------------------------------
+# HELLCORE 4v4 RBW TOURNAMENT
+# -------------------------------------------------------
+TOURNAMENT_TITLE = "HELLCORE 4v4 RBW TOURNAMENT"
+TOURNAMENT_DATE = "31 May 2026"
+
+
+def tournament_setting(key, default=""):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT setting_value FROM hc_tournament_settings WHERE setting_key={ph()}", (key,))
+    row = to_dict(c.fetchone())
+    return str((row or {}).get("setting_value") or default)
+
+
+def tournament_limits():
+    return {
+        "registration_open": tournament_setting("tournament_registration_open", "1") == "1",
+        "max_teams": int(tournament_setting("tournament_max_teams", "12") or 12),
+        "team_size": int(tournament_setting("tournament_team_size", "4") or 4),
+    }
+
+
+def clean_team_name(value):
+    name = re.sub(r"\s+", " ", str(value or "")).strip()
+    name = re.sub(r"[^\w ._\-#&()]", "", name, flags=re.UNICODE).strip()
+    if len(name) < 3 or len(name) > 40:
+        return ""
+    return name
+
+
+def user_discord_linked(user):
+    return bool(str((user or {}).get("discord_id") or "").strip())
+
+
+def user_rbw_profile(user):
+    ign = str((user or {}).get("mc_username") or "").strip()
+    if not ign or not bool((user or {}).get("is_verified", 0)):
+        return None
+    return {
+        "minecraft_ign": ign,
+        "rbw_uuid": str((user or {}).get("mc_uuid") or "").strip(),
+        "rbw_source": "hc_users.mc_username",
+    }
+
+
+def tournament_user_blocker(user):
+    if not user:
+        return "You must log in before registering for the tournament."
+    if not user_discord_linked(user):
+        return "You must link your Discord account before registering for the tournament."
+    if not user_rbw_profile(user):
+        return "No RBW player profile was found for your account. Please join the RBW server or link your Minecraft account first."
+    return ""
+
+
+def public_base_url():
+    return os.environ.get("WEBSITE_PUBLIC_URL", request.host_url.rstrip("/")).rstrip("/")
+
+
+def send_tournament_webhook(action_type, user=None, staff=None, team=None, details=None):
+    url = os.environ.get("TOURNAMENT_WEBHOOK_URL", "").strip()
+    if not url:
+        return
+    payload = {
+        "content": None,
+        "embeds": [{
+            "title": f"Tournament: {action_type}",
+            "color": 16732463,
+            "fields": [
+                {"name": "Website User", "value": f"{(user or {}).get('username','-')} / {(user or {}).get('id','-')}", "inline": True},
+                {"name": "Discord", "value": f"{(user or {}).get('discord_username','-')} / {(user or {}).get('discord_id','-')}", "inline": True},
+                {"name": "Minecraft IGN", "value": str((details or {}).get("minecraft_ign") or (user or {}).get("mc_username") or "-"), "inline": True},
+                {"name": "Team", "value": str((team or {}).get("team_name") or (details or {}).get("team_name") or "-"), "inline": True},
+                {"name": "Staff", "value": str((staff or {}).get("username") or "-"), "inline": True},
+                {"name": "Time", "value": datetime.utcnow().isoformat() + "Z", "inline": True},
+            ],
+            "footer": {"text": TOURNAMENT_TITLE},
+        }]
+    }
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "HellCoreTournament/1.0"},
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=4)
+    except Exception as e:
+        print(f"[TOURNAMENT WEBHOOK] Failed: {e}")
+
+
+def log_tournament_action(action_type, user_id=None, staff_user_id=None, team_id=None, details=None):
+    details = details or {}
+    db = get_db(); c = db_cursor(db)
+    c.execute(
+        f"INSERT INTO hc_tournament_logs(action_type,user_id,staff_user_id,team_id,details_json) VALUES({phs(5)})",
+        (action_type, user_id, staff_user_id, team_id, json.dumps(details, ensure_ascii=False)),
+    )
+    db.commit()
+
+    user = None; staff = None; team = None
+    if user_id:
+        c.execute(f"SELECT * FROM hc_users WHERE id={ph()}", (user_id,))
+        user = to_dict(c.fetchone())
+    if staff_user_id:
+        c.execute(f"SELECT * FROM hc_users WHERE id={ph()}", (staff_user_id,))
+        staff = to_dict(c.fetchone())
+    if team_id:
+        c.execute(f"SELECT * FROM hc_tournament_teams WHERE id={ph()}", (team_id,))
+        team = to_dict(c.fetchone())
+    send_tournament_webhook(action_type, user=user, staff=staff, team=team, details=details)
+
+
+def get_user_tournament_member(user_id, cursor=None):
+    c = cursor or db_cursor(get_db())
+    c.execute(
+        f"""SELECT m.*, t.team_name, t.invite_token, t.status, t.captain_user_id
+            FROM hc_tournament_members m
+            JOIN hc_tournament_teams t ON t.id=m.team_id
+            WHERE m.user_id={ph()}""",
+        (user_id,),
+    )
+    return to_dict(c.fetchone())
+
+
+def recalc_team_status(team_id, cursor=None):
+    c = cursor or db_cursor(get_db())
+    limits = tournament_limits()
+    c.execute(f"SELECT status FROM hc_tournament_teams WHERE id={ph()}", (team_id,))
+    team = to_dict(c.fetchone())
+    if not team:
+        return "incomplete"
+    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (team_id,))
+    count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+    if count < limits["team_size"]:
+        status = "incomplete"
+    elif team.get("status") == "confirmed":
+        status = "confirmed"
+    else:
+        status = "complete"
+    c.execute(f"UPDATE hc_tournament_teams SET status={ph()}, updated_at={ph()} WHERE id={ph()}", (status, datetime.now(), team_id))
+    return status
+
+
+def serialize_tournament_team(team_id=None, public=False, cursor=None):
+    c = cursor or db_cursor(get_db())
+    where = f"WHERE t.id={ph()}" if team_id else ""
+    params = (team_id,) if team_id else ()
+    c.execute(
+        f"""SELECT t.*, cu.username captain_username, cu.mc_username captain_mc
+            FROM hc_tournament_teams t
+            LEFT JOIN hc_users cu ON cu.id=t.captain_user_id
+            {where}
+            ORDER BY t.created_at ASC""",
+        params,
+    )
+    teams = to_list(c.fetchall())
+    out = []
+    limits = tournament_limits()
+    for t in teams:
+        c.execute(
+            f"""SELECT m.*, u.username website_username, u.discord_username, u.discord_global_name
+                FROM hc_tournament_members m
+                LEFT JOIN hc_users u ON u.id=m.user_id
+                WHERE m.team_id={ph()}
+                ORDER BY CASE WHEN m.role='captain' THEN 0 ELSE 1 END, m.joined_at ASC""",
+            (t["id"],),
+        )
+        members = to_list(c.fetchall())
+        safe_members = []
+        for m in members:
+            safe = {
+                "role": m.get("role") or "member",
+                "minecraft_ign": m.get("minecraft_ign_snapshot") or "",
+            }
+            if not public:
+                safe.update({
+                    "id": m["id"],
+                    "user_id": m["user_id"],
+                    "website_username": m.get("website_username") or "",
+                    "discord_id": m.get("discord_id") or "",
+                    "discord_username": m.get("discord_username") or "",
+                    "discord_global_name": m.get("discord_global_name") or "",
+                    "rbw_uuid": m.get("rbw_uuid") or "",
+                    "rbw_source": m.get("rbw_source") or "hc_users.mc_username",
+                    "joined_at": isoformat_utc(m.get("joined_at")),
+                })
+            safe_members.append(safe)
+        item = {
+            "team_name": t["team_name"],
+            "status": t.get("status") or "incomplete",
+            "player_count": len(members),
+            "team_size": limits["team_size"],
+            "captain": next((m["minecraft_ign"] for m in safe_members if m["role"] == "captain"), t.get("captain_mc") or ""),
+            "members": safe_members,
+        }
+        if not public:
+            item.update({
+                "id": t["id"],
+                "captain_user_id": t["captain_user_id"],
+                "invite_token": t["invite_token"],
+                "invite_url": f"{public_base_url()}/tournament/join/{t['invite_token']}",
+                "created_at": isoformat_utc(t.get("created_at")),
+                "updated_at": isoformat_utc(t.get("updated_at")),
+            })
+        out.append(item)
+    return out[0] if team_id and out else None if team_id else out
+
+
+def assert_tournament_joinable(user, team_id=None):
+    limits = tournament_limits()
+    if not limits["registration_open"]:
+        return "Registration is currently closed."
+    blocker = tournament_user_blocker(user)
+    if blocker:
+        return blocker
+    db = get_db(); c = db_cursor(db)
+    c.execute("SELECT COUNT(*) cnt FROM hc_tournament_teams")
+    if not team_id and int((to_dict(c.fetchone()) or {}).get("cnt") or 0) >= limits["max_teams"]:
+        return "Tournament registration is full."
+    profile = user_rbw_profile(user)
+    c.execute(
+        f"""SELECT m.id FROM hc_tournament_members m
+            WHERE m.user_id={ph()} OR m.discord_id={ph()} OR m.minecraft_ign_lc={ph()}""",
+        (user["id"], str(user.get("discord_id") or ""), profile["minecraft_ign"].lower()),
+    )
+    if c.fetchone():
+        return "You are already registered on a tournament team."
+    return ""
+
+
+@app.route("/auth/discord/start")
+@auth_required
+def discord_oauth_start():
+    client_id = os.environ.get("DISCORD_CLIENT_ID", "").strip()
+    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{request.host_url.rstrip('/')}/auth/discord/callback").strip()
+    if not client_id:
+        return Response("Discord OAuth is not configured.", status=500, mimetype="text/plain")
+    state = secrets.token_urlsafe(24)
+    session["discord_oauth_state"] = state
+    params = urllib.parse.urlencode({
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "identify",
+        "state": state,
+        "prompt": "consent",
+    })
+    return redirect(f"https://discord.com/oauth2/authorize?{params}")
+
+
+@app.route("/auth/discord/callback")
+@auth_required
+def discord_oauth_callback():
+    if request.args.get("state") != session.pop("discord_oauth_state", ""):
+        return Response("Invalid Discord OAuth state.", status=400, mimetype="text/plain")
+    code = request.args.get("code", "").strip()
+    if not code:
+        return Response("Missing Discord OAuth code.", status=400, mimetype="text/plain")
+    client_id = os.environ.get("DISCORD_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("DISCORD_CLIENT_SECRET", "").strip()
+    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{request.host_url.rstrip('/')}/auth/discord/callback").strip()
+    if not client_id or not client_secret:
+        return Response("Discord OAuth is not configured.", status=500, mimetype="text/plain")
+
+    token_data = urllib.parse.urlencode({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": redirect_uri,
+    }).encode("utf-8")
+    try:
+        req = urllib.request.Request(
+            "https://discord.com/api/oauth2/token",
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "HellCoreTournament/1.0"},
+            method="POST",
+        )
+        token = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
+        access_token = token.get("access_token")
+        req = urllib.request.Request(
+            "https://discord.com/api/users/@me",
+            headers={"Authorization": f"Bearer {access_token}", "User-Agent": "HellCoreTournament/1.0"},
+        )
+        discord_user = json.loads(urllib.request.urlopen(req, timeout=10).read().decode())
+    except Exception as e:
+        return Response(f"Discord OAuth failed: {e}", status=502, mimetype="text/plain")
+
+    discord_id = str(discord_user.get("id") or "").strip()
+    if not discord_id:
+        return Response("Discord did not return an account ID.", status=502, mimetype="text/plain")
+
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT id, username FROM hc_users WHERE discord_id={ph()} AND id!={ph()}", (discord_id, request.cu["id"]))
+    if c.fetchone():
+        return Response("That Discord account is already linked to another website account.", status=409, mimetype="text/plain")
+    username = str(discord_user.get("username") or "")[:120]
+    global_name = str(discord_user.get("global_name") or "")[:120]
+    avatar_hash = str(discord_user.get("avatar") or "")
+    avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar_hash}.png?size=128" if avatar_hash else ""
+    c.execute(
+        f"""UPDATE hc_users SET discord_id={ph()}, discord_username={ph()}, discord_global_name={ph()},
+            discord_avatar={ph()}, discord_linked_at={ph()} WHERE id={ph()}""",
+        (discord_id, username, global_name, avatar_url, datetime.now(), request.cu["id"]),
+    )
+    db.commit()
+    user = get_user_by_token(request.cookies.get("hc_token", ""))
+    log_tournament_action("discord_linked", user_id=request.cu["id"], details={"discord_id": discord_id, "discord_username": username})
+    return redirect("/tournament")
+
+
+@app.route("/tournament")
+@optional_auth
+def tournament_page():
+    return render_template("tournament.html", page="home", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/tournament/link-discord")
+@optional_auth
+def tournament_link_discord_page():
+    return render_template("tournament.html", page="link", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/tournament/create")
+@optional_auth
+def tournament_create_page():
+    return render_template("tournament.html", page="create", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/tournament/my-team")
+@optional_auth
+def tournament_my_team_page():
+    return render_template("tournament.html", page="my", invite_token="", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/tournament/join/<invite_token>")
+@optional_auth
+def tournament_join_page(invite_token):
+    return render_template("tournament.html", page="join", invite_token=invite_token, title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/tournament/teams")
+def tournament_public_teams_page():
+    return render_template("tournament_teams.html", title=TOURNAMENT_TITLE, date=TOURNAMENT_DATE)
+
+
+@app.route("/staff/tournament")
+@staff_required
+def staff_tournament_page():
+    return render_template("staff_tournament.html", page="teams", title=TOURNAMENT_TITLE)
+
+
+@app.route("/staff/tournament/logs")
+@staff_required
+def staff_tournament_logs_page():
+    return render_template("staff_tournament.html", page="logs", title=TOURNAMENT_TITLE)
+
+
+@app.route("/api/tournament/status")
+@optional_auth
+def tournament_status_api():
+    user = request.cu
+    db = get_db(); c = db_cursor(db)
+    limits = tournament_limits()
+    c.execute("SELECT COUNT(*) cnt FROM hc_tournament_teams")
+    team_count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+    member = get_user_tournament_member(user["id"], c) if user else None
+    team = serialize_tournament_team(member["team_id"], public=False, cursor=c) if member else None
+    blocker = tournament_user_blocker(user) if user else "You must log in before registering for the tournament."
+    return jsonify({
+        "title": TOURNAMENT_TITLE,
+        "date": TOURNAMENT_DATE,
+        "registration_open": limits["registration_open"],
+        "max_teams": limits["max_teams"],
+        "team_size": limits["team_size"],
+        "team_count": team_count,
+        "logged_in": bool(user),
+        "discord_linked": user_discord_linked(user),
+        "minecraft_profile": user_rbw_profile(user),
+        "blocker": blocker,
+        "my_team": team,
+        "is_staff": bool(user and user.get("role") in STAFF_ROLES),
+    })
+
+
+@app.route("/api/tournament/teams")
+def tournament_public_teams_api():
+    q = request.args.get("q", "").strip().lower()
+    status_filter = request.args.get("status", "all").strip().lower()
+    teams = serialize_tournament_team(public=True)
+    if status_filter in ("complete", "incomplete", "confirmed"):
+        if status_filter == "complete":
+            teams = [t for t in teams if t["status"] in ("complete", "confirmed")]
+        else:
+            teams = [t for t in teams if t["status"] == status_filter]
+    if q:
+        teams = [
+            t for t in teams
+            if q in t["team_name"].lower() or any(q in m["minecraft_ign"].lower() for m in t["members"])
+        ]
+    limits = tournament_limits()
+    return jsonify({
+        "teams": teams,
+        "registration_open": limits["registration_open"],
+        "max_teams": limits["max_teams"],
+        "team_size": limits["team_size"],
+        "registered_teams": len(serialize_tournament_team(public=True)),
+    })
+
+
+@app.route("/api/tournament/team", methods=["POST"])
+@auth_required
+def tournament_create_team_api():
+    user = request.cu
+    error = assert_tournament_joinable(user)
+    if error:
+        return jsonify({"error": error}), 400
+    name = clean_team_name(require_json().get("team_name"))
+    if not name:
+        return jsonify({"error": "Team name must be 3-40 characters."}), 400
+    profile = user_rbw_profile(user)
+    db = get_db(); c = db_cursor(db)
+    token = secrets.token_urlsafe(18)
+    now = datetime.now()
+    c.execute(
+        f"INSERT INTO hc_tournament_teams(team_name,captain_user_id,invite_token,status,created_at,updated_at) VALUES({phs(6)})",
+        (name, user["id"], token, "incomplete", now, now),
+    )
+    team_id = c.lastrowid
+    c.execute(
+        f"""INSERT INTO hc_tournament_members(team_id,user_id,discord_id,minecraft_ign_snapshot,
+            minecraft_ign_lc,rbw_uuid,rbw_source,role,joined_at) VALUES({phs(9)})""",
+        (team_id, user["id"], str(user.get("discord_id") or ""), profile["minecraft_ign"], profile["minecraft_ign"].lower(), profile["rbw_uuid"], profile["rbw_source"], "captain", now),
+    )
+    db.commit()
+    log_tournament_action("team_created", user_id=user["id"], team_id=team_id, details={"team_name": name, "minecraft_ign": profile["minecraft_ign"]})
+    return jsonify({"ok": True, "team": serialize_tournament_team(team_id), "invite_url": f"{public_base_url()}/tournament/join/{token}"})
+
+
+@app.route("/api/tournament/join/<invite_token>", methods=["POST"])
+@auth_required
+def tournament_join_team_api(invite_token):
+    user = request.cu
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tournament_teams WHERE invite_token={ph()}", (invite_token,))
+    team = to_dict(c.fetchone())
+    if not team:
+        return jsonify({"error": "Invalid invite link."}), 404
+    error = assert_tournament_joinable(user, team["id"])
+    if error:
+        return jsonify({"error": error}), 400
+    limits = tournament_limits()
+    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (team["id"],))
+    count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+    if count >= limits["team_size"]:
+        return jsonify({"error": "This team is already full."}), 400
+    profile = user_rbw_profile(user)
+    now = datetime.now()
+    c.execute(
+        f"""INSERT INTO hc_tournament_members(team_id,user_id,discord_id,minecraft_ign_snapshot,
+            minecraft_ign_lc,rbw_uuid,rbw_source,role,joined_at) VALUES({phs(9)})""",
+        (team["id"], user["id"], str(user.get("discord_id") or ""), profile["minecraft_ign"], profile["minecraft_ign"].lower(), profile["rbw_uuid"], profile["rbw_source"], "member", now),
+    )
+    status = recalc_team_status(team["id"], c)
+    db.commit()
+    log_tournament_action("player_joined", user_id=user["id"], team_id=team["id"], details={"team_name": team["team_name"], "minecraft_ign": profile["minecraft_ign"]})
+    if status == "complete":
+        log_tournament_action("team_full", team_id=team["id"], details={"team_name": team["team_name"]})
+    return jsonify({"ok": True, "team": serialize_tournament_team(team["id"])})
+
+
+@app.route("/api/tournament/leave", methods=["POST"])
+@auth_required
+def tournament_leave_team_api():
+    user = request.cu
+    db = get_db(); c = db_cursor(db)
+    member = get_user_tournament_member(user["id"], c)
+    if not member:
+        return jsonify({"error": "You are not on a tournament team."}), 404
+    if member["role"] == "captain":
+        return jsonify({"error": "Captains cannot leave their team. Ask staff to delete or manage the team."}), 400
+    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (member["team_id"],))
+    count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+    if count >= tournament_limits()["team_size"]:
+        return jsonify({"error": "You cannot leave after your team is full. Ask staff for help."}), 400
+    c.execute(f"DELETE FROM hc_tournament_members WHERE id={ph()}", (member["id"],))
+    recalc_team_status(member["team_id"], c)
+    db.commit()
+    log_tournament_action("player_left", user_id=user["id"], team_id=member["team_id"], details={"minecraft_ign": member["minecraft_ign_snapshot"], "team_name": member["team_name"]})
+    return jsonify({"ok": True})
+
+
+@app.route("/api/staff/tournament/teams")
+@staff_required
+def staff_tournament_teams_api():
+    q = request.args.get("q", "").strip().lower()
+    teams = serialize_tournament_team(public=False)
+    if q:
+        teams = [
+            t for t in teams
+            if q in t["team_name"].lower()
+            or any(q in str(m.get("website_username","")).lower() or q in str(m.get("discord_username","")).lower()
+                   or q in str(m.get("discord_id","")).lower() or q in str(m.get("minecraft_ign","")).lower()
+                   for m in t["members"])
+        ]
+    return jsonify({"teams": teams, "settings": tournament_limits()})
+
+
+@app.route("/api/staff/tournament/teams/<int:team_id>/rename", methods=["POST"])
+@staff_required
+def staff_tournament_rename_api(team_id):
+    name = clean_team_name(require_json().get("team_name"))
+    if not name:
+        return jsonify({"error": "Team name must be 3-40 characters."}), 400
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_tournament_teams SET team_name={ph()}, updated_at={ph()} WHERE id={ph()}", (name, datetime.now(), team_id))
+    db.commit()
+    log_tournament_action("team_renamed", staff_user_id=request.cu["id"], team_id=team_id, details={"team_name": name})
+    return jsonify({"ok": True, "team": serialize_tournament_team(team_id)})
+
+
+@app.route("/api/staff/tournament/teams/<int:team_id>/confirm", methods=["POST"])
+@staff_required
+def staff_tournament_confirm_api(team_id):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT COUNT(*) cnt FROM hc_tournament_members WHERE team_id={ph()}", (team_id,))
+    count = int((to_dict(c.fetchone()) or {}).get("cnt") or 0)
+    if count < tournament_limits()["team_size"]:
+        return jsonify({"error": "Only full teams can be confirmed."}), 400
+    c.execute(f"UPDATE hc_tournament_teams SET status='confirmed', updated_at={ph()} WHERE id={ph()}", (datetime.now(), team_id))
+    db.commit()
+    log_tournament_action("team_confirmed", staff_user_id=request.cu["id"], team_id=team_id)
+    return jsonify({"ok": True, "team": serialize_tournament_team(team_id)})
+
+
+@app.route("/api/staff/tournament/members/<int:member_id>", methods=["DELETE"])
+@staff_required
+def staff_tournament_remove_member_api(member_id):
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"SELECT * FROM hc_tournament_members WHERE id={ph()}", (member_id,))
+    member = to_dict(c.fetchone())
+    if not member:
+        return jsonify({"error": "Member not found."}), 404
+    c.execute(f"DELETE FROM hc_tournament_members WHERE id={ph()}", (member_id,))
+    recalc_team_status(member["team_id"], c)
+    db.commit()
+    log_tournament_action("player_removed", user_id=member["user_id"], staff_user_id=request.cu["id"], team_id=member["team_id"], details={"minecraft_ign": member["minecraft_ign_snapshot"]})
+    return jsonify({"ok": True})
+
+
+@app.route("/api/staff/tournament/teams/<int:team_id>", methods=["DELETE"])
+@staff_required
+def staff_tournament_delete_team_api(team_id):
+    team = serialize_tournament_team(team_id)
+    if not team:
+        return jsonify({"error": "Team not found."}), 404
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"DELETE FROM hc_tournament_members WHERE team_id={ph()}", (team_id,))
+    c.execute(f"DELETE FROM hc_tournament_teams WHERE id={ph()}", (team_id,))
+    db.commit()
+    log_tournament_action("team_deleted", staff_user_id=request.cu["id"], team_id=team_id, details={"team_name": team["team_name"]})
+    return jsonify({"ok": True})
+
+
+@app.route("/api/staff/tournament/settings", methods=["POST"])
+@staff_required
+def staff_tournament_settings_api():
+    open_value = "1" if bool(require_json().get("registration_open")) else "0"
+    db = get_db(); c = db_cursor(db)
+    c.execute(f"UPDATE hc_tournament_settings SET setting_value={ph()}, updated_at={ph()} WHERE setting_key='tournament_registration_open'", (open_value, datetime.now()))
+    db.commit()
+    log_tournament_action("registration_open_changed", staff_user_id=request.cu["id"], details={"registration_open": open_value == "1"})
+    return jsonify({"ok": True, "settings": tournament_limits()})
+
+
+@app.route("/api/staff/tournament/logs")
+@staff_required
+def staff_tournament_logs_api():
+    db = get_db(); c = db_cursor(db)
+    c.execute(
+        """SELECT l.*, u.username user_name, s.username staff_name, t.team_name
+           FROM hc_tournament_logs l
+           LEFT JOIN hc_users u ON u.id=l.user_id
+           LEFT JOIN hc_users s ON s.id=l.staff_user_id
+           LEFT JOIN hc_tournament_teams t ON t.id=l.team_id
+           ORDER BY l.created_at DESC LIMIT 300"""
+    )
+    rows = []
+    for r in to_list(c.fetchall()):
+        r["created_at"] = isoformat_utc(r.get("created_at"))
+        try:
+            r["details"] = json.loads(r.get("details_json") or "{}")
+        except Exception:
+            r["details"] = {}
+        r.pop("details_json", None)
+        rows.append(r)
+    return jsonify(rows)
+
+
+@app.route("/api/staff/tournament/export")
+@staff_required
+def staff_tournament_export_api():
+    fmt = request.args.get("format", "json").lower()
+    teams = serialize_tournament_team(public=False)
+    if fmt == "csv":
+        lines = ["team_name,status,role,minecraft_ign,website_username,discord_username,discord_id"]
+        for t in teams:
+            for m in t["members"]:
+                vals = [t["team_name"], t["status"], m["role"], m["minecraft_ign"], m.get("website_username",""), m.get("discord_username",""), m.get("discord_id","")]
+                lines.append(",".join('"' + str(v).replace('"', '""') + '"' for v in vals))
+        return Response("\n".join(lines), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=hellcore-tournament.csv"})
+    return jsonify({"teams": teams})
 
 @app.route("/api/bot/tickets/transcripts", methods=["POST"])
 def bot_ticket_transcript_upload():

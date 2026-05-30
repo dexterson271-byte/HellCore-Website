@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Staff Tournament - {{ title }}</title>
+  <style>
+    :root{--bg:#070707;--panel:#121214;--panel2:#1b1b20;--line:#303038;--text:#fff;--muted:#a1a1aa;--accent:#ff512f;--bad:#ff5c5c;--good:#35d07f}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}main{max-width:1280px;margin:0 auto;padding:28px 18px 60px}h1{margin:0 0 10px}.nav{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}.nav a,.btn{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;text-decoration:none;font-weight:800;cursor:pointer}.btn.hot{background:var(--accent);border-color:var(--accent)}input{background:#0b0b0d;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin:12px 0}.team-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.member{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;border-top:1px solid rgba(255,255,255,.08);padding:9px 0}.muted{color:var(--muted)}pre{white-space:pre-wrap;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;padding:10px}.err{color:var(--bad)}@media(max-width:850px){.member{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>{{ title }} Staff</h1>
+  <div class="nav">
+    <a href="/staff/tournament">Teams</a>
+    <a href="/staff/tournament/logs">Logs</a>
+    <a href="/api/staff/tournament/export?format=csv">Export CSV</a>
+    <a href="/api/staff/tournament/export?format=json">Export JSON</a>
+    <a href="/tournament/teams">Public Page</a>
+  </div>
+  <div class="card">
+    <input id="q" placeholder="Search team, user, Discord, IGN" style="width:min(460px,100%)">
+    <button class="btn hot" onclick="loadTeams()">Search</button>
+    <button id="toggleReg" class="btn" onclick="toggleRegistration()">Toggle Registration</button>
+    <span id="settings" class="muted"></span>
+  </div>
+  <section id="teams"></section>
+  <section id="logs" {% if page != 'logs' %}style="display:none"{% endif %}></section>
+</main>
+<script>
+const PAGE={{ page|tojson }};const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let SETTINGS={};
+async function api(url,opt={}){const r=await fetch(url,{method:opt.method||'GET',credentials:'include',headers:{'Content-Type':'application/json'},body:opt.body?JSON.stringify(opt.body):undefined});const d=await r.json().catch(()=>({error:'Request failed'}));if(!r.ok)throw new Error(d.error||'Request failed');return d}
+async function loadTeams(){
+  const p=new URLSearchParams();if($('q').value.trim())p.set('q',$('q').value.trim());
+  const d=await api('/api/staff/tournament/teams?'+p);SETTINGS=d.settings;$('settings').textContent=`Registration: ${SETTINGS.registration_open?'Open':'Closed'} · Team size ${SETTINGS.team_size} · Max ${SETTINGS.max_teams}`;
+  $('teams').innerHTML=d.teams.map(t=>`
+    <div class="card">
+      <div class="team-head">
+        <div><h2>${esc(t.team_name)}</h2><div class="muted">${esc(t.status)} · ${t.player_count}/${t.team_size} · Invite: ${esc(t.invite_url)}</div></div>
+        <div>
+          <button class="btn" onclick="renameTeam(${t.id}, '${esc(t.team_name)}')">Rename</button>
+          <button class="btn" onclick="confirmTeam(${t.id})">Confirm</button>
+          <button class="btn" onclick="deleteTeam(${t.id})">Delete</button>
+        </div>
+      </div>
+      <h3>Players</h3>
+      ${t.members.map(m=>`<div class="member">
+        <div><b>${esc(m.minecraft_ign)}</b><div class="muted">${esc(m.role)} · ${esc(m.rbw_source)}</div></div>
+        <div>${esc(m.website_username)}<div class="muted">User ID ${esc(m.user_id)}</div></div>
+        <div>${esc(m.discord_username || m.discord_global_name)}<div class="muted">${esc(m.discord_id)}</div></div>
+        <button class="btn" onclick="removeMember(${m.id})">Remove</button>
+      </div>`).join('')}
+    </div>`).join('') || '<div class="card">No teams yet.</div>';
+}
+async function renameTeam(id,name){const n=prompt('New team name',name);if(!n)return;try{await api(`/api/staff/tournament/teams/${id}/rename`,{method:'POST',body:{team_name:n}});loadTeams();}catch(e){alert(e.message)}}
+async function confirmTeam(id){try{await api(`/api/staff/tournament/teams/${id}/confirm`,{method:'POST'});loadTeams();}catch(e){alert(e.message)}}
+async function deleteTeam(id){if(!confirm('Delete team?'))return;try{await api(`/api/staff/tournament/teams/${id}`,{method:'DELETE'});loadTeams();}catch(e){alert(e.message)}}
+async function removeMember(id){if(!confirm('Remove player?'))return;try{await api(`/api/staff/tournament/members/${id}`,{method:'DELETE'});loadTeams();}catch(e){alert(e.message)}}
+async function toggleRegistration(){try{await api('/api/staff/tournament/settings',{method:'POST',body:{registration_open:!SETTINGS.registration_open}});loadTeams();}catch(e){alert(e.message)}}
+async function loadLogs(){const d=await api('/api/staff/tournament/logs');$('logs').innerHTML='<h2>Logs</h2>'+d.map(l=>`<div class="card"><b>${esc(l.action_type)}</b> <span class="muted">${esc(l.created_at)}</span><div>User: ${esc(l.user_name||'-')} · Staff: ${esc(l.staff_name||'-')} · Team: ${esc(l.team_name||'-')}</div><pre>${esc(JSON.stringify(l.details,null,2))}</pre></div>`).join('')}
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')loadTeams()});loadTeams();if(PAGE==='logs')loadLogs();
+</script>
+</body>
+</html>
