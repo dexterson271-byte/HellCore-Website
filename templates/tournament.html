@@ -5,57 +5,71 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ title }}</title>
   <style>
-    :root{--bg:#050505;--panel:#121214;--panel2:#1b1b20;--line:#2d2d34;--text:#fff;--muted:#a1a1aa;--accent:#ff512f;--accent2:#dd2476;--good:#35d07f;--bad:#ff5c5c}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#24100d,#050505 42%);color:var(--text);font-family:Inter,Arial,sans-serif;min-height:100vh}
-    main{max-width:1100px;margin:0 auto;padding:34px 18px 60px}.nav{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 26px}.nav a,.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:800;cursor:pointer}.btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0}.btn.secondary{background:var(--panel2);border:1px solid var(--line)}
-    .hero{padding:28px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,81,47,.18),rgba(221,36,118,.08)),var(--panel);border-radius:8px}.eyebrow{color:var(--accent);font-weight:900;letter-spacing:.08em;text-transform:uppercase;font-size:12px}h1{font-size:clamp(32px,6vw,62px);margin:8px 0 10px;line-height:.98}p{color:var(--muted);line-height:1.55}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px}.row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);padding:10px 0}.row:last-child{border-bottom:0}.label{color:var(--muted)}input{width:100%;background:#0b0b0d;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit}.msg{margin-top:12px;padding:12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}.err{color:var(--bad)}.ok{color:var(--good)}.team-member{display:flex;align-items:center;gap:10px;padding:8px 0}.team-member img{width:30px;height:30px;border-radius:5px;image-rendering:pixelated}.hidden{display:none}
-    @media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding:20px}}
+    :root{--bg:#08090b;--panel:#111319;--panel2:#171a22;--line:#2a2f3a;--text:#f7f7fb;--muted:#a5adbb;--soft:#d7dce5;--accent:#ff5a2f;--accent2:#e2355b;--good:#3ddc84;--bad:#ff5f67}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#08090b;color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;letter-spacing:0}
+    body:before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(rgba(8,9,11,.74),rgba(8,9,11,.96)),url("/static/background.png") center/cover no-repeat}
+    body:after{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 20% 0%,rgba(255,90,47,.22),transparent 34%),linear-gradient(180deg,rgba(8,9,11,.08),#08090b 72%)}
+    main{width:min(1180px,100%);margin:0 auto;padding:26px 18px 56px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);font-weight:900}.brand img{width:42px;height:42px;border-radius:8px;object-fit:cover}.nav{display:flex;gap:8px;flex-wrap:wrap}.nav a,.btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:rgba(17,19,25,.88);color:var(--text);padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:800;font-size:14px;cursor:pointer}.nav a:hover,.btn.secondary:hover{border-color:#465064}.btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}.btn.secondary{background:var(--panel2);border-color:var(--line)}.hidden{display:none!important}
+    .hero{display:grid;grid-template-columns:minmax(0,1.35fr) 300px;gap:20px;align-items:end;padding:26px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(135deg,rgba(17,19,25,.94),rgba(13,15,20,.86));border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.35)}.eyebrow{color:#ffbe8f;font-weight:900;text-transform:uppercase;font-size:12px}.hero h1{font-size:58px;line-height:1;margin:9px 0 12px}.hero p{max-width:760px;color:var(--soft);line-height:1.58;margin:0}.prize{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:8px;padding:16px}.prize b{display:block;font-size:28px;margin-bottom:4px}.prize span{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:16px;margin-top:16px}.card{background:rgba(17,19,25,.92);border:1px solid var(--line);border-radius:8px;padding:18px}.card h2{margin:0 0 14px;font-size:18px}.card h3{margin:18px 0 8px;font-size:14px;color:var(--muted);text-transform:uppercase}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);padding:11px 0}.row:last-child{border-bottom:0}.label,.muted{color:var(--muted)}.value{font-weight:900;text-align:right}.status-good{color:var(--good)}.status-bad{color:var(--bad)}input{width:100%;background:#0b0d12;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:12px 13px;font:inherit;outline:none}input:focus{border-color:#59667c}.msg{margin-top:12px;padding:12px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--soft)}.err{border-color:rgba(255,95,103,.34);color:#ffadb2}.ok{border-color:rgba(61,220,132,.34);color:#a8f3ca}.team-member{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}.team-member:last-child{border-bottom:0}.team-member img{width:34px;height:34px;border-radius:6px;image-rendering:pixelated}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.stack{display:flex;flex-direction:column;gap:10px}
+    @media(max-width:860px){.topbar{align-items:flex-start;flex-direction:column}.hero,.grid{grid-template-columns:1fr}.hero h1{font-size:38px}.prize{max-width:none}.nav a,.btn{flex:1 1 auto}.hero{padding:20px}}
   </style>
 </head>
 <body>
 <main>
-  <div class="hero">
-    <div class="eyebrow">31 May 2026 · 4v4 RBW · Double Elimination</div>
-    <h1>{{ title }}</h1>
-    <p>Maximum 12 teams. Four players per team. Winning team players receive one GTA V Epic Games account or a similar-value Epic Games Store title if available.</p>
-    <div class="nav">
+  <header class="topbar">
+    <a class="brand" href="/"><img src="/static/logo.png" alt=""><span>HELLCORE</span></a>
+    <nav class="nav">
       <a href="/tournament">Info</a>
-      <a href="/tournament/teams">Registered Teams</a>
-      <a href="/tournament/create">Create Team</a>
+      <a href="/tournament/teams">Teams</a>
+      <a href="/tournament/create">Create</a>
       <a href="/tournament/my-team">My Team</a>
-      <a id="staffLink" class="hidden" href="/staff/tournament">Staff Panel</a>
+      <a id="staffLink" class="hidden" href="/staff/tournament">Staff</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">31 May 2026 - 4v4 RBW - Double Elimination</div>
+      <h1>{{ title }}</h1>
+      <p>Register a four-player RBW team, share your invite link, and keep your roster locked to verified Discord and Minecraft accounts.</p>
     </div>
-  </div>
+    <aside class="prize">
+      <b>12 Teams</b>
+      <span>Four players per team. Winners receive a GTA V Epic Games account or a similar-value Epic Games Store title if available.</span>
+    </aside>
+  </section>
 
   <section class="grid">
     <div class="card">
-      <h2>Status</h2>
-      <div id="statusBox">Loading...</div>
-      <div id="actions" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"></div>
+      <h2>Account & Team</h2>
+      <div id="statusBox"><div class="msg">Loading status...</div></div>
+      <h3>My Team</h3>
+      <div id="teamBox"><div class="msg">Loading team...</div></div>
+      <div id="actions" class="actions"></div>
     </div>
     <div class="card">
       <h2>Registration</h2>
-      {% if page == 'create' %}
-        <p>Enter only your team name. Your Discord and Minecraft IGN are loaded from your linked accounts.</p>
-        <input id="teamName" placeholder="Team name">
-        <button class="btn" style="margin-top:10px" onclick="createTeam()">Create Team</button>
-      {% elif page == 'join' %}
-        <p>You are joining from an invite link. Your Discord and Minecraft IGN will be verified automatically.</p>
-        <button class="btn" onclick="joinTeam()">Join Team</button>
-      {% elif page == 'link' %}
-        <p>Link Discord before creating or joining a team.</p>
-        <a class="btn" href="/auth/discord/start">Link Discord</a>
-      {% else %}
-        <p>Use the buttons below to register, join with an invite link, or check your current team.</p>
-      {% endif %}
+      <div class="stack">
+        {% if page == 'create' %}
+          <p class="muted">Choose a team name. Your Discord and Minecraft IGN come from your linked accounts.</p>
+          <input id="teamName" placeholder="Team name">
+          <input id="teamLogo" placeholder="Team logo URL (optional)">
+          <button class="btn" onclick="createTeam()">Create Team</button>
+        {% elif page == 'join' %}
+          <p class="muted">You are joining from an invite link. Your account details will be verified automatically.</p>
+          <button class="btn" onclick="joinTeam()">Join Team</button>
+        {% elif page == 'link' %}
+          <p class="muted">Link Discord before creating or joining a team.</p>
+          <a class="btn" href="/auth/discord/start">Link Discord</a>
+        {% else %}
+          <p class="muted">Use the actions below to create a team, link Discord, or review the registered teams.</p>
+        {% endif %}
+      </div>
       <div id="formMsg" class="msg hidden"></div>
     </div>
   </section>
 
-  <section class="card" style="margin-top:16px">
-    <h2>My Team</h2>
-    <div id="teamBox">Loading...</div>
-  </section>
 </main>
 <script>
 const PAGE = {{ page|tojson }};
@@ -73,13 +87,13 @@ async function loadStatus(){
   const s = await api('/api/tournament/status').catch(e=>({error:e.message, logged_in:false}));
   if(s.is_staff) $('staffLink').classList.remove('hidden');
   $('statusBox').innerHTML = `
-    <div class="row"><span class="label">Registration</span><b>${s.registration_open?'Open':'Closed'}</b></div>
-    <div class="row"><span class="label">Registered Teams</span><b>${s.team_count||0}/${s.max_teams||12}</b></div>
-    <div class="row"><span class="label">Discord</span><b>${s.discord_linked?'Linked':'Not linked'}</b></div>
-    <div class="row"><span class="label">Minecraft IGN</span><b>${s.minecraft_profile?.minecraft_ign || 'Not found'}</b></div>
+    <div class="row"><span class="label">Registration</span><span class="value ${s.registration_open?'status-good':'status-bad'}">${s.registration_open?'Open':'Closed'}</span></div>
+    <div class="row"><span class="label">Registered Teams</span><span class="value">${s.team_count||0}/${s.max_teams||12}</span></div>
+    <div class="row"><span class="label">Discord</span><span class="value">${s.discord_linked?'Linked':'Not linked'}</span></div>
+    <div class="row"><span class="label">Minecraft IGN</span><span class="value">${s.minecraft_profile?.minecraft_ign || 'Not found'}</span></div>
     ${s.blocker ? `<div class="msg err">${esc(s.blocker)}</div>` : '<div class="msg ok">Ready to register.</div>'}`;
   const buttons = [];
-  if(!s.logged_in) buttons.push('<a class="btn" href="/login">Log In</a>');
+  if(!s.logged_in) buttons.push('<a class="btn" href="https://hellcore.net">Log In</a>');
   if(s.logged_in && !s.discord_linked) buttons.push('<a class="btn" href="/auth/discord/start">Link Discord</a>');
   if(s.logged_in && !s.my_team && s.registration_open) buttons.push('<a class="btn" href="/tournament/create">Create Team</a>');
   buttons.push('<a class="btn secondary" href="/tournament/teams">View Teams</a>');
@@ -87,16 +101,16 @@ async function loadStatus(){
   renderTeam(s.my_team);
 }
 function renderTeam(team){
-  if(!team){ $('teamBox').innerHTML = '<p>You are not on a tournament team yet.</p>'; return; }
+  if(!team){ $('teamBox').innerHTML = '<div class="msg">You are not on a tournament team yet.</div>'; return; }
   $('teamBox').innerHTML = `
-    <div class="row"><span class="label">Team</span><b>${esc(team.team_name)}</b></div>
-    <div class="row"><span class="label">Status</span><b>${esc(team.status)} · ${team.player_count}/${team.team_size}</b></div>
-    <div class="row"><span class="label">Invite</span><button class="btn secondary" onclick="copyInvite('${esc(team.invite_url)}')">Copy Invite Link</button></div>
+    <div class="row"><span class="label">Team</span><span class="value">${esc(team.team_name)}</span></div>
+    <div class="row"><span class="label">Status</span><span class="value">${esc(team.status)} - ${team.player_count}/${team.team_size}</span></div>
+    <div class="row"><span class="label">Invite</span><button class="btn secondary" onclick="copyInvite('${esc(team.invite_url)}')">Copy Invite</button></div>
     <h3>Players</h3>
-    ${team.members.map(m=>`<div class="team-member"><img src="/api/skin/head/${encodeURIComponent(m.minecraft_ign)}/30"><b>${esc(m.minecraft_ign)}</b><span class="label">${esc(m.role)}</span></div>`).join('')}
-    ${team.status==='incomplete' ? '<button class="btn secondary" onclick="leaveTeam()">Leave Team</button>' : ''}`;
+    ${team.members.map(m=>`<div class="team-member"><img src="/api/skin/head/${encodeURIComponent(m.minecraft_ign)}/34" alt=""><b>${esc(m.minecraft_ign)}</b><span class="label">${esc(m.role)}</span></div>`).join('')}
+    ${team.status==='incomplete' ? '<div class="actions"><button class="btn secondary" onclick="leaveTeam()">Leave Team</button></div>' : ''}`;
 }
-async function createTeam(){try{const d=await api('/api/tournament/team',{method:'POST',body:{team_name:$('teamName').value}});showMsg('Team created.',true);renderTeam(d.team);}catch(e){showMsg(e.message);}}
+async function createTeam(){try{const d=await api('/api/tournament/team',{method:'POST',body:{team_name:$('teamName').value,logo_url:$('teamLogo')?.value||''}});showMsg('Team created.',true);renderTeam(d.team);}catch(e){showMsg(e.message);}}
 async function joinTeam(){try{const d=await api('/api/tournament/join/'+encodeURIComponent(INVITE),{method:'POST'});showMsg('Joined team.',true);renderTeam(d.team);}catch(e){showMsg(e.message);}}
 async function leaveTeam(){if(!confirm('Leave this team?'))return;try{await api('/api/tournament/leave',{method:'POST'});location.reload();}catch(e){showMsg(e.message);}}
 function copyInvite(url){navigator.clipboard.writeText(url);showMsg('Invite link copied.',true)}

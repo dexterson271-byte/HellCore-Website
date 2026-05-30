@@ -1379,6 +1379,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_user_trials(
 f"""CREATE TABLE IF NOT EXISTS hc_tournament_teams(
   id INTEGER PRIMARY KEY {AI},
   team_name VARCHAR(80) NOT NULL,
+  logo_url VARCHAR(500) DEFAULT '',
   captain_user_id INTEGER NOT NULL,
   invite_token VARCHAR(80) UNIQUE NOT NULL,
   status VARCHAR(30) DEFAULT 'incomplete',
@@ -1487,6 +1488,7 @@ f"""CREATE TABLE IF NOT EXISTS hc_tournament_settings(
         "ALTER TABLE hc_users ADD COLUMN discord_global_name VARCHAR(120) DEFAULT ''",
         "ALTER TABLE hc_users ADD COLUMN discord_avatar VARCHAR(255) DEFAULT ''",
         "ALTER TABLE hc_users ADD COLUMN discord_linked_at DATETIME",
+        "ALTER TABLE hc_tournament_teams ADD COLUMN logo_url VARCHAR(500) DEFAULT ''",
         "ALTER TABLE hc_tournament_teams ADD COLUMN status VARCHAR(30) DEFAULT 'incomplete'",
         "ALTER TABLE hc_tournament_teams ADD COLUMN updated_at DATETIME",
         "ALTER TABLE hc_tournament_members ADD COLUMN minecraft_ign_lc VARCHAR(50) DEFAULT ''",
@@ -2935,18 +2937,32 @@ def clean_team_name(value):
     return name
 
 
+def clean_logo_url(value):
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    if len(url) > 500:
+        return ""
+    if url.startswith("/static/") or url.startswith("/api/"):
+        return url
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme in ("http", "https") and parsed.netloc:
+        return url
+    return ""
+
+
 def user_discord_linked(user):
     return bool(str((user or {}).get("discord_id") or "").strip())
 
 
 def user_rbw_profile(user):
-    ign = str((user or {}).get("mc_username") or "").strip()
-    if not ign or not bool((user or {}).get("is_verified", 0)):
+    ign = str((user or {}).get("mc_username") or "").strip() or str((user or {}).get("username") or "").strip()
+    if not ign:
         return None
     return {
         "minecraft_ign": ign,
         "rbw_uuid": str((user or {}).get("mc_uuid") or "").strip(),
-        "rbw_source": "hc_users.mc_username",
+        "rbw_source": "hellcore_link" if bool((user or {}).get("is_verified", 0)) else "website_username",
     }
 
 
@@ -2955,8 +2971,6 @@ def tournament_user_blocker(user):
         return "You must log in before registering for the tournament."
     if not user_discord_linked(user):
         return "You must link your Discord account before registering for the tournament."
-    if not user_rbw_profile(user):
-        return "No RBW player profile was found for your account. Please join the RBW server or link your Minecraft account first."
     return ""
 
 
@@ -3079,6 +3093,7 @@ def serialize_tournament_team(team_id=None, public=False, cursor=None):
             safe = {
                 "role": m.get("role") or "member",
                 "minecraft_ign": m.get("minecraft_ign_snapshot") or "",
+                "discord_username": m.get("discord_username") or m.get("discord_global_name") or m.get("discord_id") or "",
             }
             if not public:
                 safe.update({
@@ -3086,7 +3101,7 @@ def serialize_tournament_team(team_id=None, public=False, cursor=None):
                     "user_id": m["user_id"],
                     "website_username": m.get("website_username") or "",
                     "discord_id": m.get("discord_id") or "",
-                    "discord_username": m.get("discord_username") or "",
+                    "discord_username": m.get("discord_username") or m.get("discord_global_name") or m.get("discord_id") or "",
                     "discord_global_name": m.get("discord_global_name") or "",
                     "rbw_uuid": m.get("rbw_uuid") or "",
                     "rbw_source": m.get("rbw_source") or "hc_users.mc_username",
@@ -3095,6 +3110,7 @@ def serialize_tournament_team(team_id=None, public=False, cursor=None):
             safe_members.append(safe)
         item = {
             "team_name": t["team_name"],
+            "logo_url": t.get("logo_url") or "",
             "status": t.get("status") or "incomplete",
             "player_count": len(members),
             "team_size": limits["team_size"],
@@ -3323,16 +3339,18 @@ def tournament_create_team_api():
     error = assert_tournament_joinable(user)
     if error:
         return jsonify({"error": error}), 400
-    name = clean_team_name(require_json().get("team_name"))
+    data = require_json()
+    name = clean_team_name(data.get("team_name"))
     if not name:
         return jsonify({"error": "Team name must be 3-40 characters."}), 400
+    logo_url = clean_logo_url(data.get("logo_url"))
     profile = user_rbw_profile(user)
     db = get_db(); c = db_cursor(db)
     token = secrets.token_urlsafe(18)
     now = datetime.now()
     c.execute(
-        f"INSERT INTO hc_tournament_teams(team_name,captain_user_id,invite_token,status,created_at,updated_at) VALUES({phs(6)})",
-        (name, user["id"], token, "incomplete", now, now),
+        f"INSERT INTO hc_tournament_teams(team_name,logo_url,captain_user_id,invite_token,status,created_at,updated_at) VALUES({phs(7)})",
+        (name, logo_url, user["id"], token, "incomplete", now, now),
     )
     team_id = c.lastrowid
     c.execute(
