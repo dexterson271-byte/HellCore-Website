@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - HellCore 4v4 RBW Tournament</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="HellCore overview">
+        <img src="/assets/hellcore-logo.png" alt="HellCore logo" />
+        <span>HellCore</span>
+      </a>
+      <nav class="tabs" aria-label="Primary navigation">
+        <a href="/">Overview</a>
+        <a href="/teams">Teams</a>
+        <a href="/bracket">Bracket</a>
+        <a href="/rules">Rules</a>
+        <a href="/register">Register</a>
+      </nav>
+    </header>
+    <main>
+      <section class="section page-head register-section">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Lock In</p>
+            <h1>Register</h1>
+          </div>
+          <p class="muted">Exactly 4 players. Minecraft username and Discord user ID are required.</p>
+        </div>
+        <form id="registerForm" class="register-form">
+          <label>
+            Team name
+            <input name="name" maxlength="60" autocomplete="off" required />
+          </label>
+          <div id="playersFields" class="players-fields"></div>
+          <input class="bot-field" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <div class="captcha-box">
+            <div>
+              <span class="muted">Verification</span>
+              <strong id="captchaQuestion">Loading...</strong>
+            </div>
+            <label>
+              Answer
+              <input name="captchaAnswer" inputmode="numeric" autocomplete="off" required />
+            </label>
+            <button class="button ghost" id="refreshCaptcha" type="button">Refresh</button>
+          </div>
+          <button class="button primary" type="submit">Submit Team</button>
+          <p id="formMessage" class="form-message" role="status"></p>
+        </form>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

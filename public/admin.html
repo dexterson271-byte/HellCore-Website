@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HellCore Staff Panel</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="admin-shell">
+      <section id="loginPanel" class="admin-login">
+        <img src="/assets/hellcore-logo.png" alt="HellCore logo" />
+        <h1>Staff Panel</h1>
+        <form id="loginForm">
+          <label>
+            Admin password
+            <input type="password" name="password" required />
+          </label>
+          <button class="button primary" type="submit">Enter</button>
+          <p id="loginMessage" class="form-message"></p>
+        </form>
+      </section>
+
+      <section id="adminPanel" class="admin-panel hidden">
+        <header class="admin-header">
+          <div>
+            <p class="eyebrow">HellCore Staff</p>
+            <h1>Tournament Control</h1>
+          </div>
+          <a class="button ghost" href="/">Public Site</a>
+        </header>
+
+        <div class="admin-grid">
+          <section class="tool-panel">
+            <h2>Event Details</h2>
+            <form id="eventForm" class="stack-form">
+              <label>Title<input name="title" /></label>
+              <label>Date/status<input name="dateLabel" /></label>
+              <label>Discord link<input name="discordUrl" /></label>
+              <label>Prize title<input name="prizeTitle" /></label>
+              <label>Prize text<textarea name="prizeBody" rows="4"></textarea></label>
+              <label>Rules<textarea name="rules" rows="8"></textarea></label>
+              <label class="check-row"><input type="checkbox" name="registrationLocked" /> Lock registration</label>
+              <button class="button primary" type="submit">Save Event</button>
+            </form>
+          </section>
+
+          <section class="tool-panel">
+            <div class="panel-title-row">
+              <h2>Teams</h2>
+              <button id="addTeamButton" class="button ghost" type="button">Add Team</button>
+            </div>
+            <div id="adminTeams" class="admin-list"></div>
+          </section>
+
+          <section class="tool-panel wide">
+            <div class="panel-title-row">
+              <h2>Bracket</h2>
+              <button id="generateBracket" class="button primary" type="button">Generate Bracket</button>
+            </div>
+            <div id="adminBracket" class="bracket-board"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="teamDialog">
+      <form id="teamForm" method="dialog" class="dialog-form">
+        <h2 id="teamDialogTitle">Team</h2>
+        <input type="hidden" name="id" />
+        <label>Team name<input name="name" required /></label>
+        <div id="teamPlayersFields" class="players-fields"></div>
+        <div class="dialog-actions">
+          <button class="button ghost" value="cancel" type="button" id="cancelTeam">Cancel</button>
+          <button class="button primary" value="default" type="submit">Save Team</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>

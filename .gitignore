@@ -1,0 +1,7 @@
+node_modules/
+data/
+tmp/
+.env
+.agents/
+skills-lock.json
+npm-debug.log*

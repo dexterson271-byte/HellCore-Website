@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HellCore 4v4 RBW Tournament</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="HellCore overview">
+        <img src="/assets/hellcore-logo.png" alt="HellCore logo" />
+        <span>HellCore</span>
+      </a>
+      <nav class="tabs" aria-label="Primary navigation">
+        <a href="/">Overview</a>
+        <a href="/teams">Teams</a>
+        <a href="/bracket">Bracket</a>
+        <a href="/rules">Rules</a>
+        <a href="/register">Register</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="overview" class="hero">
+        <div class="hero-copy reveal">
+          <p class="eyebrow">Ranked Bedwars Matchday</p>
+          <h1>HellCore 4v4 RBW Tournament</h1>
+          <p class="lede">A clean tournament hub for registration, team checks, and live bracket updates.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="/register">Register Team</a>
+            <a class="button ghost" href="/bracket">View Bracket</a>
+          </div>
+        </div>
+        <aside class="prize-panel reveal delay-1">
+          <div class="live-row">
+            <span class="live-dot"></span>
+            <span id="dateLabel">Live today</span>
+          </div>
+          <h2 id="prizeTitle">GTA V Account Per Winning Player</h2>
+          <p id="prizeBody"></p>
+          <div class="stat-grid">
+            <div>
+              <strong id="teamCount">0/12</strong>
+              <span>Teams</span>
+            </div>
+            <div>
+              <strong>4v4</strong>
+              <span>Format</span>
+            </div>
+            <div>
+              <strong>2</strong>
+              <span>Chances</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
