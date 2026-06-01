@@ -32,11 +32,14 @@ function renderCaptainPanel() {
   if (!team) return;
   $("#captainTeamName").textContent = team.name;
   $("#captainPlayers").innerHTML = team.players
-    .map(
-      (player) => `
+    .map((player, index) => {
+      const n = index + 1;
+      return `
       <article class="admin-team">
         <h3>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</h3>
-        <p class="muted">Discord ID: ${escapeHtml(player.discordId)}</p>
+        <input type="hidden" name="playerId${n}" value="${escapeHtml(player.id)}">
+        <label>Minecraft username<input name="minecraft${n}" value="${escapeHtml(player.minecraft)}" maxlength="40" required></label>
+        <label>Discord user ID<input name="discordId${n}" value="${escapeHtml(player.discordId)}" inputmode="numeric" pattern="\\d{15,25}" maxlength="25" required></label>
         <div class="admin-team-actions">
           ${
             player.id !== team.captainPlayerId
@@ -46,8 +49,8 @@ function renderCaptainPanel() {
           }
         </div>
       </article>
-    `
-    )
+    `;
+    })
     .join("");
   $("#captainAddPlayer").classList.toggle("hidden", team.players.length >= 4);
 
@@ -65,10 +68,11 @@ function renderCaptainPanel() {
 async function saveTeam(players, captainPlayerId) {
   $("#captainMessage").textContent = "Saving...";
   try {
+    const cleanPlayers = Array.from(players || []).filter((player) => player.minecraft || player.discordId);
     state.team = await api("/api/captain/team", {
       method: "PUT",
       headers: authHeaders(),
-      body: JSON.stringify({ players, captainPlayerId })
+      body: JSON.stringify({ players: cleanPlayers, captainPlayerId })
     });
     $("#captainMessage").textContent = "Team updated.";
     renderCaptainPanel();
@@ -122,6 +126,20 @@ $("#captainAddPlayer").addEventListener("submit", async (event) => {
   ];
   await saveTeam(players, state.team.captainPlayerId);
   event.currentTarget.reset();
+});
+
+$("#captainEditPlayers").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  const players = state.team.players.map((player, index) => {
+    const n = index + 1;
+    return {
+      id: data.get(`playerId${n}`) || player.id,
+      minecraft: data.get(`minecraft${n}`),
+      discordId: data.get(`discordId${n}`)
+    };
+  });
+  await saveTeam(players, state.team.captainPlayerId);
 });
 
 $("#captainLogout").addEventListener("click", () => {

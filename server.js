@@ -178,13 +178,20 @@ function makeCaptainCode() {
 }
 
 function normalizeTeam(input) {
-  const players = Array.isArray(input.players) ? input.players : [];
-  const normalizedPlayers = players.slice(0, 4).map((player) => ({
-    id: player.id || crypto.randomUUID(),
-    minecraft: cleanText(player.minecraft, 40),
-    discordId: cleanText(player.discordId, 30),
-    discord: player.discord || null
-  }));
+  const players = Array.isArray(input.players)
+    ? input.players
+    : input.players && typeof input.players === "object"
+      ? Object.values(input.players)
+      : [];
+  const normalizedPlayers = players
+    .slice(0, 4)
+    .map((player) => ({
+      id: player.id || crypto.randomUUID(),
+      minecraft: cleanText(player.minecraft, 40),
+      discordId: cleanText(player.discordId, 30),
+      discord: player.discord || null
+    }))
+    .filter((player) => player.minecraft || player.discordId);
   const captainPlayerId =
     normalizedPlayers.find((player) => player.id === input.captainPlayerId)?.id || normalizedPlayers[0]?.id || null;
   return {

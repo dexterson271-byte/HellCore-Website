@@ -53,7 +53,10 @@
             </div>
             <button id="captainLogout" class="button ghost" type="button">Log Out</button>
           </div>
-          <div id="captainPlayers" class="admin-list"></div>
+          <form id="captainEditPlayers" class="stack-form">
+            <div id="captainPlayers" class="admin-list"></div>
+            <button class="button primary" type="submit">Save Player Changes</button>
+          </form>
           <form id="captainAddPlayer" class="stack-form">
             <h3>Add Player</h3>
             <label>Minecraft username<input name="minecraft" maxlength="40" autocomplete="off" /></label>
