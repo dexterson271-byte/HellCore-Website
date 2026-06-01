@@ -232,6 +232,16 @@ function publicState(state) {
   };
 }
 
+function ensureTeamSecrets(state) {
+  let changed = false;
+  state.teams = (state.teams || []).map((team) => {
+    if (team.captainCode && team.captainPlayerId && (team.players || []).every((player) => player.id)) return team;
+    changed = true;
+    return normalizeTeam(team);
+  });
+  return changed;
+}
+
 async function lookupDiscordUser(id) {
   if (!process.env.DISCORD_BOT_TOKEN) return { id, status: "unconfigured" };
   const response = await fetch(`https://discord.com/api/v10/users/${id}`, {
@@ -334,6 +344,12 @@ async function main() {
   app.get("/api/state", async (_req, res) => {
     const state = await store.read();
     res.json(publicState(state));
+  });
+
+  app.get("/api/admin/state", requireAdmin, async (_req, res) => {
+    const state = await store.read();
+    if (ensureTeamSecrets(state)) await store.write(state);
+    res.json(state);
   });
 
   app.get("/api/captcha", (_req, res) => {
