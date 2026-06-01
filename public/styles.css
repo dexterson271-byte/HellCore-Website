@@ -353,11 +353,11 @@ dialog {
 .member-card {
   position: relative;
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr) minmax(110px, auto);
+  grid-template-columns: 88px minmax(0, 1fr) minmax(110px, auto);
   align-items: center;
   gap: 12px;
   padding: 12px;
-  min-height: 78px;
+  min-height: 96px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -375,16 +375,16 @@ dialog {
 }
 
 .member-card.compact {
-  grid-template-columns: 54px minmax(0, 1fr);
-  min-height: 66px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  min-height: 78px;
   padding: 9px;
 }
 
 .member-skin {
-  width: 58px;
-  height: 58px;
+  width: 76px;
+  height: 76px;
   display: grid;
-  place-items: end center;
+  place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: radial-gradient(circle at 50% 20%, rgba(226, 59, 40, 0.22), rgba(255, 255, 255, 0.04));
@@ -392,21 +392,21 @@ dialog {
 }
 
 .member-card.compact .member-skin {
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
 }
 
 .member-skin img {
   display: block;
-  width: 78px;
+  width: 124px;
   max-width: none;
-  transform: translateY(10px);
+  transform: translateY(2px);
   image-rendering: pixelated;
 }
 
 .member-card.compact .member-skin img {
-  width: 60px;
-  transform: translateY(8px);
+  width: 96px;
+  transform: translateY(2px);
 }
 
 .member-main {
@@ -709,7 +709,7 @@ textarea:focus {
 }
 
 .captain-member-card {
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: start;
 }
 
@@ -842,7 +842,7 @@ dialog::backdrop {
   }
 
   .member-card {
-    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-columns: 76px minmax(0, 1fr);
   }
 
   .member-discord {
