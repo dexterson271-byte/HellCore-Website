@@ -17,9 +17,10 @@ function playerFields(container) {
 }
 
 async function api(path, options = {}) {
+  const { headers = {}, ...rest } = options;
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options
+    ...rest,
+    headers: { "Content-Type": "application/json", ...headers }
   });
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
