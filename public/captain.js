@@ -41,6 +41,11 @@ function currentEditedPlayers() {
   });
 }
 
+function syncEditedPlayersToState() {
+  if (!state.team) return;
+  state.team.players = currentEditedPlayers();
+}
+
 function renderCaptainPanel() {
   const team = state.team;
   if (!team) return;
@@ -69,6 +74,10 @@ function renderCaptainPanel() {
 
   $("#captainPlayers").querySelectorAll("[data-promote]").forEach((button) => {
     button.addEventListener("click", async () => saveTeam(currentEditedPlayers(), button.dataset.promote));
+  });
+  $("#captainPlayers").querySelectorAll("input").forEach((input) => {
+    input.addEventListener("input", syncEditedPlayersToState);
+    input.addEventListener("change", syncEditedPlayersToState);
   });
 }
 
