@@ -169,6 +169,28 @@ function verifyCaptainToken(token, state) {
   return team;
 }
 
+function mergeCaptainPlayers(existingPlayers, incomingPlayers) {
+  const incoming = Array.isArray(incomingPlayers)
+    ? incomingPlayers
+    : incomingPlayers && typeof incomingPlayers === "object"
+      ? Object.values(incomingPlayers)
+      : [];
+  const byId = new Map(incoming.filter((player) => player && player.id).map((player) => [player.id, player]));
+  const merged = existingPlayers.map((player) => {
+    const next = byId.get(player.id);
+    if (!next) return player;
+    return {
+      ...player,
+      minecraft: cleanText(next.minecraft || player.minecraft, 40),
+      discordId: cleanText(next.discordId || player.discordId, 30)
+    };
+  });
+  for (const player of incoming) {
+    if (!player?.id && (player.minecraft || player.discordId)) merged.push(player);
+  }
+  return merged.slice(0, 4);
+}
+
 function cleanText(value, max = 80) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
@@ -421,9 +443,10 @@ async function main() {
     const existing = verifyCaptainToken(token, state);
     if (!existing) return res.status(401).json({ error: "Captain access required." });
     const index = state.teams.findIndex((team) => team.id === existing.id);
+    const players = mergeCaptainPlayers(existing.players || [], req.body.players);
     const team = normalizeTeam({
       ...existing,
-      players: req.body.players,
+      players,
       captainPlayerId: req.body.captainPlayerId,
       id: existing.id,
       name: existing.name,

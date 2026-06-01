@@ -43,8 +43,7 @@ function renderCaptainPanel() {
         <div class="admin-team-actions">
           ${
             player.id !== team.captainPlayerId
-              ? `<button class="button ghost" data-promote="${player.id}" type="button">Make Captain</button>
-                 <button class="button ghost" data-kick="${player.id}" type="button">Kick</button>`
+              ? `<button class="button ghost" data-promote="${player.id}" type="button">Make Captain</button>`
               : `<span class="muted">Current captain</span>`
           }
         </div>
@@ -56,12 +55,6 @@ function renderCaptainPanel() {
 
   $("#captainPlayers").querySelectorAll("[data-promote]").forEach((button) => {
     button.addEventListener("click", async () => saveTeam(team.players, button.dataset.promote));
-  });
-  $("#captainPlayers").querySelectorAll("[data-kick]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const players = team.players.filter((player) => player.id !== button.dataset.kick);
-      await saveTeam(players, team.captainPlayerId);
-    });
   });
 }
 
