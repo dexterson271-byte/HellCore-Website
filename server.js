@@ -368,7 +368,15 @@ async function main() {
 
   const app = express();
   app.use(express.json({ limit: "1mb" }));
-  app.use(express.static(path.join(__dirname, "public")));
+  app.use(
+    express.static(path.join(__dirname, "public"), {
+      setHeaders(res, filePath) {
+        if (/\.(html|js|css)$/.test(filePath)) {
+          res.setHeader("Cache-Control", "no-store");
+        }
+      }
+    })
+  );
 
   app.get("/api/state", async (_req, res) => {
     const state = await store.read();

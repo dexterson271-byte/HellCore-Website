@@ -27,6 +27,20 @@ function renderTeamSelect() {
     : `<option value="">No teams registered</option>`;
 }
 
+function currentEditedPlayers() {
+  const form = $("#captainEditPlayers");
+  if (!form || !state.team) return state.team?.players || [];
+  const data = new FormData(form);
+  return state.team.players.map((player, index) => {
+    const n = index + 1;
+    return {
+      id: data.get(`playerId${n}`) || player.id,
+      minecraft: data.get(`minecraft${n}`),
+      discordId: data.get(`discordId${n}`)
+    };
+  });
+}
+
 function renderCaptainPanel() {
   const team = state.team;
   if (!team) return;
@@ -54,7 +68,7 @@ function renderCaptainPanel() {
   $("#captainAddPlayer").classList.toggle("hidden", team.players.length >= 4);
 
   $("#captainPlayers").querySelectorAll("[data-promote]").forEach((button) => {
-    button.addEventListener("click", async () => saveTeam(team.players, button.dataset.promote));
+    button.addEventListener("click", async () => saveTeam(currentEditedPlayers(), button.dataset.promote));
   });
 }
 
@@ -114,7 +128,7 @@ $("#captainAddPlayer").addEventListener("submit", async (event) => {
   const data = new FormData(event.currentTarget);
   if (state.team.players.length >= 4) return;
   const players = [
-    ...state.team.players,
+    ...currentEditedPlayers(),
     { minecraft: data.get("minecraft"), discordId: data.get("discordId") }
   ];
   await saveTeam(players, state.team.captainPlayerId);
@@ -123,16 +137,7 @@ $("#captainAddPlayer").addEventListener("submit", async (event) => {
 
 $("#captainEditPlayers").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
-  const players = state.team.players.map((player, index) => {
-    const n = index + 1;
-    return {
-      id: data.get(`playerId${n}`) || player.id,
-      minecraft: data.get(`minecraft${n}`),
-      discordId: data.get(`discordId${n}`)
-    };
-  });
-  await saveTeam(players, state.team.captainPlayerId);
+  await saveTeam(currentEditedPlayers(), state.team.captainPlayerId);
 });
 
 $("#captainLogout").addEventListener("click", () => {
