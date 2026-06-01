@@ -59,7 +59,7 @@ function renderTeams() {
             .map(
               (player) => `
               <div class="player-row">
-                <strong>${escapeHtml(player.minecraft)}${player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
+                <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
                 ${discordLabel(player)}
               </div>
             `

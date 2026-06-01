@@ -35,7 +35,7 @@ function renderCaptainPanel() {
     .map(
       (player) => `
       <article class="admin-team">
-        <h3>${escapeHtml(player.minecraft)}${player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</h3>
+        <h3>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</h3>
         <p class="muted">Discord ID: ${escapeHtml(player.discordId)}</p>
         <div class="admin-team-actions">
           ${

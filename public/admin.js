@@ -76,7 +76,7 @@ function renderAdmin() {
           <article class="admin-team">
             <h3>${escapeHtml(team.name)}</h3>
             <p class="muted">Captain code: ${escapeHtml(team.captainCode || "Missing")}</p>
-            ${team.players.map((player) => `<p class="muted">${escapeHtml(player.minecraft)}${player.id === team.captainPlayerId ? " - Captain" : ""} - ${escapeHtml(discordStatus(player))}</p>`).join("")}
+            ${team.players.map((player) => `<p class="muted">${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? " - Captain" : ""} - ${escapeHtml(discordStatus(player))}</p>`).join("")}
             <div class="admin-team-actions">
               <button class="button ghost" data-edit="${team.id}" type="button">Edit</button>
               <button class="button ghost" data-delete="${team.id}" type="button">Delete</button>

@@ -343,6 +343,7 @@ async function main() {
 
   app.get("/api/state", async (_req, res) => {
     const state = await store.read();
+    if (ensureTeamSecrets(state)) await store.write(state);
     res.json(publicState(state));
   });
 
@@ -391,6 +392,7 @@ async function main() {
 
   app.post("/api/captain/login", async (req, res) => {
     const state = await store.read();
+    if (ensureTeamSecrets(state)) await store.write(state);
     const team = state.teams.find((item) => item.id === req.body.teamId);
     if (!team || cleanText(req.body.captainCode, 20).toUpperCase() !== team.captainCode) {
       return res.status(401).json({ error: "Team or captain code is incorrect." });
