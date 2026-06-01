@@ -59,7 +59,7 @@ function renderTeams() {
             .map(
               (player) => `
               <div class="player-row">
-                <strong>${escapeHtml(player.minecraft)}</strong>
+                <strong>${escapeHtml(player.minecraft)}${player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
                 ${discordLabel(player)}
               </div>
             `
@@ -168,7 +168,7 @@ if (registerForm) {
     });
     $("#formMessage").textContent = "Checking Discord IDs...";
     try {
-      await api("/api/teams", {
+      const created = await api("/api/teams", {
         method: "POST",
         body: JSON.stringify({
           name: data.get("name"),
@@ -179,7 +179,9 @@ if (registerForm) {
         })
       });
       form.reset();
-      $("#formMessage").textContent = "Team registered. Choose your teammates wisely.";
+      $("#formMessage").innerHTML = `Team registered. Captain code: <strong>${escapeHtml(
+        created.captainCode
+      )}</strong>. Save it to manage your team.`;
       await loadCaptcha();
       await loadState();
     } catch (error) {

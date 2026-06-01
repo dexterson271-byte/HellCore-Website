@@ -66,10 +66,14 @@
     </main>
 
     <dialog id="teamDialog">
-      <form id="teamForm" method="dialog" class="dialog-form">
+      <form id="teamForm" class="dialog-form">
         <h2 id="teamDialogTitle">Team</h2>
         <input type="hidden" name="id" />
-        <label>Team name<input name="name" required /></label>
+        <label>Team name<input name="teamName" required /></label>
+        <label>
+          Captain
+          <select name="captainPlayerId" id="captainSelect"></select>
+        </label>
         <div id="teamPlayersFields" class="players-fields"></div>
         <div class="dialog-actions">
           <button class="button ghost" value="cancel" type="button" id="cancelTeam">Cancel</button>

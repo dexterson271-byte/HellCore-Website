@@ -370,6 +370,27 @@ dialog {
   background: rgba(255, 180, 59, 0.12);
 }
 
+.role-badge {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255, 180, 59, 0.16);
+  color: var(--accent-2);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ink);
+  background: #1b1d25;
+  font: inherit;
+}
+
 .bracket-board {
   display: grid;
   grid-auto-flow: column;

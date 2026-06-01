@@ -149,32 +149,87 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function signCaptainToken(team) {
+  const body = Buffer.from(JSON.stringify({ teamId: team.id, code: team.captainCode, iat: Date.now() })).toString(
+    "base64url"
+  );
+  const sig = crypto.createHmac("sha256", ADMIN_PASSWORD).update(`captain.${body}`).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function verifyCaptainToken(token, state) {
+  if (!token || !token.includes(".")) return null;
+  const [body, sig] = token.split(".");
+  const expected = crypto.createHmac("sha256", ADMIN_PASSWORD).update(`captain.${body}`).digest("base64url");
+  if (Buffer.byteLength(sig) !== Buffer.byteLength(expected)) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  const team = state.teams.find((item) => item.id === payload.teamId);
+  if (!team || team.captainCode !== payload.code) return null;
+  return team;
+}
+
 function cleanText(value, max = 80) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
 
+function makeCaptainCode() {
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
+}
+
 function normalizeTeam(input) {
   const players = Array.isArray(input.players) ? input.players : [];
+  const normalizedPlayers = players.slice(0, 4).map((player) => ({
+    id: player.id || crypto.randomUUID(),
+    minecraft: cleanText(player.minecraft, 40),
+    discordId: cleanText(player.discordId, 30),
+    discord: player.discord || null
+  }));
+  const captainPlayerId =
+    normalizedPlayers.find((player) => player.id === input.captainPlayerId)?.id || normalizedPlayers[0]?.id || null;
   return {
     id: input.id || crypto.randomUUID(),
     name: cleanText(input.name, 60),
     createdAt: input.createdAt || new Date().toISOString(),
-    players: players.slice(0, 4).map((player) => ({
-      minecraft: cleanText(player.minecraft, 40),
-      discordId: cleanText(player.discordId, 30),
-      discord: player.discord || null
-    }))
+    captainPlayerId,
+    captainCode: input.captainCode || makeCaptainCode(),
+    players: normalizedPlayers
   };
 }
 
-function validateTeam(team) {
+function validateTeam(team, options = {}) {
+  const exactPlayers = options.exactPlayers !== false;
   if (!team.name) return "Team name is required.";
-  if (team.players.length !== 4) return "Exactly 4 players are required.";
+  if (exactPlayers && team.players.length !== 4) return "Exactly 4 players are required.";
+  if (!exactPlayers && (team.players.length < 1 || team.players.length > 4)) return "Teams must have 1 to 4 players.";
+  if (!team.players.some((player) => player.id === team.captainPlayerId)) return "Captain must be on the team.";
   for (const [index, player] of team.players.entries()) {
     if (!player.minecraft) return `Player ${index + 1} needs a Minecraft username.`;
     if (!/^\d{15,25}$/.test(player.discordId)) return `Player ${index + 1} needs a valid Discord user ID.`;
   }
   return null;
+}
+
+function publicTeam(team) {
+  return {
+    id: team.id,
+    name: team.name,
+    createdAt: team.createdAt,
+    captainPlayerId: team.captainPlayerId,
+    players: (team.players || []).map((player) => ({
+      id: player.id,
+      minecraft: player.minecraft,
+      discordId: player.discordId,
+      discord: player.discord
+    }))
+  };
+}
+
+function publicState(state) {
+  return {
+    ...state,
+    teams: (state.teams || []).map(publicTeam)
+  };
 }
 
 async function lookupDiscordUser(id) {
@@ -278,7 +333,7 @@ async function main() {
 
   app.get("/api/state", async (_req, res) => {
     const state = await store.read();
-    res.json(state);
+    res.json(publicState(state));
   });
 
   app.get("/api/captcha", (_req, res) => {
@@ -315,7 +370,50 @@ async function main() {
     state.teams.push(team);
     state.bracket = { generatedAt: null, matches: [] };
     await store.write(state);
-    res.status(201).json(team);
+    res.status(201).json({ team: publicTeam(team), captainCode: team.captainCode });
+  });
+
+  app.post("/api/captain/login", async (req, res) => {
+    const state = await store.read();
+    const team = state.teams.find((item) => item.id === req.body.teamId);
+    if (!team || cleanText(req.body.captainCode, 20).toUpperCase() !== team.captainCode) {
+      return res.status(401).json({ error: "Team or captain code is incorrect." });
+    }
+    res.json({ token: signCaptainToken(team), team: publicTeam(team) });
+  });
+
+  app.get("/api/captain/team", async (req, res) => {
+    const state = await store.read();
+    const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const team = verifyCaptainToken(token, state);
+    if (!team) return res.status(401).json({ error: "Captain access required." });
+    res.json(publicTeam(team));
+  });
+
+  app.put("/api/captain/team", async (req, res) => {
+    const state = await store.read();
+    const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const existing = verifyCaptainToken(token, state);
+    if (!existing) return res.status(401).json({ error: "Captain access required." });
+    const index = state.teams.findIndex((team) => team.id === existing.id);
+    const team = normalizeTeam({
+      ...existing,
+      players: req.body.players,
+      captainPlayerId: req.body.captainPlayerId,
+      id: existing.id,
+      name: existing.name,
+      createdAt: existing.createdAt,
+      captainCode: existing.captainCode
+    });
+    const error = validateTeam(team, { exactPlayers: false });
+    if (error) return res.status(400).json({ error });
+    team.players = await Promise.all(
+      team.players.map(async (player) => ({ ...player, discord: await lookupDiscordUser(player.discordId) }))
+    );
+    state.teams[index] = team;
+    state.bracket = { generatedAt: null, matches: [] };
+    await store.write(state);
+    res.json(publicTeam(team));
   });
 
   app.post("/api/admin/teams", requireAdmin, async (req, res) => {
@@ -336,7 +434,12 @@ async function main() {
     const state = await store.read();
     const index = state.teams.findIndex((team) => team.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: "Team not found." });
-    const team = normalizeTeam({ ...req.body, id: req.params.id, createdAt: state.teams[index].createdAt });
+    const team = normalizeTeam({
+      ...req.body,
+      id: req.params.id,
+      createdAt: state.teams[index].createdAt,
+      captainCode: state.teams[index].captainCode
+    });
     const error = validateTeam(team);
     if (error) return res.status(400).json({ error });
     team.players = await Promise.all(
@@ -402,6 +505,10 @@ async function main() {
 
   app.get("/register", (_req, res) => {
     res.sendFile(path.join(__dirname, "public", "register.html"));
+  });
+
+  app.get("/captain", (_req, res) => {
+    res.sendFile(path.join(__dirname, "public", "captain.html"));
   });
 
   app.get("*", (_req, res) => {

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Captain - HellCore 4v4 RBW Tournament</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="HellCore overview">
+        <img src="/assets/hellcore-logo.png" alt="HellCore logo" />
+        <span>HellCore</span>
+      </a>
+      <nav class="tabs" aria-label="Primary navigation">
+        <a href="/">Overview</a>
+        <a href="/teams">Teams</a>
+        <a href="/bracket">Bracket</a>
+        <a href="/rules">Rules</a>
+        <a href="/register">Register</a>
+        <a href="/captain">Captain</a>
+      </nav>
+    </header>
+    <main>
+      <section class="section page-head">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Team Control</p>
+            <h1>Captain</h1>
+          </div>
+          <p class="muted">Use the captain code shown after registration.</p>
+        </div>
+
+        <form id="captainLogin" class="register-form">
+          <label>
+            Team
+            <select name="teamId" id="captainTeamSelect"></select>
+          </label>
+          <label>
+            Captain code
+            <input name="captainCode" autocomplete="off" required />
+          </label>
+          <button class="button primary" type="submit">Manage Team</button>
+          <p id="captainLoginMessage" class="form-message"></p>
+        </form>
+
+        <section id="captainPanel" class="tool-panel hidden">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">Squad</p>
+              <h2 id="captainTeamName">Team</h2>
+            </div>
+            <button id="captainLogout" class="button ghost" type="button">Log Out</button>
+          </div>
+          <div id="captainPlayers" class="admin-list"></div>
+          <form id="captainAddPlayer" class="stack-form">
+            <h3>Add Player</h3>
+            <label>Minecraft username<input name="minecraft" maxlength="40" autocomplete="off" /></label>
+            <label>Discord user ID<input name="discordId" inputmode="numeric" pattern="\\d{15,25}" maxlength="25" /></label>
+            <button class="button primary" type="submit">Add Player</button>
+          </form>
+          <p id="captainMessage" class="form-message"></p>
+        </section>
+      </section>
+    </main>
+    <script src="/captain.js"></script>
+  </body>
+</html>

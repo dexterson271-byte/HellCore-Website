@@ -20,14 +20,28 @@ function playerFields(container, players = []) {
   container.innerHTML = Array.from({ length: 4 }, (_, index) => {
     const n = index + 1;
     const player = players[index] || {};
+    const playerId = player.id || crypto.randomUUID();
     return `
       <div class="player-fieldset">
         <h3>Player ${n}</h3>
+        <input type="hidden" name="playerId${n}" value="${escapeAttr(playerId)}">
         <label>Minecraft username<input name="minecraft${n}" required maxlength="40" value="${escapeAttr(player.minecraft || "")}"></label>
         <label>Discord user ID<input name="discordId${n}" required inputmode="numeric" pattern="\\d{15,25}" maxlength="25" value="${escapeAttr(player.discordId || "")}"></label>
       </div>
     `;
   }).join("");
+}
+
+function syncCaptainOptions(selectedId = "") {
+  const form = $("#teamForm");
+  const options = Array.from({ length: 4 }, (_, index) => {
+    const n = index + 1;
+    const id = form.elements[`playerId${n}`].value || `slot-${n}`;
+    const label = form.elements[`minecraft${n}`].value || `Player ${n}`;
+    return `<option value="${escapeAttr(id)}">${escapeHtml(label)}</option>`;
+  }).join("");
+  $("#captainSelect").innerHTML = options;
+  $("#captainSelect").value = selectedId || $("#captainSelect").options[0]?.value || "";
 }
 
 function escapeHtml(value) {
@@ -150,8 +164,12 @@ function openTeamDialog(team = null) {
   $("#teamDialogTitle").textContent = team ? "Edit Team" : "Add Team";
   const form = $("#teamForm");
   form.elements.id.value = team?.id || "";
-  form.elements.name.value = team?.name || "";
+  form.elements.teamName.value = team?.name || "";
   playerFields($("#teamPlayersFields"), team?.players || []);
+  syncCaptainOptions(team?.captainPlayerId || team?.players?.[0]?.id || "");
+  $("#teamPlayersFields").querySelectorAll("input[name^='minecraft']").forEach((input) => {
+    input.addEventListener("input", () => syncCaptainOptions($("#captainSelect").value));
+  });
   $("#teamDialog").showModal();
 }
 
@@ -200,13 +218,13 @@ $("#teamForm").addEventListener("submit", async (event) => {
   const data = new FormData(form);
   const players = Array.from({ length: 4 }, (_, index) => {
     const n = index + 1;
-    return { minecraft: data.get(`minecraft${n}`), discordId: data.get(`discordId${n}`) };
+    return { id: data.get(`playerId${n}`) || undefined, minecraft: data.get(`minecraft${n}`), discordId: data.get(`discordId${n}`) };
   });
   const id = data.get("id");
   await api(id ? `/api/admin/teams/${id}` : "/api/admin/teams", {
     method: id ? "PUT" : "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ name: data.get("name"), players })
+    body: JSON.stringify({ name: data.get("teamName"), players, captainPlayerId: data.get("captainPlayerId") })
   });
   $("#teamDialog").close();
   await loadState();
