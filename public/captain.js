@@ -21,6 +21,10 @@ function escapeHtml(value) {
   return String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 }
 
+function skinBust(username) {
+  return `https://nmsr.nickac.dev/bust/${encodeURIComponent(username || "Steve")}`;
+}
+
 function renderTeamSelect() {
   const select = $("#captainTeamSelect");
   select.innerHTML = state.public.teams.length
@@ -55,7 +59,10 @@ function renderCaptainPanel() {
     .map((player, index) => {
       const n = index + 1;
       return `
-      <article class="admin-team">
+      <article class="admin-team captain-member-card">
+        <div class="member-skin">
+          <img data-skin-preview="${n}" src="${skinBust(player.minecraft)}" alt="${escapeHtml(player.minecraft)} Minecraft skin" loading="lazy" onerror="this.style.display='none'">
+        </div>
         <h3>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</h3>
         <input type="hidden" name="playerId${n}" value="${escapeHtml(player.id)}">
         <label>Minecraft username<input name="minecraft${n}" value="${escapeHtml(player.minecraft)}" maxlength="40" required></label>
@@ -79,6 +86,16 @@ function renderCaptainPanel() {
   $("#captainPlayers").querySelectorAll("input").forEach((input) => {
     input.addEventListener("input", syncEditedPlayersToState);
     input.addEventListener("change", syncEditedPlayersToState);
+  });
+  $("#captainPlayers").querySelectorAll("input[name^='minecraft']").forEach((input) => {
+    input.addEventListener("change", () => {
+      const slot = input.name.replace("minecraft", "");
+      const preview = document.querySelector(`[data-skin-preview="${slot}"]`);
+      if (preview) {
+        preview.style.display = "";
+        preview.src = skinBust(input.value);
+      }
+    });
   });
 }
 

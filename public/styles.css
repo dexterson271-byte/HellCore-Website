@@ -350,6 +350,90 @@ dialog {
   color: var(--muted);
 }
 
+.member-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) minmax(110px, auto);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  min-height: 78px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.035);
+  overflow: hidden;
+}
+
+.member-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent-2));
+}
+
+.member-card.compact {
+  grid-template-columns: 54px minmax(0, 1fr);
+  min-height: 66px;
+  padding: 9px;
+}
+
+.member-skin {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: end center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 20%, rgba(226, 59, 40, 0.22), rgba(255, 255, 255, 0.04));
+  overflow: hidden;
+}
+
+.member-card.compact .member-skin {
+  width: 44px;
+  height: 44px;
+}
+
+.member-skin img {
+  display: block;
+  width: 78px;
+  max-width: none;
+  transform: translateY(10px);
+  image-rendering: pixelated;
+}
+
+.member-card.compact .member-skin img {
+  width: 60px;
+  transform: translateY(8px);
+}
+
+.member-main {
+  min-width: 0;
+}
+
+.member-main strong,
+.member-main > span {
+  display: block;
+}
+
+.member-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-main > span {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.member-discord {
+  justify-self: end;
+  min-width: 0;
+}
+
 .discord-pill {
   display: inline-flex;
   align-items: center;
@@ -624,6 +708,15 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.045);
 }
 
+.captain-member-card {
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: start;
+}
+
+.captain-member-card .member-skin {
+  grid-row: span 4;
+}
+
 .admin-team-actions {
   display: flex;
   gap: 8px;
@@ -746,6 +839,15 @@ dialog::backdrop {
 
   .captcha-box {
     grid-template-columns: 1fr;
+  }
+
+  .member-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .member-discord {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .prize-panel {

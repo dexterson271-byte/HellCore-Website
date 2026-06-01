@@ -44,6 +44,10 @@ function discordLabel(player) {
   return `<span class="discord-pill warn">Not verified</span>`;
 }
 
+function skinBust(username) {
+  return `https://nmsr.nickac.dev/bust/${encodeURIComponent(username || "Steve")}`;
+}
+
 function renderTeams() {
   const grid = $("#teamsGrid");
   if (!grid) return;
@@ -59,9 +63,17 @@ function renderTeams() {
           ${team.players
             .map(
               (player) => `
-              <div class="player-row">
-                <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
-                ${discordLabel(player)}
+              <div class="player-row member-card">
+                <div class="member-skin">
+                  <img src="${skinBust(player.minecraft)}" alt="${escapeHtml(player.minecraft)} Minecraft skin" loading="lazy" onerror="this.style.display='none'">
+                </div>
+                <div class="member-main">
+                  <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
+                  <span>Minecraft</span>
+                </div>
+                <div class="member-discord">
+                  ${discordLabel(player)}
+                </div>
               </div>
             `
             )

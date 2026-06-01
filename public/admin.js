@@ -59,6 +59,10 @@ function discordStatus(player) {
   return "not verified";
 }
 
+function skinBust(username) {
+  return `https://nmsr.nickac.dev/bust/${encodeURIComponent(username || "Steve")}`;
+}
+
 function renderAdmin() {
   const event = state.data.event;
   const form = $("#eventForm");
@@ -77,7 +81,17 @@ function renderAdmin() {
           <article class="admin-team">
             <h3>${escapeHtml(team.name)}</h3>
             <p class="captain-code">Captain code: <strong>${escapeHtml(team.captainCode || "Missing")}</strong></p>
-            ${team.players.map((player) => `<p class="muted">${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? " - Captain" : ""} - ${escapeHtml(discordStatus(player))}</p>`).join("")}
+            ${team.players.map((player) => `
+              <div class="player-row member-card compact">
+                <div class="member-skin">
+                  <img src="${skinBust(player.minecraft)}" alt="${escapeHtml(player.minecraft)} Minecraft skin" loading="lazy" onerror="this.style.display='none'">
+                </div>
+                <div class="member-main">
+                  <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
+                  <span>${escapeHtml(discordStatus(player))}</span>
+                </div>
+              </div>
+            `).join("")}
             <div class="admin-team-actions">
               <button class="button ghost" data-edit="${team.id}" type="button">Edit</button>
               <button class="button ghost" data-delete="${team.id}" type="button">Delete</button>
