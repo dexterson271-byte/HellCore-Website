@@ -315,7 +315,7 @@ dialog {
 
 .teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 14px;
 }
 
@@ -353,7 +353,7 @@ dialog {
 .member-card {
   position: relative;
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) minmax(110px, auto);
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   padding: 12px;
@@ -434,8 +434,28 @@ dialog {
 }
 
 .member-discord {
-  justify-self: end;
+  justify-self: start;
+  margin-top: 8px;
   min-width: 0;
+  text-align: left;
+}
+
+.member-discord span,
+.member-discord strong {
+  display: block;
+}
+
+.member-discord span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.member-discord strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--good);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .discord-pill {
@@ -852,6 +872,7 @@ dialog::backdrop {
   .member-discord {
     grid-column: 2;
     justify-self: start;
+    text-align: left;
   }
 
   .prize-panel {

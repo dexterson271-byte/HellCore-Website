@@ -54,7 +54,7 @@ function escapeAttr(value) {
 }
 
 function discordStatus(player) {
-  if (player.discord?.status === "verified") return `verified as ${player.discord.username || player.discord.handle}`;
+  if (player.discord?.status === "verified") return player.discord.username || player.discord.handle;
   if (player.discord?.status === "unconfigured") return "saved, bot token missing";
   return "not verified";
 }
@@ -88,7 +88,11 @@ function renderAdmin() {
                 </div>
                 <div class="member-main">
                   <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
-                  <span>${escapeHtml(discordStatus(player))}</span>
+                  <span>Minecraft username</span>
+                  <div class="member-discord">
+                    <span>Discord username</span>
+                    <strong>${escapeHtml(discordStatus(player))}</strong>
+                  </div>
                 </div>
               </div>
             `).join("")}

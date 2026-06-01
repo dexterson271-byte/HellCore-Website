@@ -39,9 +39,9 @@ async function loadCaptcha() {
 
 function discordLabel(player) {
   const discord = player.discord;
-  if (discord?.status === "verified") return `<span class="discord-pill">✓ ${discord.username || discord.handle}</span>`;
-  if (discord?.status === "unconfigured") return `<span class="discord-pill warn">ID saved</span>`;
-  return `<span class="discord-pill warn">Not verified</span>`;
+  if (discord?.status === "verified") return escapeHtml(discord.username || discord.handle || "Verified");
+  if (discord?.status === "unconfigured") return "ID saved";
+  return "Not verified";
 }
 
 function skinBust(username) {
@@ -69,10 +69,11 @@ function renderTeams() {
                 </div>
                 <div class="member-main">
                   <strong>${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? ' <span class="role-badge">Captain</span>' : ""}</strong>
-                  <span>Minecraft</span>
-                </div>
-                <div class="member-discord">
-                  ${discordLabel(player)}
+                  <span>Minecraft username</span>
+                  <div class="member-discord">
+                    <span>Discord username</span>
+                    <strong>${discordLabel(player)}</strong>
+                  </div>
                 </div>
               </div>
             `

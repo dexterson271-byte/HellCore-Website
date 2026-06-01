@@ -12,7 +12,7 @@ const defaultState = {
     title: "HellCore 4v4 RBW Tournament",
     mode: "Ranked Bedwars",
     dateLabel: "Live today: May 31, 2026",
-    maxTeams: 12,
+    maxTeams: 16,
     registrationLocked: false,
     discordUrl: "",
     prizeTitle: "GTA V Account Per Winning Player",
@@ -20,7 +20,7 @@ const defaultState = {
       "Each player on the winning team receives 1 GTA V (Epic Games) account, or a game of similar value from the Epic Games Store if possible.",
     rules: [
       "4v4 RBW with 4 players per team.",
-      "Maximum 12 teams.",
+      "Maximum 16 teams.",
       "Double elimination: every team gets 2 chances.",
       "Register only if your entire team will be available during the tournament.",
       "If any player is unavailable when your match is called, your team may be disqualified.",
@@ -88,10 +88,13 @@ class PostgresStore {
 }
 
 function mergeDefaults(state) {
+  const event = { ...defaultState.event, ...(state.event || {}) };
+  if (!event.maxTeams || event.maxTeams < 16) event.maxTeams = 16;
+  event.rules = (event.rules || defaultState.event.rules).map((rule) => rule.replace("Maximum 12 teams", "Maximum 16 teams"));
   return {
     ...defaultState,
     ...state,
-    event: { ...defaultState.event, ...(state.event || {}) },
+    event,
     teams: state.teams || [],
     bracket: { ...defaultState.bracket, ...(state.bracket || {}) }
   };
@@ -297,19 +300,23 @@ function makeMatch(id, bracket, round, position, teamA = null, teamB = null, nex
 
 function generateBracket(teams) {
   const seeded = [...teams].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const slots = Array.from({ length: 12 }, (_, i) => teamRef(seeded[i]));
+  const slots = Array.from({ length: 16 }, (_, i) => teamRef(seeded[i]));
   const matches = [
-    makeMatch("w1", "Winners", 1, 1, slots[4], slots[11], { matchId: "w5", slot: "teamB" }, { matchId: "l1", slot: "teamA" }),
-    makeMatch("w2", "Winners", 1, 2, slots[5], slots[10], { matchId: "w8", slot: "teamB" }, { matchId: "l1", slot: "teamB" }),
-    makeMatch("w3", "Winners", 1, 3, slots[6], slots[9], { matchId: "w7", slot: "teamB" }, { matchId: "l2", slot: "teamA" }),
-    makeMatch("w4", "Winners", 1, 4, slots[7], slots[8], { matchId: "w6", slot: "teamB" }, { matchId: "l2", slot: "teamB" }),
-    makeMatch("w5", "Winners", 2, 1, slots[0], null, { matchId: "w9", slot: "teamA" }, { matchId: "l4", slot: "teamB" }),
-    makeMatch("w6", "Winners", 2, 2, slots[3], null, { matchId: "w9", slot: "teamB" }, { matchId: "l3", slot: "teamB" }),
-    makeMatch("w7", "Winners", 2, 3, slots[2], null, { matchId: "w10", slot: "teamA" }, { matchId: "l3", slot: "teamA" }),
-    makeMatch("w8", "Winners", 2, 4, slots[1], null, { matchId: "w10", slot: "teamB" }, { matchId: "l4", slot: "teamA" }),
-    makeMatch("w9", "Winners", 3, 1, null, null, { matchId: "w11", slot: "teamA" }, { matchId: "l8", slot: "teamB" }),
-    makeMatch("w10", "Winners", 3, 2, null, null, { matchId: "w11", slot: "teamB" }, { matchId: "l7", slot: "teamB" }),
-    makeMatch("w11", "Winners", 4, 1, null, null, { matchId: "gf", slot: "teamA" }, { matchId: "l10", slot: "teamB" }),
+    makeMatch("w1", "Winners", 1, 1, slots[0], slots[15], { matchId: "w9", slot: "teamA" }, { matchId: "l1", slot: "teamA" }),
+    makeMatch("w2", "Winners", 1, 2, slots[7], slots[8], { matchId: "w9", slot: "teamB" }, { matchId: "l1", slot: "teamB" }),
+    makeMatch("w3", "Winners", 1, 3, slots[3], slots[12], { matchId: "w10", slot: "teamA" }, { matchId: "l2", slot: "teamA" }),
+    makeMatch("w4", "Winners", 1, 4, slots[4], slots[11], { matchId: "w10", slot: "teamB" }, { matchId: "l2", slot: "teamB" }),
+    makeMatch("w5", "Winners", 1, 5, slots[2], slots[13], { matchId: "w11", slot: "teamA" }, { matchId: "l3", slot: "teamA" }),
+    makeMatch("w6", "Winners", 1, 6, slots[5], slots[10], { matchId: "w11", slot: "teamB" }, { matchId: "l3", slot: "teamB" }),
+    makeMatch("w7", "Winners", 1, 7, slots[1], slots[14], { matchId: "w12", slot: "teamA" }, { matchId: "l4", slot: "teamA" }),
+    makeMatch("w8", "Winners", 1, 8, slots[6], slots[9], { matchId: "w12", slot: "teamB" }, { matchId: "l4", slot: "teamB" }),
+    makeMatch("w9", "Winners", 2, 1, null, null, { matchId: "w13", slot: "teamA" }, { matchId: "l5", slot: "teamA" }),
+    makeMatch("w10", "Winners", 2, 2, null, null, { matchId: "w13", slot: "teamB" }, { matchId: "l5", slot: "teamB" }),
+    makeMatch("w11", "Winners", 2, 3, null, null, { matchId: "w14", slot: "teamA" }, { matchId: "l6", slot: "teamA" }),
+    makeMatch("w12", "Winners", 2, 4, null, null, { matchId: "w14", slot: "teamB" }, { matchId: "l6", slot: "teamB" }),
+    makeMatch("w13", "Winners", 3, 1, null, null, { matchId: "w15", slot: "teamA" }, { matchId: "l8", slot: "teamB" }),
+    makeMatch("w14", "Winners", 3, 2, null, null, { matchId: "w15", slot: "teamB" }, { matchId: "l7", slot: "teamB" }),
+    makeMatch("w15", "Winners", 4, 1, null, null, { matchId: "gf", slot: "teamA" }, { matchId: "l10", slot: "teamB" }),
     makeMatch("l1", "Elimination", 1, 1, null, null, { matchId: "l3", slot: "teamB" }, null),
     makeMatch("l2", "Elimination", 1, 2, null, null, { matchId: "l4", slot: "teamB" }, null),
     makeMatch("l3", "Elimination", 2, 1, null, null, { matchId: "l5", slot: "teamA" }, null),

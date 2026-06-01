@@ -29,9 +29,9 @@ Registration requires:
 
 Rules:
 
-- Maximum 12 teams
+- Maximum 16 teams
 - Teams appear publicly immediately after registering
-- Registration automatically closes at 12 teams and shows a clear "Registration full" message
+- Registration automatically closes at 16 teams and shows a clear "Registration full" message
 - No substitutes unless announced otherwise
 - Teams may be disqualified if a player is unavailable when the match is called
 
@@ -60,7 +60,7 @@ Staff can:
 Format:
 
 - 4v4
-- Maximum 12 teams
+- Maximum 16 teams
 - Double elimination
 - Every team gets 2 chances
 
