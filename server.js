@@ -176,8 +176,8 @@ function mergeCaptainPlayers(existingPlayers, incomingPlayers) {
       ? Object.values(incomingPlayers)
       : [];
   const byId = new Map(incoming.filter((player) => player && player.id).map((player) => [player.id, player]));
-  const merged = existingPlayers.map((player) => {
-    const next = byId.get(player.id);
+  const merged = existingPlayers.map((player, index) => {
+    const next = byId.get(player.id) || incoming[index];
     if (!next) return player;
     return {
       ...player,
@@ -185,8 +185,8 @@ function mergeCaptainPlayers(existingPlayers, incomingPlayers) {
       discordId: cleanText(next.discordId || player.discordId, 30)
     };
   });
-  for (const player of incoming) {
-    if (!player?.id && (player.minecraft || player.discordId)) merged.push(player);
+  for (const [index, player] of incoming.entries()) {
+    if (index >= existingPlayers.length && (player.minecraft || player.discordId)) merged.push(player);
   }
   return merged.slice(0, 4);
 }
