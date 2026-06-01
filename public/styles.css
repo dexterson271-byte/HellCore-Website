@@ -381,6 +381,24 @@ dialog {
   text-transform: uppercase;
 }
 
+.captain-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 180, 59, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 180, 59, 0.12);
+  color: var(--accent-2);
+}
+
+.captain-code strong {
+  color: var(--ink);
+  letter-spacing: 0.08em;
+}
+
 select {
   width: 100%;
   border: 1px solid var(--line);

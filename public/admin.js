@@ -75,7 +75,7 @@ function renderAdmin() {
           (team) => `
           <article class="admin-team">
             <h3>${escapeHtml(team.name)}</h3>
-            <p class="muted">Captain code: ${escapeHtml(team.captainCode || "Missing")}</p>
+            <p class="captain-code">Captain code: <strong>${escapeHtml(team.captainCode || "Missing")}</strong></p>
             ${team.players.map((player) => `<p class="muted">${escapeHtml(player.minecraft)}${player.id && team.captainPlayerId && player.id === team.captainPlayerId ? " - Captain" : ""} - ${escapeHtml(discordStatus(player))}</p>`).join("")}
             <div class="admin-team-actions">
               <button class="button ghost" data-edit="${team.id}" type="button">Edit</button>
@@ -233,6 +233,11 @@ $("#teamForm").addEventListener("submit", async (event) => {
 
 $("#generateBracket").addEventListener("click", async () => {
   await api("/api/admin/bracket/generate", { method: "POST", headers: authHeaders() });
+  await loadState();
+});
+
+$("#clearBracket").addEventListener("click", async () => {
+  await api("/api/admin/bracket", { method: "DELETE", headers: authHeaders() });
   await loadState();
 });
 

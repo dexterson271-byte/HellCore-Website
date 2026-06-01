@@ -452,11 +452,14 @@ async function main() {
     const state = await store.read();
     const index = state.teams.findIndex((team) => team.id === req.params.id);
     if (index === -1) return res.status(404).json({ error: "Team not found." });
+    const existing = state.teams[index];
     const team = normalizeTeam({
       ...req.body,
+      name: req.body.name || req.body.teamName || existing.name,
       id: req.params.id,
-      createdAt: state.teams[index].createdAt,
-      captainCode: state.teams[index].captainCode
+      createdAt: existing.createdAt,
+      captainCode: existing.captainCode,
+      captainPlayerId: req.body.captainPlayerId || existing.captainPlayerId
     });
     const error = validateTeam(team);
     if (error) return res.status(400).json({ error });
@@ -482,6 +485,13 @@ async function main() {
     state.bracket = generateBracket(state.teams);
     await store.write(state);
     res.json(state.bracket);
+  });
+
+  app.delete("/api/admin/bracket", requireAdmin, async (_req, res) => {
+    const state = await store.read();
+    state.bracket = { generatedAt: null, matches: [] };
+    await store.write(state);
+    res.status(204).end();
   });
 
   app.post("/api/admin/bracket/:matchId/winner", requireAdmin, async (req, res) => {
