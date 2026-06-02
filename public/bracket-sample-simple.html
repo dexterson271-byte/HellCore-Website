@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HellCore Simple Bracket Sample</title>
+    <style>
+      :root {
+        --bg: #08090d;
+        --panel: #181a22;
+        --panel-2: #20232d;
+        --ink: #f7f7fb;
+        --muted: #aeb4c0;
+        --line: rgba(255, 255, 255, 0.13);
+        --red: #e63828;
+        --gold: #ffb43b;
+        --green: #63e6a5;
+        --grass: #4c9b3f;
+        --dirt: #7b4a2d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(230, 56, 40, 0.22), transparent 30%),
+          linear-gradient(135deg, #090a0f, #14161f 48%, #09090d);
+        color: var(--ink);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 190px 1fr 190px;
+        align-items: center;
+        gap: 18px;
+        padding: 16px clamp(18px, 4vw, 56px);
+        border-bottom: 1px solid var(--line);
+        background: rgba(8, 9, 13, 0.78);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ff5648, #6d0707 70%);
+        box-shadow: 0 0 26px rgba(230, 56, 40, 0.48);
+      }
+
+      .tabs {
+        justify-self: center;
+        display: flex;
+        gap: 6px;
+        padding: 5px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.045);
+      }
+
+      .tabs a {
+        padding: 9px 13px;
+        border-radius: 999px;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 14px;
+      }
+
+      .tabs a.active {
+        color: var(--ink);
+        background: rgba(230, 56, 40, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(230, 56, 40, 0.36);
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 46px 0;
+      }
+
+      h1 {
+        margin: 0 0 28px;
+        font-size: clamp(46px, 7vw, 88px);
+        line-height: 0.92;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--gold);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .bracket {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(260px, 1fr));
+        gap: 16px;
+        overflow-x: auto;
+      }
+
+      .round {
+        display: grid;
+        gap: 14px;
+        align-content: start;
+      }
+
+      .round h2 {
+        margin: 0;
+        color: var(--gold);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .match {
+        position: relative;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+      }
+
+      .match::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: -17px;
+        width: 17px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--red), var(--gold));
+      }
+
+      .round:last-child .match::after {
+        display: none;
+      }
+
+      .match-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .block-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink);
+        font-weight: 900;
+      }
+
+      .match-logo {
+        width: 18px;
+        height: 18px;
+        object-fit: cover;
+        border-radius: 50%;
+        box-shadow: 0 0 12px rgba(230, 56, 40, 0.52);
+      }
+
+      .slot {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        min-height: 70px;
+        padding: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .captain-bust {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+
+      .captain-bust img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center bottom;
+        image-rendering: pixelated;
+      }
+
+      .slot.winner {
+        color: var(--green);
+      }
+
+      .slot.winner .captain-bust {
+        border-color: rgba(255, 180, 59, 0.7);
+        box-shadow: 0 0 20px rgba(255, 180, 59, 0.18);
+      }
+
+      .crown {
+        position: absolute;
+        top: -9px;
+        left: 50%;
+        width: 28px;
+        height: 18px;
+        transform: translateX(-50%);
+        background:
+          linear-gradient(135deg, transparent 0 16%, var(--gold) 16% 34%, transparent 34% 48%, var(--gold) 48% 65%, transparent 65% 78%, var(--gold) 78%) top / 100% 11px no-repeat,
+          linear-gradient(var(--gold), #d88c19) bottom / 100% 8px no-repeat;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+      }
+
+      .slot.eliminated {
+        color: #ff8d8d;
+      }
+
+      .slot.eliminated .captain-bust {
+        border-color: rgba(230, 56, 40, 0.72);
+        background: rgba(230, 56, 40, 0.14);
+      }
+
+      .slot.eliminated .captain-bust img {
+        filter: grayscale(0.55) sepia(0.35) hue-rotate(310deg) saturate(1.8);
+        opacity: 0.72;
+      }
+
+      .team-name {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 900;
+      }
+
+      .captain-name {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 780px) {
+        .topbar {
+          grid-template-columns: 1fr;
+        }
+
+        .tabs {
+          width: 100%;
+          overflow-x: auto;
+          justify-self: stretch;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">H</span> HellCore</div>
+      <nav class="tabs">
+        <a href="#">Overview</a>
+        <a href="#">Teams</a>
+        <a class="active" href="#">Bracket</a>
+        <a href="#">Rules</a>
+        <a href="#">Register</a>
+        <a href="#">Captain</a>
+      </nav>
+      <div></div>
+    </header>
+
+    <main>
+      <p class="eyebrow">Simple first pass</p>
+      <h1>Bracket Sample</h1>
+      <div class="bracket">
+        <section class="round">
+          <h2>Winners R1</h2>
+          <article class="match">
+            <div class="match-head"><span class="block-chip"><img class="match-logo" src="/assets/hellcore-logo.png" alt="">W1</span><span>Done</span></div>
+            <div class="slot winner">
+              <div class="captain-bust">
+                <span class="crown"></span>
+                <img src="https://nmsr.nickac.dev/bust/Techno_play987" alt="captain bust" />
+              </div>
+              <div><span class="team-name">Try_This</span><span class="captain-name">Captain: Techno_play987</span></div>
+            </div>
+            <div class="slot eliminated">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/zestytaps" alt="captain bust" /></div>
+              <div><span class="team-name">Shree Squad</span><span class="captain-name">Captain: zestytaps</span></div>
+            </div>
+          </article>
+          <article class="match">
+            <div class="match-head"><span class="block-chip"><img class="match-logo" src="/assets/hellcore-logo.png" alt="">W2</span><span>Open</span></div>
+            <div class="slot">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/kqtf" alt="captain bust" /></div>
+              <div><span class="team-name">Frost Combo</span><span class="captain-name">Captain: kqtf</span></div>
+            </div>
+            <div class="slot">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/ReddyYt" alt="captain bust" /></div>
+              <div><span class="team-name">Red Rush</span><span class="captain-name">Captain: ReddyYt</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="round">
+          <h2>Winners R2</h2>
+          <article class="match">
+            <div class="match-head"><span class="block-chip"><img class="match-logo" src="/assets/hellcore-logo.png" alt="">W9</span><span>Next</span></div>
+            <div class="slot winner">
+              <div class="captain-bust">
+                <span class="crown"></span>
+                <img src="https://nmsr.nickac.dev/bust/Techno_play987" alt="captain bust" />
+              </div>
+              <div><span class="team-name">Try_This</span><span class="captain-name">Captain: Techno_play987</span></div>
+            </div>
+            <div class="slot">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/Steve" alt="captain bust" /></div>
+              <div><span class="team-name">TBD</span><span class="captain-name">Waiting for winner</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="round">
+          <h2>Grand Final</h2>
+          <article class="match">
+            <div class="match-head"><span class="block-chip"><img class="match-logo" src="/assets/hellcore-logo.png" alt="">GF</span><span>Locked</span></div>
+            <div class="slot">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/Steve" alt="captain bust" /></div>
+              <div><span class="team-name">TBD</span><span class="captain-name">Winners finalist</span></div>
+            </div>
+            <div class="slot">
+              <div class="captain-bust"><img src="https://nmsr.nickac.dev/bust/Steve" alt="captain bust" /></div>
+              <div><span class="team-name">TBD</span><span class="captain-name">Elimination finalist</span></div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
