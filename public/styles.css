@@ -60,9 +60,9 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
+  display: grid;
+  grid-template-columns: 190px 1fr 190px;
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
   padding: 16px clamp(18px, 4vw, 56px);
   background: rgba(8, 9, 13, 0.76);
@@ -89,6 +89,7 @@ a {
 }
 
 .tabs {
+  justify-self: center;
   display: flex;
   max-width: 100%;
   min-width: 0;
@@ -520,7 +521,7 @@ select {
 .bracket-board {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 1fr);
+  grid-auto-columns: minmax(280px, 1fr);
   gap: 14px;
   overflow-x: auto;
   padding-bottom: 12px;
@@ -530,7 +531,7 @@ select {
   display: grid;
   align-content: start;
   gap: 12px;
-  min-width: 230px;
+  min-width: 280px;
 }
 
 .bracket-column h3 {
@@ -541,23 +542,135 @@ select {
 }
 
 .match-card {
+  position: relative;
+  overflow: hidden;
   padding: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.025));
+}
+
+.match-card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  opacity: 0.8;
 }
 
 .match-id {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
   color: var(--muted);
   font-size: 12px;
   text-transform: uppercase;
 }
 
+.match-logo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.match-logo-chip img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(226, 59, 40, 0.52);
+}
+
 .match-slot {
-  min-height: 42px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  justify-content: start;
+  min-height: 70px;
+  padding: 8px;
 }
 
 .match-slot.winner {
   color: var(--good);
+}
+
+.match-slot.eliminated {
+  color: #ff8d8d;
+}
+
+.match-bust {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: visible;
+}
+
+.match-bust img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  border-radius: 7px;
+  image-rendering: pixelated;
+}
+
+.match-slot.winner .match-bust {
+  border-color: rgba(255, 180, 59, 0.7);
+  box-shadow: 0 0 20px rgba(255, 180, 59, 0.18);
+}
+
+.match-slot.eliminated .match-bust {
+  border-color: rgba(226, 59, 40, 0.72);
+  background: rgba(226, 59, 40, 0.14);
+}
+
+.match-slot.eliminated .match-bust img {
+  filter: grayscale(0.55) sepia(0.35) hue-rotate(310deg) saturate(1.8);
+  opacity: 0.72;
+}
+
+.winner-crown {
+  position: absolute;
+  z-index: 2;
+  top: -12px;
+  left: 50%;
+  width: 30px;
+  height: 19px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(135deg, transparent 0 16%, var(--accent-2) 16% 34%, transparent 34% 48%, var(--accent-2) 48% 65%, transparent 65% 78%, var(--accent-2) 78%) top / 100% 11px no-repeat,
+    linear-gradient(var(--accent-2), #d88c19) bottom / 100% 8px no-repeat;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+.match-team-text {
+  min-width: 0;
+}
+
+.match-team-text strong,
+.match-team-text span {
+  display: block;
+}
+
+.match-team-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-team-text span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .winner-actions {
@@ -802,7 +915,7 @@ dialog::backdrop {
   .topbar,
   .admin-header {
     align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .tabs {

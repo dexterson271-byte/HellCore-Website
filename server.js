@@ -264,6 +264,24 @@ function publicState(state) {
   };
 }
 
+function teamRefWithCaptain(team) {
+  if (!team) return null;
+  const captain = (team.players || []).find((player) => player.id === team.captainPlayerId) || team.players?.[0];
+  return {
+    id: team.id,
+    name: team.name,
+    captainMinecraft: captain?.minecraft || team.name
+  };
+}
+
+function enrichBracketTeams(state) {
+  const teamsById = new Map((state.teams || []).map((team) => [team.id, teamRefWithCaptain(team)]));
+  for (const match of state.bracket?.matches || []) {
+    if (match.teamA?.id && teamsById.has(match.teamA.id)) match.teamA = { ...match.teamA, ...teamsById.get(match.teamA.id) };
+    if (match.teamB?.id && teamsById.has(match.teamB.id)) match.teamB = { ...match.teamB, ...teamsById.get(match.teamB.id) };
+  }
+}
+
 function ensureTeamSecrets(state) {
   let changed = false;
   state.teams = (state.teams || []).map((team) => {
@@ -291,7 +309,7 @@ async function lookupDiscordUser(id) {
 }
 
 function teamRef(team) {
-  return team ? { id: team.id, name: team.name } : null;
+  return teamRefWithCaptain(team);
 }
 
 function makeMatch(id, bracket, round, position, teamA = null, teamB = null, nextWin = null, nextLose = null) {
@@ -388,12 +406,14 @@ async function main() {
   app.get("/api/state", async (_req, res) => {
     const state = await store.read();
     if (ensureTeamSecrets(state)) await store.write(state);
+    enrichBracketTeams(state);
     res.json(publicState(state));
   });
 
   app.get("/api/admin/state", requireAdmin, async (_req, res) => {
     const state = await store.read();
     if (ensureTeamSecrets(state)) await store.write(state);
+    enrichBracketTeams(state);
     res.json(state);
   });
 

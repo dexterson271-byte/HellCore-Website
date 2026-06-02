@@ -63,6 +63,10 @@ function skinBust(username) {
   return `https://nmsr.nickac.dev/bust/${encodeURIComponent(username || "Steve")}`;
 }
 
+function captainBust(team) {
+  return skinBust(team?.captainMinecraft || team?.name || "Steve");
+}
+
 function renderAdmin() {
   const event = state.data.event;
   const form = $("#eventForm");
@@ -158,11 +162,15 @@ function renderMatch(match) {
   const aWon = match.winner && match.teamA?.id === match.winner;
   const bWon = match.winner && match.teamB?.id === match.winner;
   const canPick = match.teamA && match.teamB;
+  const status = match.locked ? "Bye" : match.winner ? "Done" : "Open";
   return `
-    <article class="match-card">
-      <div class="match-id"><span>${match.id}</span><span>${match.locked ? "Bye" : match.winner ? "Done" : "Open"}</span></div>
-      <div class="match-slot ${aWon ? "winner" : ""}"><strong>${escapeHtml(match.teamA?.name || "TBD")}</strong></div>
-      <div class="match-slot ${bWon ? "winner" : ""}"><strong>${escapeHtml(match.teamB?.name || "TBD")}</strong></div>
+    <article class="match-card ${status.toLowerCase()}">
+      <div class="match-id">
+        <span class="match-logo-chip"><img src="/assets/hellcore-logo.png" alt="" aria-hidden="true">${match.id}</span>
+        <span>${status}</span>
+      </div>
+      ${renderMatchSlot(match.teamA, aWon, match.winner && !aWon)}
+      ${renderMatchSlot(match.teamB, bWon, match.winner && !bWon)}
       ${
         canPick
           ? `<div class="winner-actions">
@@ -172,6 +180,21 @@ function renderMatch(match) {
           : ""
       }
     </article>
+  `;
+}
+
+function renderMatchSlot(team, isWinner, isEliminated) {
+  return `
+    <div class="match-slot ${isWinner ? "winner" : ""} ${isEliminated ? "eliminated" : ""}">
+      <div class="match-bust">
+        ${isWinner ? '<span class="winner-crown" aria-hidden="true"></span>' : ""}
+        <img src="${captainBust(team)}" alt="${escapeHtml(team?.name || "TBD")} captain bust" loading="lazy" onerror="this.style.display='none'">
+      </div>
+      <div class="match-team-text">
+        <strong>${escapeHtml(team?.name || "TBD")}</strong>
+        <span>${team?.captainMinecraft ? `Captain: ${escapeHtml(team.captainMinecraft)}` : "Waiting for team"}</span>
+      </div>
+    </div>
   `;
 }
 
