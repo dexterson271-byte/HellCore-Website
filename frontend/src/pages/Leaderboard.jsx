@@ -1,42 +1,26 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Crown, Medal, Trophy, TrendingUp } from "lucide-react";
 import { fetchLeaderboard } from "../lib/api";
 import { avatarUrl, formatNumber, formatRatio, rankStyle } from "../lib/formatters";
 
 const sortOptions = [
-  { key: "won",        label: "Wins" },
-  { key: "kills",      label: "Kills" },
-  { key: "final_kills",label: "Final Kills" },
+  { key: "won", label: "Wins" },
+  { key: "kills", label: "Kills" },
+  { key: "final_kills", label: "Final Kills" },
   { key: "final_k_d", label: "Final K/D" },
 ];
 
-const podiumColors = [
-  { ring: "ring-amber-300/40",  bg: "bg-amber-400/10",  text: "text-amber-300",  border: "border-amber-300/20",  glow: "shadow-[0_0_30px_rgba(251,191,36,0.08)]" },
-  { ring: "ring-slate-300/30",  bg: "bg-slate-400/8",   text: "text-slate-300",  border: "border-slate-300/15",  glow: "shadow-[0_0_20px_rgba(203,213,225,0.05)]" },
-  { ring: "ring-orange-400/30", bg: "bg-orange-400/8",  text: "text-orange-300", border: "border-orange-400/15", glow: "shadow-[0_0_20px_rgba(251,146,60,0.05)]" },
-];
-
 function RankBadge({ index }) {
-  if (index === 0) return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-      <Crown className="text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" size={20} />
-    </div>
-  );
-  if (index === 1) return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-      <Medal className="text-slate-300 drop-shadow-[0_0_6px_rgba(203,213,225,0.5)]" size={20} />
-    </div>
-  );
-  if (index === 2) return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
-      <Medal className="text-orange-400 drop-shadow-[0_0_6px_rgba(251,146,60,0.5)]" size={20} />
-    </div>
-  );
+  const tones = [
+    "text-[var(--gold)]",
+    "text-[var(--silver)]",
+    "text-[var(--bronze)]",
+    "text-[var(--text-faint)]",
+  ];
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-sm font-bold text-slate-500">
-      {index + 1}
+    <div className={`font-mono-stat w-8 text-sm font-bold ${tones[Math.min(index, 3)]}`}>
+      {String(index + 1).padStart(2, "0")}
     </div>
   );
 }
@@ -63,38 +47,34 @@ function Leaderboard() {
 
   return (
     <main className="page-shell space-y-8">
-      {/* ── Header ── */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="glass-panel relative overflow-hidden p-6 sm:p-8"
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="panel panel-static p-6 sm:p-8"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(251,191,36,0.10),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.07),transparent_50%)]" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-xs uppercase tracking-[0.25em] text-amber-200">
-              <Trophy size={13} />
+            <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-faint)]">
               Leaderboard
             </div>
-            <h1 className="mt-4 text-4xl font-black text-white sm:text-5xl">
+            <h1 className="font-display mt-2 text-5xl font-extrabold text-[var(--text)] sm:text-6xl">
               Top performers
             </h1>
-            <p className="mt-2 max-w-xl text-slate-400">
-              Sort by wins, kills, finals, or FKDR and click any row to view the full player profile.
+            <p className="mt-2 max-w-xl text-[var(--text-dim)]">
+              Sort by wins, kills, finals, or FKDR. Click any row for the full profile.
             </p>
           </div>
 
-          {/* sort tabs */}
           <div className="flex flex-wrap gap-2">
             {sortOptions.map((option) => (
               <button
                 key={option.key}
                 onClick={() => setSortBy(option.key)}
-                className={`rounded-2xl border px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                className={`rounded-[6px] border px-3.5 py-2 text-sm font-medium transition ${
                   sortBy === option.key
-                    ? "border-amber-300/30 bg-amber-400/12 text-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.10)]"
-                    : "border-white/8 bg-white/[0.03] text-slate-400 hover:border-white/12 hover:bg-white/[0.06] hover:text-slate-200"
+                    ? "border-[var(--accent)] bg-[rgba(200,245,66,0.12)] text-[var(--accent)]"
+                    : "border-[var(--line)] text-[var(--text-dim)] hover:border-[var(--line-strong)] hover:text-[var(--text)]"
                 }`}
               >
                 {option.label}
@@ -104,19 +84,17 @@ function Leaderboard() {
         </div>
       </motion.section>
 
-      {/* ── Table ── */}
       <motion.section
         key={sortBy}
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="glass-panel overflow-hidden"
+        transition={{ duration: 0.35 }}
+        className="panel panel-static overflow-hidden"
       >
-        {/* column headers */}
-        <div className="grid grid-cols-[56px_1fr_130px_110px_100px] border-b border-white/8 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 min-w-[700px]">
+        <div className="grid min-w-[700px] grid-cols-[56px_1fr_130px_110px_100px] border-b border-[var(--line)] px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-faint)]">
           <div>Rank</div>
           <div>Player</div>
-          <div className="text-right text-amber-300/80">{currentOption?.label}</div>
+          <div className="text-right text-[var(--accent)]">{currentOption?.label}</div>
           <div className="text-right">Final K/D</div>
           <div className="text-right">Stars</div>
         </div>
@@ -124,82 +102,72 @@ function Leaderboard() {
         {loading ? (
           <div className="space-y-px">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="shimmer h-[68px] w-full" />
+              <div key={i} className="shimmer h-[64px] w-full" />
             ))}
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.045] overflow-x-auto">
+          <div className="overflow-x-auto">
             <div className="min-w-[700px]">
-              {players.map((player, index) => {
-                const pod = podiumColors[index];
-                return (
-                  <motion.div
-                    key={player.username}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.03 }}
+              {players.map((player, index) => (
+                <motion.div
+                  key={player.username}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.28, delay: index * 0.025 }}
+                >
+                  <Link
+                    to={`/player/${player.username}`}
+                    className="grid grid-cols-[56px_1fr_130px_110px_100px] items-center gap-3 border-b border-[var(--line)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(200,245,66,0.04)]"
                   >
-                    <Link
-                      to={`/player/${player.username}`}
-                      className={`grid grid-cols-[56px_1fr_130px_110px_100px] items-center gap-3 px-5 py-3.5 transition-all duration-200 ${
-                        index < 3
-                          ? `border border-transparent hover:border hover:${pod?.border} hover:${pod?.bg} ${pod?.glow}`
-                          : "hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      {/* rank */}
-                      <div>
-                        <RankBadge index={index} />
-                      </div>
+                    <RankBadge index={index} />
 
-                      {/* player */}
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={avatarUrl(player.username, 40)}
-                          alt={player.username}
-                          className={`h-10 w-10 shrink-0 rounded-xl ring-1 ${index < 3 ? pod?.ring : "ring-white/10"}`}
-                        />
-                        <div>
-                          <div className="font-semibold text-white">{player.username}</div>
-                          <div className="mt-1 flex flex-wrap gap-1.5">
-                            {player.custom_rank && (
-                              <span
-                                className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.13em]"
-                                style={rankStyle(player.custom_rank_color)}
-                              >
-                                {player.custom_rank}
-                              </span>
-                            )}
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={avatarUrl(player.username, 40)}
+                        alt={player.username}
+                        className="h-9 w-9 shrink-0 rounded-[6px] border border-[var(--line)]"
+                      />
+                      <div>
+                        <div className="font-semibold text-[var(--text)]">{player.username}</div>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {player.custom_rank && (
                             <span
-                              className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.13em]"
-                              style={rankStyle(player.level_color)}
+                              className="rounded-[4px] border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.12em]"
+                              style={rankStyle(player.custom_rank_color)}
                             >
-                              Lvl {formatNumber(player.level)}
+                              {player.custom_rank}
                             </span>
-                          </div>
+                          )}
+                          <span
+                            className="rounded-[4px] border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.12em]"
+                            style={rankStyle(player.level_color)}
+                          >
+                            Lvl {formatNumber(player.level)}
+                          </span>
                         </div>
                       </div>
+                    </div>
 
-                      {/* primary stat */}
-                      <div className={`text-right text-base font-black tabular-nums ${index < 3 ? pod?.text : "text-cyan-200"}`}>
-                        {sortBy.includes("_d") || sortBy === "w_l"
-                          ? formatRatio(player[sortBy])
-                          : formatNumber(player[sortBy])}
-                      </div>
+                    <div
+                      className={`font-mono-stat text-right text-base font-bold ${
+                        index === 0 ? "text-[var(--gold)]" : "text-[var(--text)]"
+                      }`}
+                    >
+                      {sortBy.includes("_d") || sortBy === "w_l"
+                        ? formatRatio(player[sortBy])
+                        : formatNumber(player[sortBy])}
+                    </div>
 
-                      {/* fkdr */}
-                      <div className="text-right font-semibold text-white tabular-nums">
-                        {formatRatio(player.final_k_d)}
-                      </div>
+                    <div className="font-mono-stat text-right font-semibold text-[var(--text)]">
+                      {formatRatio(player.final_k_d)}
+                    </div>
 
-                      {/* stars */}
-                      <div className="text-right font-semibold text-slate-400 tabular-nums">
-                        {formatNumber(player.stars)}★
-                      </div>
-                    </Link>
-                  </motion.div>
-                );
-              })}
+                    <div className="font-mono-stat text-right font-semibold text-[var(--text-dim)]">
+                      {formatNumber(player.stars)}★
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
             </div>
           </div>
         )}
