@@ -8,7 +8,7 @@ import Leaderboard from "./pages/Leaderboard";
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-[#07111f] text-slate-100">
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />

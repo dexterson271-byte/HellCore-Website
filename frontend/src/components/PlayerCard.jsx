@@ -1,28 +1,18 @@
 import { motion } from "framer-motion";
-import { CalendarClock, Clock3, Hash, Sparkles, Star, TrendingUp } from "lucide-react";
+import { CalendarClock, Clock3, Hash, Star } from "lucide-react";
 import { avatarUrl, bodyUrl, formatNumber, formatRatio, formatUpdated, rankStyle } from "../lib/formatters";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+  show: { transition: { staggerChildren: 0.06 } },
 };
 
-function QuickStat({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition hover:border-cyan-300/15 hover:bg-white/[0.05]">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-black text-white">{value}</div>
-    </div>
-  );
-}
-
 function PlayerCard({ stats }) {
-  // XP progress percentage
   const xpPercent = stats.xp_to_next_level
     ? Math.min((stats.xp_progress / stats.xp_to_next_level) * 100, 100)
     : 0;
@@ -32,73 +22,59 @@ function PlayerCard({ stats }) {
       initial="hidden"
       animate="show"
       variants={containerVariants}
-      className="glass-panel relative overflow-hidden"
+      className="panel panel-static relative overflow-hidden"
     >
-      {/* background glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,211,238,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(139,92,246,0.09),transparent_50%)]" />
+      <div className="accent-bar anim-line w-full" />
 
-      {/* top accent bar */}
-      <div className="h-[3px] w-full bg-gradient-to-r from-cyan-400 via-violet-500 to-transparent" />
-
-      <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[220px_1fr]">
-        {/* ── Avatar column ── */}
+      <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[200px_1fr]">
         <motion.div
           variants={itemVariants}
-          className="flex flex-col items-center justify-start gap-4 pt-2"
+          className="flex flex-col items-center justify-start gap-4 pt-1"
         >
-          {/* 3-D body render */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-cyan-400/10 to-transparent blur-xl" />
-            <img
-              src={bodyUrl(stats.username)}
-              alt={stats.username}
-              className="relative h-auto w-44 drop-shadow-[0_20px_48px_rgba(0,0,0,0.55)]"
-            />
-          </div>
+          <img
+            src={bodyUrl(stats.username)}
+            alt={stats.username}
+            className="relative h-auto w-40 drop-shadow-[0_16px_32px_rgba(0,0,0,0.5)]"
+          />
 
-          {/* rank badges */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {stats.custom_rank && (
               <div
-                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em]"
+                className="inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-[11px] uppercase tracking-[0.14em]"
                 style={rankStyle(stats.custom_rank_color)}
               >
-                <Sparkles size={10} />
                 {stats.custom_rank}
               </div>
             )}
             <div
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em]"
+              className="inline-flex items-center gap-1.5 rounded-[5px] border px-2.5 py-1 text-[11px] uppercase tracking-[0.14em]"
               style={rankStyle(stats.level_color)}
             >
               <Star size={10} />
-              {formatNumber(stats.stars)} Stars
+              {formatNumber(stats.stars)}★
             </div>
           </div>
 
-          {/* XP bar */}
-          <div className="w-full rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-            <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-slate-500">
+          <div className="w-full rounded-[var(--radius)] border border-[var(--line)] bg-[rgba(243,241,236,0.02)] px-4 py-3">
+            <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[var(--text-faint)]">
               <span>XP Progress</span>
-              <span className="text-cyan-400">{xpPercent.toFixed(0)}%</span>
+              <span className="font-mono-stat text-[var(--accent)]">{xpPercent.toFixed(0)}%</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/5">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-[rgba(243,241,236,0.06)]">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${xpPercent}%` }}
-                transition={{ duration: 1.1, ease: "easeOut", delay: 0.3 }}
-                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500"
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
+                className="h-full bg-[var(--accent)]"
               />
             </div>
-            <div className="mt-2 text-center text-xs text-slate-400">
-              {formatNumber(stats.xp_progress)} / {formatNumber(stats.xp_to_next_level)} XP
+            <div className="mt-2 text-center font-mono-stat text-xs text-[var(--text-dim)]">
+              {formatNumber(stats.xp_progress)} / {formatNumber(stats.xp_to_next_level)}
             </div>
           </div>
         </motion.div>
 
-        {/* ── Stats column ── */}
         <div className="space-y-6">
-          {/* header */}
           <motion.div
             variants={itemVariants}
             className="flex flex-col justify-between gap-4 xl:flex-row xl:items-start"
@@ -108,36 +84,38 @@ function PlayerCard({ stats }) {
                 <img
                   src={avatarUrl(stats.username, 64)}
                   alt={stats.username}
-                  className="h-11 w-11 rounded-2xl border border-white/10 shadow-lg"
+                  className="h-11 w-11 rounded-[7px] border border-[var(--line)]"
                 />
                 <div>
-                  <div className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">Player profile</div>
-                  <h1 className="text-4xl font-black text-white leading-none mt-0.5">{stats.username}</h1>
+                  <div className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-faint)]">
+                    Player profile
+                  </div>
+                  <h1 className="font-display text-4xl font-extrabold leading-none text-[var(--text)] sm:text-5xl">
+                    {stats.username}
+                  </h1>
                 </div>
               </div>
 
-              {/* meta chips */}
-              <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-300">
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
                 <span className="chip">
-                  <Hash size={13} className="text-cyan-300" />
+                  <Hash size={12} className="text-[var(--accent)]" />
                   Rank #{stats.rank}
                 </span>
                 <span className="chip">
-                  <Star size={13} style={{ color: stats.level_color || "#94a3b8" }} />
+                  <Star size={12} style={{ color: stats.level_color || "#9a958c" }} />
                   Level {formatNumber(stats.level)}
                 </span>
                 <span className="chip">
-                  <CalendarClock size={13} className="text-violet-300" />
+                  <CalendarClock size={12} />
                   {formatUpdated(stats.updated)}
                 </span>
                 <span className="chip">
-                  <Clock3 size={13} className="text-emerald-300" />
+                  <Clock3 size={12} />
                   {stats.time_played}
                 </span>
               </div>
             </div>
 
-            {/* key ratio grid */}
             <motion.div
               variants={containerVariants}
               className="grid grid-cols-3 gap-2 xl:min-w-[300px]"
@@ -153,19 +131,22 @@ function PlayerCard({ stats }) {
                 <motion.div
                   key={item.label}
                   variants={itemVariants}
-                  className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 text-center transition hover:border-cyan-300/15 hover:bg-white/[0.05]"
+                  className="rounded-[var(--radius)] border border-[var(--line)] bg-[rgba(243,241,236,0.02)] p-3 text-center transition hover:border-[var(--line-strong)]"
                 >
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">{item.label}</div>
-                  <div className="mt-1.5 text-xl font-black text-white">{item.value}</div>
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-faint)]">
+                    {item.label}
+                  </div>
+                  <div className="font-mono-stat mt-1.5 text-xl font-bold text-[var(--text)]">
+                    {item.value}
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           </motion.div>
 
-          {/* secondary stats row */}
           <motion.div
             variants={containerVariants}
-            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+            className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5"
           >
             {[
               { label: "Current WS", value: formatNumber(stats.current_win_streak) },
@@ -177,10 +158,14 @@ function PlayerCard({ stats }) {
               <motion.div
                 key={label}
                 variants={itemVariants}
-                className="rounded-2xl border border-white/8 bg-slate-950/40 p-4 transition hover:border-white/12"
+                className="rounded-[var(--radius)] border border-[var(--line)] px-4 py-3 transition hover:border-[var(--line-strong)]"
               >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</div>
-                <div className="mt-2 text-lg font-bold text-white">{value}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-faint)]">
+                  {label}
+                </div>
+                <div className="font-mono-stat mt-1.5 text-lg font-bold text-[var(--text)]">
+                  {value}
+                </div>
               </motion.div>
             ))}
           </motion.div>
