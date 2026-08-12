@@ -87,7 +87,7 @@ def try_connect():
             c = mysql.connector.connect(
                 host=AIVEN_HOST, port=AIVEN_PORT,
                 user=AIVEN_USER, password=AIVEN_PASSWORD,
-                database=AIVEN_DATABASE, ssl_disabled=False,
+                database=AIVEN_DATABASE, ssl_disabled=True,
                 connection_timeout=10
             )
             c.close()
@@ -136,7 +136,7 @@ def get_db():
         return mysql.connector.connect(
             host=AIVEN_HOST, port=AIVEN_PORT,
             user=AIVEN_USER, password=AIVEN_PASSWORD,
-            database=AIVEN_DATABASE, ssl_disabled=False,
+            database=AIVEN_DATABASE, ssl_disabled=True,
             autocommit=True
         )
     elif _DB_MODE == "mysql_railway":
