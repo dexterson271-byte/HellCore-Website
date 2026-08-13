@@ -6,12 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Hellcore Store — Ranks, Plugins & More</title>
   <link rel="icon" href="/static/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700;800;900&display=swap"
-    rel="stylesheet">
   <link rel="stylesheet" href="/main-static/shared-ui.css">
-
 
   <meta name="description"
     content="Hellcore Network Store — Buy ranks and more for the best Minecraft Bedwars & Skywars experience.">
@@ -19,23 +14,29 @@
   <meta property="og:description" content="Get VIP, MVP, MVP++ ranks and exclusive perks for Hellcore Network.">
   <meta property="og:image" content="https://hellcore.net/static/logo.png">
   <meta property="og:url" content="https://store.hellcore.net">
-  <meta name="theme-color" content="#FF512F">
+  <meta name="theme-color" content="#FF6B2C">
 
   <style>
     :root {
-      --g: #FF512F;
-      --g2: #DD2476;
-      --g3: #F09819;
-      --grn: #10b981;
-      --r2: #ef4444;
-      --bg: #09090b;
-      --p1: rgba(24, 24, 27, 0.65);
-      --p2: rgba(39, 39, 42, 0.75);
-      --bd: rgba(255, 255, 255, 0.1);
-      --bd2: rgba(255, 255, 255, 0.2);
-      --tx: #fafafa;
-      --tx2: #a1a1aa;
-      --tx3: #71717a;
+      --g: #FF6B2C;
+      --g2: #E85D04;
+      --g3: #FF9F0A;
+      --grn: #30D158;
+      --r2: #FF453A;
+      --bg: #050504;
+      --p1: rgba(28, 22, 18, 0.72);
+      --p2: rgba(42, 32, 26, 0.78);
+      --bd: rgba(255, 255, 255, 0.08);
+      --bd2: rgba(255, 255, 255, 0.14);
+      --tx: #F5F5F7;
+      --tx2: rgba(235, 235, 245, 0.6);
+      --tx3: rgba(235, 235, 245, 0.3);
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --radius-pill: 980px;
+      --spring: cubic-bezier(0.22, 1, 0.36, 1);
+      --press: 100ms ease-out;
     }
 
     *,
@@ -49,9 +50,9 @@
     html,
     body {
       min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
       color: var(--tx);
-      background: var(--bg);
+      background: transparent;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
@@ -60,22 +61,38 @@
     #BG {
       position: fixed;
       inset: 0;
-      z-index: -1;
-      background-color: #050505;
-      background-image: url('/static/background.png?v=2');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
+      z-index: 0;
       overflow: hidden;
+      pointer-events: none;
+      background-color: #1a0e08;
+      background-image: url('/main-static/bg-hellcore.jpg?v=1');
+      background-size: cover;
+      background-position: center 45%;
+      background-repeat: no-repeat;
+    }
+
+    #BG::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 55% 45% at 50% 42%, rgba(8, 4, 12, 0.55), transparent 70%),
+        radial-gradient(ellipse 80% 55% at 50% 40%, rgba(255, 107, 44, 0.08), transparent 65%);
+      pointer-events: none;
     }
 
     #BG::after {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(3, 3, 3, 0.8) 100%);
+      background: linear-gradient(180deg,
+        rgba(8, 5, 4, 0.62) 0%,
+        rgba(8, 5, 4, 0.68) 40%,
+        rgba(8, 5, 4, 0.88) 100%);
       pointer-events: none;
     }
+
+    .grid-bg { display: none !important; }
 
     #APP {
       position: relative;
@@ -83,6 +100,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      background: transparent;
     }
 
     ::-webkit-scrollbar {
@@ -98,7 +116,7 @@
       border-radius: 4px;
     }
 
-    /* ═══ NAVBAR ═══ */
+    /* ═══ NAVBAR — pill chrome (matches main site) ═══ */
     #NAV {
       position: fixed;
       top: 0;
@@ -106,14 +124,20 @@
       right: 0;
       z-index: 1000;
       height: 68px;
-      background: rgba(9, 9, 11, 0.8);
-      border-bottom: 1px solid var(--bd);
-      backdrop-filter: blur(20px);
-      display: flex;
+      background: rgba(0, 0, 0, 0.45);
+      border-bottom: none;
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      padding: 0 24px;
-      gap: 12px;
+      padding: 0 22px;
+      gap: 16px;
     }
+
+    #NAV .nlogo { justify-self: start; grid-column: 1; }
+    #NAV .nav-links { justify-self: center; grid-column: 2; }
+    #NAV .nav-right { justify-self: end; grid-column: 3; }
 
     .nlogo {
       display: flex;
@@ -121,93 +145,108 @@
       gap: 12px;
       cursor: pointer;
       text-decoration: none;
+      min-width: 0;
     }
 
     .nlogo img {
-      height: 42px;
-      width: 42px;
-      filter: drop-shadow(0 0 10px rgba(255, 81, 47, 0.5));
-      transition: all 0.3s;
+      height: 40px;
+      width: 40px;
+      object-fit: contain;
+      border-radius: 0;
+      background: transparent;
+      filter:
+        drop-shadow(0 0 6px rgba(255, 107, 44, 0.75))
+        drop-shadow(0 0 16px rgba(255, 107, 44, 0.4));
+      transition: transform var(--press);
     }
 
-    .nlogo:hover img {
-      filter: drop-shadow(0 0 18px #FF512F);
-      transform: scale(1.05);
-    }
+    .nlogo:hover img { transform: none; }
+    .nlogo:active img { transform: scale(0.94); }
 
     .nlogo-t {
       line-height: 1.15;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .nlogo-t b {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #fff, var(--g));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-family: var(--font);
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: #fff;
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      -webkit-text-fill-color: unset;
+      letter-spacing: -0.03em;
     }
 
     .nlogo-t small {
-      font-size: 0.55rem;
-      color: var(--tx2);
-      letter-spacing: 0.3em;
+      font-size: 0.62rem;
+      color: rgba(235, 235, 245, 0.45);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 600;
       display: block;
-      margin-top: 1px;
+      margin-top: 0;
     }
 
     .nav-links {
       display: flex;
-      gap: 4px;
-      flex: 1;
-      justify-content: center;
+      align-items: center;
+      gap: 2px;
+      flex: 0 1 auto;
+      padding: 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(12, 12, 14, 0.55);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      max-width: min(640px, 58vw);
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links .nb .ic { display: none; }
 
     .nb {
       background: transparent;
-      border: none;
-      color: var(--tx2);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 8px 16px;
+      border: 1px solid transparent;
+      color: rgba(235, 235, 245, 0.55);
+      font-family: var(--font);
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 8px 14px;
       cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.25s;
+      border-radius: 999px;
+      transition: color 160ms var(--spring), background 160ms var(--spring), border-color 160ms var(--spring), transform var(--press);
       white-space: nowrap;
       position: relative;
+      flex-shrink: 0;
     }
 
     .nb:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.05);
+      color: rgba(245, 245, 247, 0.92);
+      background: transparent;
     }
+    .nb:active { transform: scale(0.97); }
 
     .nb.on {
       color: #fff;
-      background: rgba(255, 81, 47, 0.1);
+      font-weight: 650;
+      background: rgba(0, 0, 0, 0.45);
+      border-color: rgba(255, 255, 255, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
-    .nb.on::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 30%;
-      height: 2px;
-      background: var(--g);
-      border-radius: 2px 2px 0 0;
-    }
+    .nb.on::after { display: none; }
 
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-left: auto;
+      gap: 8px;
+      margin-left: 0;
     }
 
     .nav-xp {
@@ -234,24 +273,28 @@
 
     .nav-cart {
       position: relative;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--bd);
-      padding: 8px 14px;
-      border-radius: 10px;
-      color: #fff;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      color: rgba(245, 245, 247, 0.85);
       cursor: pointer;
       font-size: 0.85rem;
       font-weight: 600;
-      transition: all 0.2s;
-      display: flex;
+      transition: transform var(--press), background 160ms var(--spring), border-color 160ms var(--spring);
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 0;
     }
 
     .nav-cart:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--bd2);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.22);
     }
+    .nav-cart:active { transform: scale(0.96); }
 
     .cart-badge {
       position: absolute;
@@ -270,20 +313,24 @@
     }
 
     .nav-user {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--bd);
-      padding: 8px 16px;
-      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 0 14px;
+      min-height: 36px;
+      border-radius: 12px;
       color: #fff;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-family: var(--font);
+      font-size: 0.82rem;
       font-weight: 600;
-      transition: all 0.2s;
+      transition: transform var(--press), background 160ms var(--spring), border-color 160ms var(--spring);
     }
 
     .nav-user:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.22);
     }
+    .nav-user:active { transform: scale(0.97); }
 
     /* ═══ BUTTONS ═══ */
     .btn {
@@ -291,31 +338,32 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      background: linear-gradient(135deg, var(--g), var(--g2));
+      background: var(--g);
       color: #fff;
       border: none;
-      padding: 10px 22px;
-      border-radius: 8px;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 0.9rem;
+      padding: 12px 22px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font);
+      font-weight: 650;
+      font-size: 0.92rem;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      transition: transform var(--press), background 160ms var(--spring), box-shadow 160ms var(--spring);
+      text-transform: none;
+      letter-spacing: -0.01em;
       white-space: nowrap;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(255, 81, 47, 0.25);
+      box-shadow: 0 8px 24px rgba(255, 107, 44, 0.25);
     }
 
     .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 81, 47, 0.45);
+      transform: none;
+      background: #FF7A3D;
+      box-shadow: 0 10px 28px rgba(255, 107, 44, 0.35);
     }
 
     .btn:active {
-      transform: translateY(0);
+      transform: scale(0.97);
     }
 
     .btn:disabled {
@@ -326,11 +374,12 @@
     }
 
     .bto {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--bd2);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       color: var(--tx);
-      padding: 9px 21px;
-      border-radius: 8px;
+      padding: 11px 20px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font);
       font-family: 'Outfit', sans-serif;
       font-weight: 600;
       font-size: 0.9rem;
@@ -399,95 +448,71 @@
       margin: 0 auto;
     }
 
-    /* ═══ HERO ═══ */
+    /* ═══ HERO — centered store landing ═══ */
     .hero {
-      padding: 60px 0 40px;
+      padding: clamp(32px, 6vh, 64px) 16px clamp(40px, 7vh, 72px);
       position: relative;
+      min-height: calc(100svh - 68px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-sizing: border-box;
     }
 
     .hero-shell {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-      gap: 24px;
-      align-items: stretch;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
     }
 
     .hero-main {
-      text-align: left;
-      padding: 36px;
-      border: 1px solid var(--bd);
-      border-radius: 24px;
-      background:
-        linear-gradient(135deg, rgba(255, 81, 47, 0.12), rgba(221, 36, 118, 0.08)),
-        rgba(24, 24, 27, 0.62);
-      backdrop-filter: blur(18px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-    }
-
-    .hero-side {
-      display: grid;
-      gap: 16px;
-      align-content: start;
-    }
-
-    .hero-panel {
-      border: 1px solid var(--bd);
-      border-radius: 18px;
-      background: rgba(24, 24, 27, 0.72);
-      padding: 20px;
-      backdrop-filter: blur(16px);
-    }
-
-    .hero-panel h3 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1rem;
-      margin-bottom: 12px;
-    }
-
-    .hero-points {
-      display: grid;
-      gap: 10px;
-    }
-
-    .hero-point {
+      text-align: center;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: none;
+      backdrop-filter: none;
+      box-shadow: none;
+      width: 100%;
       display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      color: var(--tx2);
-      font-size: 0.9rem;
-      line-height: 1.5;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .hero-point strong {
-      color: #fff;
-      display: block;
-      font-size: 0.92rem;
-      margin-bottom: 2px;
+    .hero-side { display: none; }
+
+    .hero-mark {
+      margin-bottom: 16px;
     }
 
-    .hero-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      margin-top: 6px;
-      flex-shrink: 0;
-      background: linear-gradient(135deg, var(--g), var(--g2));
-      box-shadow: 0 0 18px rgba(255, 81, 47, 0.35);
+    .hero-mark img {
+      width: clamp(120px, 18vw, 170px);
+      height: clamp(120px, 18vw, 170px);
+      object-fit: contain;
+      filter:
+        drop-shadow(0 0 8px rgba(255, 107, 44, 0.9))
+        drop-shadow(0 0 24px rgba(255, 107, 44, 0.5))
+        drop-shadow(0 0 48px rgba(255, 107, 44, 0.3));
     }
 
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255, 81, 47, 0.1);
-      border: 1px solid rgba(255, 81, 47, 0.2);
-      padding: 6px 16px;
-      border-radius: 100px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--g);
-      margin-bottom: 20px;
-      letter-spacing: 0.05em;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 650;
+      color: rgba(235, 235, 245, 0.72);
+      margin-bottom: 18px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
@@ -496,76 +521,86 @@
       height: 6px;
       border-radius: 50%;
       background: var(--g);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(255, 81, 47, 0.4);
-      }
-
-      70% {
-        box-shadow: 0 0 0 6px rgba(255, 81, 47, 0);
-      }
+      box-shadow: 0 0 10px rgba(255, 107, 44, 0.7);
+      animation: none;
     }
 
     .hero h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: clamp(2.2rem, 6vw, 3.8rem);
-      font-weight: 900;
-      background: linear-gradient(135deg, #fff 30%, var(--g));
+      font-family: var(--font);
+      font-size: clamp(2.8rem, 9vw, 4.8rem);
+      font-weight: 780;
+      background: linear-gradient(180deg, #fff 20%, #FFD0B5 85%, #FF6B2C 160%);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 16px;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.045em;
+      line-height: 0.98;
     }
 
     .hero p {
       color: var(--tx2);
-      font-size: 1.15rem;
-      max-width: 640px;
-      margin: 0 0 28px;
-      line-height: 1.6;
+      font-size: 1.1rem;
+      max-width: 34ch;
+      margin: 0 0 26px;
+      line-height: 1.4;
+      letter-spacing: -0.015em;
     }
 
     .hero-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 14px;
     }
 
-    .hero-stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 28px;
+    .hero-links {
+      display: inline-flex;
+      align-items: stretch;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 10, 12, 0.55);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      padding: 4px;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    .hero-links::-webkit-scrollbar { display: none; }
 
-    .hero-stat {
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      padding: 16px;
+    .hero-links button {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      color: rgba(245, 245, 247, 0.82);
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 11px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: color 160ms var(--spring), background 160ms var(--spring);
     }
-
-    .hero-stat .value {
-      display: block;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
-      font-weight: 800;
+    .hero-links button + button {
+      box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+    }
+    .hero-links button:hover {
       color: #fff;
-      margin-bottom: 4px;
+      background: rgba(255, 255, 255, 0.06);
     }
+    .hero-links .arr { opacity: 0.4; }
 
-    .hero-stat .label {
-      color: var(--tx2);
-      font-size: 0.76rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      line-height: 1.4;
-    }
+    .hero-stats { display: none; }
+    .hero-panel,
+    .hero-points,
+    .hero-point,
+    .hero-dot { display: none; }
 
     .home-strip {
       display: grid;
@@ -666,228 +701,374 @@
       }
     }
 
-    /* ═══ RANK CARDS ═══ */
-    .rank-card {
-      background: var(--p1);
-      border: 1px solid var(--bd);
-      border-radius: 20px;
-      padding: 28px 20px;
-      text-align: center;
-      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    /* ═══ RANK / PACKAGE CARDS (Ayor-style) ═══ */
+    .pkg-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    @media (max-width: 1100px) {
+      .pkg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+      .pkg-grid { grid-template-columns: 1fr; }
+    }
+
+    .rank-card,
+    .product-card {
+      background: rgba(18, 16, 15, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 0;
+      text-align: left;
+      transition: border-color 180ms var(--spring), transform var(--press), box-shadow 180ms var(--spring);
       display: flex;
       flex-direction: column;
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      min-height: 100%;
     }
 
-    .rank-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--cc, var(--g)), transparent);
-      opacity: 0.8;
-    }
-
-    .rank-card:hover {
-      transform: translateY(-8px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 40px var(--cc, rgba(255, 81, 47, 0.15));
-    }
-
-    .rank-card.featured {
-      border-color: var(--cc, var(--g));
-      box-shadow: 0 0 30px var(--cc, rgba(255, 81, 47, 0.15));
-    }
-
+    .rank-card::before,
+    .product-card::before,
     .rank-card.featured::after {
-      content: 'POPULAR';
+      display: none !important;
+    }
+
+    .rank-card:hover,
+    .product-card:hover {
+      transform: none;
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .pkg-art {
+      position: relative;
+      min-height: 148px;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px 22px;
+      background:
+        radial-gradient(ellipse 70% 70% at 50% 55%, rgba(255, 107, 44, 0.18), transparent 70%),
+        rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 -40px 80px -40px var(--cc, rgba(255, 107, 44, 0.35));
+    }
+
+    .pkg-badge {
       position: absolute;
-      top: 14px;
-      right: -28px;
-      background: var(--cc, var(--g));
-      color: #fff;
-      font-size: 0.6rem;
-      font-weight: 800;
-      padding: 4px 32px;
-      transform: rotate(45deg);
-      letter-spacing: 0.1em;
-    }
-
-    .rank-icon {
-      font-size: 2.5rem;
-      margin-bottom: 12px;
-      display: block;
-      transition: all 0.3s;
-    }
-
-    .rank-card:hover .rank-icon {
-      transform: scale(1.15) rotate(5deg);
-    }
-
-    .rank-name {
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.15rem;
-      font-weight: 800;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .rank-price {
-      font-size: 2rem;
-      font-weight: 900;
-      font-family: 'Outfit', sans-serif;
-      margin: 8px 0;
-    }
-
-    .rank-price .currency {
-      font-size: 1rem;
-      vertical-align: super;
-      opacity: 0.7;
-    }
-
-    .rank-original {
-      color: var(--tx3);
-      font-size: 0.85rem;
-      text-decoration: line-through;
-      margin-bottom: 8px;
-    }
-
-    .rank-save {
-      display: inline-block;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34d399;
-      font-size: 0.7rem;
+      top: 12px;
+      left: 12px;
+      font-size: 0.62rem;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 9px;
+      border-radius: 8px;
+      background: #6D28D9;
+      color: #fff;
+    }
+
+    .pkg-badge.alt {
+      left: auto;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(245, 245, 247, 0.85);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pkg-pixel {
+      font-family: "Courier New", Courier, monospace;
+      font-size: clamp(1.35rem, 2.4vw, 1.7rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--cc, var(--g));
+      text-shadow: 0 0 18px rgba(255, 255, 255, 0.15), 0 0 28px var(--cc, rgba(255, 107, 44, 0.45));
+      line-height: 1.2;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .pkg-body {
+      padding: 16px 16px 8px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 8px;
+    }
+
+    .pkg-title {
+      font-family: var(--font);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .pkg-desc {
+      color: var(--tx2);
+      font-size: 0.86rem;
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .rank-perks {
       list-style: none;
       text-align: left;
-      margin: 16px 0;
+      margin: 4px 0 0;
+      padding: 0;
       flex: 1;
     }
 
     .rank-perks li {
-      padding: 6px 0;
+      padding: 4px 0;
       font-size: 0.82rem;
       color: var(--tx2);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: none;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
+      line-height: 1.4;
     }
 
     .rank-perks li::before {
-      content: '✓';
-      color: var(--cc, var(--g));
+      content: '◆';
+      color: #60A5FA;
       font-weight: 700;
-      font-size: 0.75rem;
+      font-size: 0.55rem;
       flex-shrink: 0;
+      margin-top: 0.4em;
     }
 
-    /* ═══ STORE LAYOUT ═══ */
-    .store-layout {
-      display: flex;
-      gap: 32px;
-      margin-top: 24px;
-      align-items: flex-start;
-    }
-
-    .store-sidebar {
-      width: 270px;
-      flex-shrink: 0;
-      position: sticky;
-      top: 100px;
-      display: grid;
-      gap: 16px;
-    }
-
-    .sidebar-panel {
-      background: var(--p1);
-      border: 1px solid var(--bd);
-      border-radius: 16px;
-      padding: 16px;
-      backdrop-filter: blur(12px);
-    }
-
-    .store-sidebar h3 {
-      font-size: 0.9rem;
-      color: var(--tx2);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 16px;
-      padding-left: 8px;
-    }
-
-    .cat-btn {
-      width: 100%;
+    .pkg-foot {
+      margin-top: auto;
+      padding: 14px 16px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      text-align: left;
-      padding: 13px 14px;
-      background: transparent;
-      border: none;
-      color: var(--tx);
-      font-size: 1rem;
-      font-family: 'Inter', sans-serif;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .pkg-price {
+      font-family: var(--font);
+      font-size: 1.45rem;
+      font-weight: 750;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .pkg-price small {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 550;
+      color: var(--tx2);
+      margin-top: 2px;
+    }
+
+    .pkg-view {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-family: var(--font);
+      font-size: 0.86rem;
       font-weight: 600;
-      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 160ms var(--spring), border-color 160ms var(--spring), transform var(--press);
+      white-space: nowrap;
+    }
+    .pkg-view:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    .pkg-view:active { transform: scale(0.97); }
+
+    .rank-icon,
+    .rank-name,
+    .rank-price,
+    .rank-original,
+    .rank-save { display: none; }
+
+    .store-search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      margin: 0 0 20px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(40, 36, 34, 0.85);
+      backdrop-filter: blur(14px);
+    }
+    .store-search .ic {
+      width: 1.05rem;
+      height: 1.05rem;
+      color: var(--tx2);
+      flex-shrink: 0;
+    }
+    .store-search input {
+      flex: 1;
+      background: transparent;
+      border: 0;
+      outline: none;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 0.95rem;
+    }
+    .store-search input::placeholder { color: var(--tx3); }
+
+    /* ═══ STORE LAYOUT — horizontal category pills ═══ */
+    .store-layout {
+      display: block;
+      margin-top: 8px;
+    }
+
+    .store-sidebar { display: none !important; }
+
+    .store-content {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .store-trust {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 800px) {
+      .store-trust { grid-template-columns: 1fr; }
+    }
+
+    .store-trust-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      background: rgba(18, 16, 15, 0.55);
+      backdrop-filter: blur(14px);
+      padding: 16px 16px 14px;
+    }
+
+    .store-trust-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 12px;
+      background: rgba(255, 107, 44, 0.14);
+      color: var(--g);
+      font-size: 1rem;
+    }
+
+    .store-trust-card strong {
+      display: block;
+      color: #fff;
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
       margin-bottom: 4px;
     }
 
+    .store-trust-card p {
+      color: var(--tx2);
+      font-size: 0.84rem;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .cat-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .cat-btn {
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+      padding: 10px 16px;
+      background: rgba(18, 16, 15, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(235, 235, 245, 0.72);
+      font-size: 0.92rem;
+      font-family: var(--font);
+      font-weight: 600;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 160ms var(--spring), color 160ms var(--spring), border-color 160ms var(--spring), box-shadow 160ms var(--spring);
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
     .cat-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
     }
 
     .cat-btn.active {
-      background: rgba(255, 81, 47, 0.1);
-      color: var(--g);
+      background: rgba(255, 107, 44, 0.18);
+      border-color: rgba(255, 107, 44, 0.45);
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255, 107, 44, 0.12), 0 8px 24px rgba(255, 107, 44, 0.12);
     }
 
     .cat-main {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       min-width: 0;
     }
 
     .cat-count {
-      min-width: 28px;
-      height: 28px;
-      padding: 0 8px;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 7px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--tx2);
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(245, 245, 247, 0.65);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 700;
       flex-shrink: 0;
     }
 
     .cat-btn.active .cat-count {
       color: #fff;
-      background: rgba(255, 81, 47, 0.18);
-      border-color: rgba(255, 81, 47, 0.28);
+      background: rgba(255, 107, 44, 0.45);
     }
 
-    .store-content {
-      flex: 1;
-      min-width: 0;
+    .cat-history {
+      margin-left: auto;
+    }
+
+    .store-hero,
+    .section-head,
+    .section-pill {
+      display: none !important;
     }
 
     .store-profile {
@@ -1265,35 +1446,6 @@
       display: block;
     }
 
-    /* ═══ GENERIC PRODUCT CARDS ═══ */
-    .product-card {
-      background: var(--p1);
-      border: 1px solid var(--bd);
-      border-radius: 18px;
-      padding: 24px;
-      text-align: left;
-      transition: all 0.3s;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(12px);
-    }
-
-    .product-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.32);
-    }
-
-    .product-card::before {
-      content: '';
-      position: absolute;
-      inset: 0 0 auto 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--cc, var(--g)), transparent);
-      opacity: 0.9;
-    }
 
     .product-top {
       display: flex;
@@ -2042,16 +2194,41 @@
         display: block;
       }
 
+      .nlogo-t { display: none; }
+
+      .hero {
+        min-height: calc(100svh - 60px);
+        padding: 24px 0 40px;
+      }
+
       .hero h1 {
-        font-size: 2rem;
+        font-size: clamp(2.4rem, 12vw, 3.4rem);
       }
 
       .hero p {
         font-size: 0.95rem;
       }
 
+      .hero-links {
+        width: min(100%, 360px);
+        flex-direction: column;
+        border-radius: 18px;
+      }
+
+      .hero-links button {
+        justify-content: center;
+        width: 100%;
+      }
+
+      .hero-links button + button {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
       #NAV {
-        padding: 0 16px;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 14px;
+        height: 60px;
       }
 
       .pg {
@@ -2066,20 +2243,18 @@
       }
 
       .hero-main {
-        padding: 28px 22px;
+        padding: 0;
       }
 
-      .hero-stats,
       .home-strip,
       .xp-stat-grid {
         grid-template-columns: 1fr;
       }
 
-      .store-layout {
-        flex-direction: column;
+      .cat-history {
+        margin-left: 0;
       }
 
-      .store-sidebar,
       .cart-side {
         width: 100%;
         position: static;
@@ -2224,27 +2399,16 @@
     <!-- ═══ NAVBAR ═══ -->
     <nav id="NAV">
       <a class="nlogo" href="https://hellcore.net">
-        <img src="/static/logo.png" alt="Hellcore">
-        <div class="nlogo-t"><b>Hellcore</b><small>Store</small></div>
+        <img src="/main-static/logo-glow.png" alt="Hellcore" onerror="this.src='/main-static/logo.png'">
+        <div class="nlogo-t"><b>Hellcore</b><small>Store · Asia</small></div>
       </a>
 
       <div class="nav-links">
-        <button class="nb on" onclick="GO('home')"><svg class="ic">
-            <use href="#ic-home" />
-          </svg> Home</button>
-        <button class="nb" onclick="GO('ranks')"><svg class="ic">
-            <use href="#ic-star" />
-          </svg> Ranks</button>
-
-        <button class="nb" onclick="GO('cart')"><svg class="ic">
-            <use href="#ic-cart" />
-          </svg> Cart</button>
-        <button class="nb" onclick="GO('tickets')"><svg class="ic">
-            <use href="#ic-bolt" />
-          </svg> Support</button>
-        <button class="nb" id="NB-ADMIN" style="display:none" onclick="GO('admin')"><svg class="ic">
-            <use href="#ic-chart" />
-          </svg> Admin</button>
+        <button class="nb on" onclick="GO('home')">Home</button>
+        <button class="nb" onclick="GO('ranks')">Ranks</button>
+        <button class="nb" onclick="GO('cart')">Cart</button>
+        <button class="nb" onclick="GO('tickets')">Support</button>
+        <button class="nb" id="NB-ADMIN" style="display:none" onclick="GO('admin')">Admin</button>
       </div>
 
       <button class="nburger" onclick="toggleMobile()"><svg class="ic">
@@ -2256,7 +2420,7 @@
           <small>XP</small>
           <span id="NAV-XP-VALUE">0</span>
         </div>
-        <button class="nav-cart" onclick="GO('cart')">
+        <button class="nav-cart" onclick="GO('cart')" title="Cart">
           <svg class="ic">
             <use href="#ic-cart" />
           </svg>
@@ -2272,55 +2436,15 @@
         <div class="hero">
           <div class="hero-shell">
             <div class="hero-main">
-              <div class="hero-badge"><span class="dot"></span> Official Hellcore Network Store</div>
-              <h1>Level Up Your Game & Support Hellcore</h1>
-              <p>Grab a rank, stack some coins, or crack open mystery boxes. Every single purchase directly pays for our servers and funds the next big update. We couldn't do it without you!</p>
+              <div class="hero-mark">
+                <img src="/main-static/logo-glow.png" alt="Hellcore" onerror="this.src='/main-static/logo.png'">
+              </div>
+              <div class="hero-badge"><span class="dot"></span> Official Store · Asia</div>
+              <h1>Hellcore Store</h1>
+              <p>Ranks, coins &amp; rewards that keep the network online.</p>
               <div class="hero-actions">
-                <button class="btn" onclick="GO('ranks')"><svg class="ic">
-                    <use href="#ic-star" />
-                  </svg> Explore Store</button>
-                <button class="bto" onclick="GO('history')">View History</button>
-              </div>
-              <div class="hero-stats">
-                <div class="hero-stat">
-                  <span class="value">Ranks</span>
-                  <span class="label">Permanent upgrades with perks across the network</span>
-                </div>
-                <div class="hero-stat">
-                  <span class="value">Coins</span>
-                  <span class="label">Quick balance top-ups for your next in-game spend</span>
-                </div>
-                <div class="hero-stat">
-                  <span class="value">Rewards</span>
-                  <span class="label">Mystery boxes and dust for cosmetics, crafting, and extras</span>
-                </div>
-              </div>
-            </div>
-            <div class="hero-side">
-              <div class="hero-panel">
-                <h3>Why grab a rank?</h3>
-                <div class="hero-points">
-                  <div class="hero-point">
-                    <span class="hero-dot"></span>
-                    <div><strong>Keep the servers online</strong>100% of store funds go straight into hosting bills and paying our developers for new features.</div>
-                  </div>
-                  <div class="hero-point">
-                    <span class="hero-dot"></span>
-                    <div><strong>Stand out in the lobby</strong>Unlock exclusive chat tags, permanent cosmetics, and quality-of-life perks that actually matter.</div>
-                  </div>
-                  <div class="hero-point">
-                    <span class="hero-dot"></span>
-                    <div><strong>Instant delivery</strong>No waiting around. Purchases sync straight to your Minecraft account in seconds.</div>
-                  </div>
-                </div>
-              </div>
-              <div class="hero-panel">
-                <h3>Quick routes</h3>
-                <div class="hero-actions" style="justify-content:flex-start">
-                  <button class="btn bsm" onclick="switchCategory('rank');GO('ranks')">Ranks</button>
-                  <button class="bto bsm" onclick="switchCategory('coins');GO('ranks')">Coins</button>
-                  <button class="bto bsm" onclick="switchCategory('mystery_dust');GO('ranks')">Dust</button>
-                </div>
+                <button class="btn" onclick="GO('ranks')">Explore Store</button>
+                <button class="bto" onclick="GO('history')">History</button>
               </div>
             </div>
           </div>
@@ -2354,7 +2478,7 @@
             </div>
             <div class="section-pill">Player Favorites</div>
           </div>
-          <div class="g5" id="FEATURED-RANKS"></div>
+          <div class="pkg-grid" id="FEATURED-RANKS"></div>
         </div>
 
 
@@ -2364,57 +2488,56 @@
     <!-- ═══ STORE PAGE ═══ -->
     <div class="pg" id="pg-ranks">
       <div class="W store-layout">
-        
-        <aside class="store-sidebar">
-          <div class="sidebar-panel">
-            <h3>Categories</h3>
+        <div class="store-content">
+          <div class="store-trust">
+            <div class="store-trust-card">
+              <div class="store-trust-ico">🛡</div>
+              <strong>Secure checkout</strong>
+              <p>Safe payments with order tracking and support if anything looks off.</p>
+            </div>
+            <div class="store-trust-card">
+              <div class="store-trust-ico">✨</div>
+              <strong>Instant delivery</strong>
+              <p>Rewards queue straight to your linked Minecraft account.</p>
+            </div>
+            <div class="store-trust-card">
+              <div class="store-trust-ico">💳</div>
+              <strong>Many payment methods</strong>
+              <p>Pay with card, UPI, or XP — pick what works for you.</p>
+            </div>
+          </div>
+
+          <div class="cat-pills">
             <button class="cat-btn active" onclick="switchCategory('rank')">
-              <span class="cat-main">🌟 <span>Ranks</span></span>
+              <span class="cat-main"><span>Ranks</span></span>
               <span class="cat-count" id="COUNT-rank">0</span>
             </button>
             <button class="cat-btn" onclick="switchCategory('mystery_box')">
-              <span class="cat-main">🎁 <span>Mystery Boxes</span></span>
+              <span class="cat-main"><span>Mystery Boxes</span></span>
               <span class="cat-count" id="COUNT-mystery_box">0</span>
             </button>
             <button class="cat-btn" onclick="switchCategory('coins')">
-              <span class="cat-main">🪙 <span>Coins</span></span>
+              <span class="cat-main"><span>Coins</span></span>
               <span class="cat-count" id="COUNT-coins">0</span>
             </button>
             <button class="cat-btn" onclick="switchCategory('mystery_dust')">
-              <span class="cat-main">✨ <span>Mystery Dust</span></span>
+              <span class="cat-main"><span>Mystery Dust</span></span>
               <span class="cat-count" id="COUNT-mystery_dust">0</span>
             </button>
-            <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--bd)">
-              <button class="cat-btn" onclick="GO('history')">
-                <span class="cat-main">📜 <span>Purchase History</span></span>
-                <span class="cat-count">→</span>
-              </button>
-            </div>
+            <button class="cat-btn cat-history" onclick="GO('history')">
+              <span class="cat-main"><span>History</span></span>
+              <span class="cat-count">→</span>
+            </button>
           </div>
-          <div class="sidebar-panel">
-            <div class="support-card-title">Need help with a purchase?</div>
-            <div class="support-card-copy">If a reward looks delayed or the wrong account is linked, you can open a ticket from the store and keep moving.</div>
-            <div class="support-card-points">
-              <span>Fast path for missing rewards and account issues</span>
-              <span>Purchase history stays one click away</span>
-              <span>Business info page is available directly from the footer</span>
-            </div>
-            <button class="btn bsm" style="width:100%" onclick="GO('tickets')">Open Support</button>
-          </div>
-        </aside>
 
-        <div class="store-content">
-          <div class="store-hero">
-            <div>
-              <h2>Gear up and show off</h2>
-              <p>Whether you're looking for a lifetime rank or just need some extra coins for the weekend, you're directly supporting the network with every purchase.</p>
-            </div>
-            <div class="store-hero-actions">
-              <button class="btn bsm" onclick="switchCategory('rank')">Ranks</button>
-              <button class="bto bsm" onclick="switchCategory('coins')">Coins</button>
-              <button class="bto bsm" onclick="switchCategory('mystery_box')">Boxes</button>
-            </div>
+          <div class="store-search">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="STORE-SEARCH" type="search" placeholder="Search packages..." oninput="filterStorePackages(this.value)" autocomplete="off">
           </div>
+
           <div class="store-profile" id="STORE-PROFILE">
             <div class="store-profile-grid">
               <div class="store-profile-stat">
@@ -2431,51 +2554,23 @@
               </div>
             </div>
           </div>
+
           <div id="CAT-rank" class="cat-section active">
-            <div class="section-head">
-              <div>
-                <div class="stitle">🌟 Server Ranks</div>
-                <p class="ssub">Lifetime global ranks. Unlock chat colors, priority queue, and exclusive cosmetics.</p>
-              </div>
-              <div class="section-pill">One-time purchase</div>
-            </div>
-            <div class="g3" id="RANKS-GRID"></div>
+            <div class="pkg-grid" id="RANKS-GRID"></div>
           </div>
 
           <div id="CAT-mystery_box" class="cat-section">
-            <div class="section-head">
-              <div>
-                <div class="stitle">🎁 Mystery Boxes</div>
-                <p class="ssub">Feeling lucky? Crack these open in the lobby for epic cosmetics and rare loot.</p>
-              </div>
-              <div class="section-pill">Unlock cosmetics</div>
-            </div>
-            <div class="g3" id="MYSTERY-BOXES-GRID"></div>
+            <div class="pkg-grid" id="MYSTERY-BOXES-GRID"></div>
           </div>
 
           <div id="CAT-coins" class="cat-section">
-            <div class="section-head">
-              <div>
-                <div class="stitle">🪙 Coins</div>
-                <p class="ssub">Need some quick cash? Top up your network balance and get back to playing.</p>
-              </div>
-              <div class="section-pill">Instant balance</div>
-            </div>
-            <div class="g3" id="COINS-GRID"></div>
+            <div class="pkg-grid" id="COINS-GRID"></div>
           </div>
 
           <div id="CAT-mystery_dust" class="cat-section">
-            <div class="section-head">
-              <div>
-                <div class="stitle">✨ Mystery Dust</div>
-                <p class="ssub">Skip the RNG. Buy dust directly to craft that exact cosmetic you've been eyeing.</p>
-              </div>
-              <div class="section-pill">Craft what you want</div>
-            </div>
-            <div class="g3" id="MYSTERY-DUST-GRID"></div>
+            <div class="pkg-grid" id="MYSTERY-DUST-GRID"></div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -3130,21 +3225,36 @@
     function getRanks() { return PRODUCTS.filter(p => p.category === 'rank').sort((a, b) => a.sort_order - b.sort_order); }
 
 
+    function pkgBadgeLabel(p) {
+      const c = String(p.category || 'rank');
+      if (c === 'rank') return 'Ranks';
+      if (c === 'mystery_box') return 'Boxes';
+      if (c === 'coins') return 'Coins';
+      if (c === 'mystery_dust') return 'Dust';
+      return c.replace(/_/g, ' ');
+    }
+
     function renderRankCard(p, featured = false) {
-      const perks = (Array.isArray(p.perks) ? p.perks : []).map(pk => `<li>${esc(pk)}</li>`).join('');
-      const savings = p.original_price > p.price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
+      const perksArr = Array.isArray(p.perks) ? p.perks.slice(0, 4) : [];
+      const perks = perksArr.map(pk => `<li>${esc(pk)}</li>`).join('');
       const isFeatured = featured || p.is_featured;
-      return `<div class="rank-card ${isFeatured ? 'featured' : ''}" style="--cc:${p.color}">
-    <span class="rank-icon"><svg class="ic" style="width:2.5rem;height:2.5rem;color:${p.color}"><use href="#${p.icon}"/></svg></span>
-    <div class="rank-name" style="color:${p.color}">${esc(p.name)}</div>
-    ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
-    <div class="rank-price"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
-    <div style="font-size:0.85rem;color:var(--tx2);font-weight:600;margin-top:-5px;margin-bottom:10px">OR ${p.xp_price.toLocaleString()} XP</div>
-    ${savings > 0 ? `<div class="rank-save">SAVE ${savings}%</div>` : ''}
-    <ul class="rank-perks">${perks}</ul>
-    <button class="btn" style="width:100%;margin-top:auto" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
-      <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
-    </button>
+      const desc = p.description || (perksArr.length ? perksArr.join(' · ') : 'Lifetime upgrade for Hellcore.');
+      const safeName = esc(p.name).replace(/'/g, "\\'");
+      return `<div class="rank-card ${isFeatured ? 'featured' : ''}" style="--cc:${p.color || '#FF6B2C'}" data-pkg-name="${esc(p.name)}" data-pkg-cat="${esc(p.category || 'rank')}">
+    <div class="pkg-art">
+      <span class="pkg-badge">${esc(pkgBadgeLabel(p))}</span>
+      ${isFeatured ? `<span class="pkg-badge alt">Popular</span>` : ''}
+      <div class="pkg-pixel" style="color:${p.color || '#FF6B2C'}">[${esc(p.name)}]</div>
+    </div>
+    <div class="pkg-body">
+      <div class="pkg-title">${esc(p.name)}</div>
+      <p class="pkg-desc">${esc(desc)}</p>
+      <ul class="rank-perks">${perks}</ul>
+    </div>
+    <div class="pkg-foot">
+      <div class="pkg-price">₹${Number(p.price).toFixed(0)}<small>or ${Number(p.xp_price || 0).toLocaleString()} XP</small></div>
+      <button class="pkg-view" type="button" onclick="addToCart(${p.id},'${safeName}',${p.price},'${p.subcategory || ''}')">View →</button>
+    </div>
   </div>`;
     }
 
@@ -3160,40 +3270,17 @@
     }
 
     function renderProductCard(p) {
-      const categoryLabel = String(p.category || 'reward').replace(/_/g, ' ');
-      const subLabel = p.subcategory ? esc(String(p.subcategory).replace(/-/g, ' ')) : 'Network';
-      const xpValue = Number.isFinite(Number(p.xp_price)) ? Number(p.xp_price).toLocaleString() : '0';
-      return `<div class="product-card" style="--cc:${p.color}">
-    <div class="product-top">
-      <div class="product-icon-wrap">
-        <svg class="ic" style="width:2rem;height:2rem;color:${p.color}"><use href="#${p.icon}"/></svg>
-      </div>
-      <div class="product-text">
-        <div class="product-title-row">
-          <div class="product-title" style="color:${p.color}">${esc(p.name)}</div>
-          <span class="product-type">${esc(categoryLabel)}</span>
-        </div>
-        <p style="color:var(--tx2);font-size:0.88rem;line-height:1.6">${esc(p.description)}</p>
-      </div>
-    </div>
-    <div class="product-meta">
-      <span>${subLabel}</span>
-      <span>Instant queue delivery</span>
-      <span>Account-linked reward</span>
-    </div>
-    <div class="product-bottom">
-      <div class="product-price-row">
-        <div>
-          ${p.original_price > p.price ? `<div class="rank-original">was ₹${p.original_price.toFixed(0)}</div>` : ''}
-          <div class="rank-price" style="margin:0"><span class="currency">₹</span>${p.price.toFixed(0)}</div>
-        </div>
-        <div class="product-xp">OR ${xpValue} XP</div>
-      </div>
-      <button class="btn" style="width:100%" onclick="addToCart(${p.id},'${esc(p.name).replace(/'/g, "\\'")}',${p.price},'${p.subcategory}')">
-        <svg class="ic"><use href="#ic-cart"/></svg> Add to Cart
-      </button>
-    </div>
-  </div>`;
+      return renderRankCard(p, false);
+    }
+
+    function filterStorePackages(q) {
+      const query = String(q || '').trim().toLowerCase();
+      document.querySelectorAll('#pg-ranks .rank-card, #pg-ranks .product-card').forEach(card => {
+        const name = (card.getAttribute('data-pkg-name') || '').toLowerCase();
+        const cat = (card.getAttribute('data-pkg-cat') || '').toLowerCase();
+        const show = !query || name.includes(query) || cat.includes(query);
+        card.style.display = show ? '' : 'none';
+      });
     }
 
     function switchCategory(cat) {
