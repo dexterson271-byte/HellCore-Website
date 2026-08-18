@@ -733,42 +733,31 @@ def opts(p): return jsonify({}), 200
 def index():
     return build_store_spa_response()
 
+def _static_dirs():
+    here = os.path.dirname(os.path.abspath(__file__))
+    return [
+        os.path.join(here, "static"),
+        os.path.join(here, "..", "static"),
+    ]
+
+
+def _send_static_file(f):
+    for directory in _static_dirs():
+        candidate = os.path.join(directory, f)
+        if os.path.isfile(candidate):
+            return send_from_directory(directory, f)
+    return "Not Found", 404
+
+
 @app.route("/static/<path:f>")
 def static_f(f):
-    return send_from_directory("static", f)
+    return _send_static_file(f)
 
 # Also serve main site static files (logo, images)
 @app.route("/main-static/<path:f>")
 def main_static(f):
-    main_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static')
-    return send_from_directory(main_static_dir, f)
+    return _send_static_file(f)
 
-
-@app.route("/legal")
-@app.route("/legel")
-def business_info_page():
-    business_info = {
-        "business_name": os.environ.get("STORE_BUSINESS_NAME", "Hellcore Network"),
-        "operator_name": os.environ.get("STORE_OPERATOR_NAME", "SUDIP GAUTAM"),
-        "representative_name": os.environ.get("STORE_REPRESENTATIVE_NAME", "SUDIP GAUTAM"),
-        "business_address": os.environ.get("STORE_BUSINESS_ADDRESS", "1-2-3 Soga, Chuo-ku, Chiba-shi, Chiba 260-0822, Japan"),
-        "business_phone": os.environ.get("STORE_BUSINESS_PHONE", "090-4231-5007"),
-        "business_email": os.environ.get("STORE_BUSINESS_EMAIL", "support@hellcore.net"),
-        "price_note": os.environ.get("STORE_PRICE_NOTE", "Prices are shown on each product page in the store."),
-        "payment_methods": os.environ.get("STORE_PAYMENT_METHODS", "Stripe, card payments, and other payment methods shown at checkout."),
-        "payment_timing": os.environ.get("STORE_PAYMENT_TIMING", "Payment is charged at the time an order is placed and accepted."),
-        "delivery_time": os.environ.get("STORE_DELIVERY_TIME", "Digital items are usually delivered shortly after successful payment."),
-        "returns_policy": os.environ.get("STORE_RETURNS_POLICY", "Because the store sells digital goods, returns and cancellations may not be available after delivery unless required by law."),
-        "additional_fees": os.environ.get("STORE_ADDITIONAL_FEES", "Customers are responsible for any internet connection or bank-related fees."),
-        "service_description": os.environ.get("STORE_SERVICE_DESCRIPTION", "Minecraft server ranks, perks, and other digital goods for Hellcore Network."),
-    }
-    return render_template("business_info.html", info=business_info), 200
-
-
-@app.route("/business_info")
-@app.route("/business-info")
-def business_info_legacy_redirect():
-    return redirect("/legal", code=301)
 
 @app.route("/<path:p>")
 def catch_all(p):
