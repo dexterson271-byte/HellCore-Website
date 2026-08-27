@@ -144,6 +144,61 @@
       display: none !important;
     }
 
+    .bg-mode-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      gap: 0;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(12, 10, 9, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .bg-mode-fab.show {
+      display: inline-flex;
+    }
+
+    .bg-mode-fab button {
+      border: 0;
+      background: transparent;
+      color: rgba(245, 245, 247, 0.55);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .bg-mode-fab button.on {
+      background: rgba(255, 107, 44, 0.22);
+      color: #fff;
+    }
+
+    .bg-mode-fab button:hover {
+      color: #fff;
+    }
+
+    @media (max-width: 640px) {
+      .bg-mode-fab {
+        right: 12px;
+        bottom: 12px;
+      }
+      .bg-mode-fab button {
+        padding: 7px 10px;
+        font-size: 0.68rem;
+      }
+    }
+
     #BG-VIDEO {
       position: absolute;
       inset: 0;
@@ -4936,6 +4991,10 @@
     </video>
   </div>
   <div class="grid-bg"></div>
+  <div class="bg-mode-fab" id="BG-TOGGLE" role="group" aria-label="Background mode">
+    <button type="button" id="BG-MODE-VIDEO" onclick="setSiteBackground('video')">Video</button>
+    <button type="button" id="BG-MODE-STATIC" onclick="setSiteBackground('static')">Static</button>
+  </div>
   <div id="APP">
 
     <!-- GLOBAL BANNER -->
@@ -4978,7 +5037,6 @@
         <div class="srv">
           <div class="dot" id="DOT"></div><span id="STXT">Checking…</span>
         </div>
-        <button class="bto bsm" id="BG-TOGGLE" type="button" onclick="toggleSiteBackground()" title="Switch background mode" style="font-size:.72rem;padding:6px 10px">Video</button>
         <div id="A-OUT" style="display:flex;gap:8px;align-items:center">
           <button class="bto bsm" onclick="openM('ML')">Login</button>
           <button class="btn bsm" onclick="openM('MR')">Register</button>
@@ -6360,7 +6418,9 @@
     function applySiteBackground(pageId) {
       const bg = I('BG');
       const vid = I('BG-VIDEO');
-      const toggle = I('BG-TOGGLE');
+      const fab = I('BG-TOGGLE');
+      const btnVideo = I('BG-MODE-VIDEO');
+      const btnStatic = I('BG-MODE-STATIC');
       if (!bg) return;
       const onHome = pageId === 'home';
       const useVideo = SITE_BG_MODE === 'video' && onHome;
@@ -6374,19 +6434,17 @@
           vid.style.display = 'none';
         }
       }
-      if (toggle) {
-        toggle.textContent = SITE_BG_MODE === 'video' ? 'Video' : 'Static';
-        toggle.title = onHome
-          ? `Background: ${SITE_BG_MODE} (click to switch)`
-          : 'Video plays on Home only — click to change preference';
-      }
+      if (fab) fab.classList.toggle('show', onHome);
+      if (btnVideo) btnVideo.classList.toggle('on', SITE_BG_MODE === 'video');
+      if (btnStatic) btnStatic.classList.toggle('on', SITE_BG_MODE === 'static');
     }
 
-    function toggleSiteBackground() {
-      SITE_BG_MODE = SITE_BG_MODE === 'video' ? 'static' : 'video';
+    function setSiteBackground(mode) {
+      if (mode !== 'video' && mode !== 'static') return;
+      if (SITE_BG_MODE === mode) return;
+      SITE_BG_MODE = mode;
       localStorage.setItem('hc_bg_mode', SITE_BG_MODE);
       applySiteBackground(CURRENT_PG);
-      toast('ok', SITE_BG_MODE === 'video' ? 'Video background on Home' : 'Static background');
     }
 
     function handleTixReplyKey(e) {
