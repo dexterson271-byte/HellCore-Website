@@ -1065,63 +1065,157 @@
       margin-left: auto;
     }
 
-    .payment-success-card {
+    .payment-success-overlay {
       display: none;
-      margin-bottom: 28px;
-      padding: 28px 30px;
-      border-radius: 24px;
-      border: 1px solid rgba(74, 222, 128, 0.28);
-      background:
-        radial-gradient(circle at top right, rgba(74, 222, 128, 0.12), transparent 45%),
-        linear-gradient(135deg, rgba(18, 28, 22, 0.96), rgba(10, 10, 10, 0.98));
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #ffffff;
+      overflow: hidden;
     }
 
-    .payment-success-card.show {
-      display: block;
+    .payment-success-overlay.show {
+      display: flex;
+    }
+
+    .payment-confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .payment-confetti i {
+      position: absolute;
+      top: -12px;
+      width: 8px;
+      height: 12px;
+      opacity: 0.9;
+      animation: confetti-fall linear forwards;
+      border-radius: 2px;
+    }
+
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0.85; }
+    }
+
+    .payment-success-card {
+      position: relative;
+      z-index: 2;
+      width: min(440px, 100%);
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.06);
+      padding: 28px 28px 24px;
+      color: #0f172a;
+      text-align: left;
+    }
+
+    .payment-success-check {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #22c55e;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);
     }
 
     .payment-success-card h2 {
-      margin: 0 0 8px;
-      font-size: 1.8rem;
-      color: #4ade80;
+      margin: 0 0 10px;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+
+    .payment-success-card .lead {
+      margin: 0;
+      color: #334155;
+      font-size: 0.95rem;
+      line-height: 1.6;
     }
 
     .payment-success-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 14px;
-      margin: 22px 0;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0 18px;
     }
 
     .payment-success-stat {
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
     }
 
     .payment-success-stat .label {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--tx3);
-      margin-bottom: 6px;
+      color: #64748b;
+      margin-bottom: 4px;
+      font-weight: 700;
     }
 
     .payment-success-stat .value {
-      font-size: 1rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      color: #fff;
-      line-height: 1.4;
+      color: #0f172a;
+      line-height: 1.35;
       word-break: break-word;
     }
 
     .payment-success-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 8px;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .payment-success-actions .btn-dark {
+      background: #0f172a;
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .payment-success-actions .btn-ghost {
+      background: transparent;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .order-action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
     }
 
     .store-hero,
@@ -2728,35 +2822,7 @@
     <div class="pg" id="pg-history">
       <div class="W" style="max-width:900px">
         <div class="stitle" style="font-size:2rem; margin-bottom:4px">📜 Purchase History</div>
-        <p class="ssub">All your past orders and rank upgrades across the network</p>
-        <div id="PAYMENT-SUCCESS" class="payment-success-card">
-          <h2>✓ Payment successful</h2>
-          <p id="PAYMENT-SUCCESS-MSG" style="color:var(--tx2); margin:0; line-height:1.7; font-size:0.95rem">
-            Your rank should appear within a few minutes. Log in to <strong style="color:#fff">mc.hellcore.net</strong> to check.
-          </p>
-          <div class="payment-success-grid">
-            <div class="payment-success-stat">
-              <div class="label">Minecraft username</div>
-              <div class="value" id="PAY-SUCCESS-MC">—</div>
-            </div>
-            <div class="payment-success-stat">
-              <div class="label">Rank purchased</div>
-              <div class="value" id="PAY-SUCCESS-RANK">—</div>
-            </div>
-            <div class="payment-success-stat">
-              <div class="label">Amount paid</div>
-              <div class="value" id="PAY-SUCCESS-AMT">—</div>
-            </div>
-            <div class="payment-success-stat">
-              <div class="label">Payment method</div>
-              <div class="value" id="PAY-SUCCESS-METHOD">—</div>
-            </div>
-          </div>
-          <div class="payment-success-actions">
-            <button class="btn bsm" type="button" onclick="GO('tickets')">Having an issue? Create Ticket</button>
-            <a class="btn bsm bgrn" href="https://discord.gg/hellcore" target="_blank" rel="noopener">Join Discord</a>
-          </div>
-        </div>
+        <p class="ssub">Past orders across the network. Unpaid card orders expire after 24 hours — cancel or continue below.</p>
         <div id="HISTORY-LIST">
           <div class="ld"><div class="sp"></div></div>
         </div>
@@ -2768,6 +2834,41 @@
       <p>&copy; 2024–2026 Hellcore Network. All rights reserved.</p>
       <p style="margin-top:8px"><a href="https://www.hellcore.net">Main Site</a> · <a href="https://www.hellcore.net/news">News</a> · <a
           href="https://discord.gg/hellcore">Discord</a> · <a href="https://www.hellcore.net/rules">Rules</a> · <a href="https://www.hellcore.net/privacy">Privacy</a> · <a href="https://www.hellcore.net/terms">Terms</a></p>
+    </div>
+  </div>
+
+  <!-- Full-screen payment success (Stripe-style) -->
+  <div class="payment-success-overlay" id="PAYMENT-SUCCESS" aria-live="polite">
+    <div class="payment-confetti" id="PAYMENT-CONFETTI" aria-hidden="true"></div>
+    <div class="payment-success-card">
+      <div class="payment-success-check">✓</div>
+      <h2>Payment succeeded!</h2>
+      <p class="lead" id="PAYMENT-SUCCESS-MSG">
+        Thank you for your purchase. Your rank should appear within a few minutes — log in to mc.hellcore.net to check.
+      </p>
+      <div class="payment-success-grid">
+        <div class="payment-success-stat">
+          <div class="label">Minecraft</div>
+          <div class="value" id="PAY-SUCCESS-MC">—</div>
+        </div>
+        <div class="payment-success-stat">
+          <div class="label">Rank</div>
+          <div class="value" id="PAY-SUCCESS-RANK">—</div>
+        </div>
+        <div class="payment-success-stat">
+          <div class="label">Amount</div>
+          <div class="value" id="PAY-SUCCESS-AMT">—</div>
+        </div>
+        <div class="payment-success-stat">
+          <div class="label">Method</div>
+          <div class="value" id="PAY-SUCCESS-METHOD">—</div>
+        </div>
+      </div>
+      <div class="payment-success-actions">
+        <button class="btn-dark" type="button" onclick="closePaymentSuccess()">Continue to store</button>
+        <button class="btn-ghost" type="button" onclick="closePaymentSuccess(); GO('tickets')">Having an issue?</button>
+        <a class="btn-ghost" href="https://discord.gg/hellcore" target="_blank" rel="noopener">Join Discord</a>
+      </div>
     </div>
   </div>
 
@@ -3090,6 +3191,66 @@
       if (push) history.pushState({ pg: id }, '', id === 'home' ? '/' : '/' + id);
     }
 
+    function spawnPaymentConfetti() {
+      const box = I('PAYMENT-CONFETTI');
+      if (!box) return;
+      box.innerHTML = '';
+      const colors = ['#ec4899', '#facc15', '#22d3ee', '#a3e635', '#fb923c', '#818cf8'];
+      for (let i = 0; i < 48; i++) {
+        const piece = document.createElement('i');
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[i % colors.length];
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = (8 + Math.random() * 10) + 'px';
+        piece.style.animationDuration = (2.2 + Math.random() * 2.4) + 's';
+        piece.style.animationDelay = (Math.random() * 0.6) + 's';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        box.appendChild(piece);
+      }
+    }
+
+    function closePaymentSuccess() {
+      const overlay = I('PAYMENT-SUCCESS');
+      if (overlay) overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function showPaymentSuccess(confirmed) {
+      const overlay = I('PAYMENT-SUCCESS');
+      if (!overlay) return;
+      I('PAYMENT-SUCCESS-MSG').textContent = confirmed.message || 'Thank you for your purchase. Your rank should appear within a few minutes — log in to mc.hellcore.net to check.';
+      I('PAY-SUCCESS-MC').textContent = confirmed.mc_username || ME?.mc_username || ME?.username || '—';
+      I('PAY-SUCCESS-RANK').textContent = confirmed.rank_label || (confirmed.items || []).map(i => i.name).join(', ') || '—';
+      I('PAY-SUCCESS-AMT').textContent = confirmed.amount_label || `₹${Number(confirmed.total_inr || 0).toFixed(0)}`;
+      I('PAY-SUCCESS-METHOD').textContent = (confirmed.payment_method || 'card').toUpperCase();
+      spawnPaymentConfetti();
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    async function cancelStoreOrder(orderId) {
+      if (!confirm('Cancel this unpaid order?')) return;
+      try {
+        await API(`/api/store/orders/${orderId}/cancel`, { method: 'POST' });
+        toast('ok', 'Order cancelled');
+        loadHistory();
+      } catch (e) { toast('err', e.message); }
+    }
+
+    async function continueStoreOrder(orderId) {
+      toast('info', 'Opening payment…');
+      try {
+        const d = await API(`/api/store/orders/${orderId}/continue`, { method: 'POST' });
+        if (d.stripe_url) {
+          window.location.href = d.stripe_url;
+        } else if (d.already_paid && d.redirect) {
+          window.location.href = d.redirect;
+        } else {
+          toast('err', d.error || 'Could not continue payment');
+        }
+      } catch (e) { toast('err', e.message); }
+    }
+
     async function loadHistory() {
       if (!ME) { GO('home'); return; }
 
@@ -3105,17 +3266,15 @@
           if (sessionId) q.set('session_id', sessionId);
           if (orderCode) q.set('order', orderCode);
           const confirmed = await API('/api/store/orders/confirm?' + q.toString());
-          if (successCard) {
-            successCard.classList.add('show');
-            I('PAYMENT-SUCCESS-MSG').textContent = confirmed.message || 'Your rank should appear within a few minutes. Log in to mc.hellcore.net to check.';
-            I('PAY-SUCCESS-MC').textContent = confirmed.mc_username || ME.mc_username || ME.username || '—';
-            I('PAY-SUCCESS-RANK').textContent = confirmed.rank_label || (confirmed.items || []).map(i => i.name).join(', ') || '—';
-            const method = (confirmed.payment_method || 'card').toUpperCase();
-            I('PAY-SUCCESS-AMT').textContent = confirmed.amount_label || `₹${Number(confirmed.total_inr || 0).toFixed(0)}`;
-            I('PAY-SUCCESS-METHOD').textContent = method;
-          }
+          showPaymentSuccess(confirmed);
         } catch (e) {
-          toast('ok', 'Payment successful! Your order is being processed.');
+          showPaymentSuccess({
+            message: 'Payment received. Your rank should appear within a few minutes — log in to mc.hellcore.net to check.',
+            mc_username: ME.mc_username || ME.username,
+            rank_label: '—',
+            amount_label: '—',
+            payment_method: 'stripe',
+          });
         }
         sessionStorage.removeItem('store_payment_success');
         sessionStorage.removeItem('store_payment_order');
@@ -3132,52 +3291,50 @@
         }
         el.innerHTML = `
           <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:24px; margin-top:24px;">
-            ${orders.map(o => `
-              <div class="p" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:20px; position:relative; overflow:hidden; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 8px 32px rgba(0,0,0,0.2); backdrop-filter:blur(10px);" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.4)';this.style.borderColor='rgba(255,255,255,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.2)';this.style.borderColor='rgba(255,255,255,0.05)'">
-                
-                <!-- Status Glow -->
-                <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:${o.status === 'completed' ? 'var(--grn)' : o.status === 'pending' ? 'var(--y)' : 'var(--r2)'}; opacity:0.8; box-shadow:0 0 10px ${o.status === 'completed' ? 'var(--grn)' : o.status === 'pending' ? 'var(--y)' : 'var(--r2)'};"></div>
-                
+            ${orders.map(o => {
+              const status = (o.status || 'pending').toLowerCase();
+              const statusColor = status === 'completed' ? 'var(--grn)' : (status === 'pending' ? 'var(--y)' : 'var(--r2)');
+              const totalInr = Number(o.total_inr != null ? o.total_inr : (o.total || 0) * 83);
+              return `
+              <div class="p" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:20px; position:relative; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:${statusColor}; opacity:0.8;"></div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; padding-top:6px;">
                   <div>
                     <div style="font-size:0.75rem; color:var(--tx3); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:4px; font-weight:600">Order Code</div>
                     <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.3rem; color:var(--g); letter-spacing:0.5px">${esc(o.order_code || '#' + o.id)}</div>
                   </div>
                   <div style="text-align:right">
-                    <span class="tix-status status-${o.status === 'completed' ? 'open' : o.status === 'pending' ? 'pending' : 'closed'}" style="padding:6px 12px; font-size:0.75rem; border-radius:20px; font-weight:700; letter-spacing:0.5px; text-shadow:none">
-                      ${o.status.toUpperCase()}
+                    <span style="padding:6px 12px; font-size:0.75rem; border-radius:20px; font-weight:700; letter-spacing:0.5px; background:rgba(255,255,255,0.06)">
+                      ${esc(status.toUpperCase())}
                     </span>
                   </div>
                 </div>
-
                 <div style="background:rgba(0,0,0,0.25); border-radius:12px; padding:16px; margin-bottom:18px; border:1px solid rgba(255,255,255,0.03);">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <span style="font-size:0.8rem; color:var(--tx2); text-transform:uppercase; letter-spacing:1px; font-weight:600">Items Purchased</span>
+                    <span style="font-size:0.8rem; color:var(--tx2); text-transform:uppercase; letter-spacing:1px; font-weight:600">Items</span>
                     <span style="font-size:0.8rem; color:var(--tx2); text-transform:uppercase; letter-spacing:1px; font-weight:600">Total</span>
                   </div>
                   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px">
                     <div style="font-weight:500; color:#fff; flex:1; line-height:1.5">
-                      ${(o.items || []).map(i => `<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:6px"><span style="color:var(--g); font-size:1.1rem; line-height:1">▸</span> <span style="font-size:0.95rem">${esc(i.name)}</span></div>`).join('')}
+                      ${(o.items || []).map(i => `<div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:6px"><span style="color:var(--g)">▸</span> <span>${esc(i.name)}</span></div>`).join('')}
                     </div>
-                    <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.4rem; color:var(--g); text-shadow:0 0 15px rgba(234, 179, 8, 0.3)">
-                      ₹${(o.total || 0).toFixed(0)}
+                    <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.4rem; color:var(--g)">
+                      ₹${totalInr.toFixed(0)}
                     </div>
                   </div>
                 </div>
-
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                  <div style="color:var(--tx3); display:flex; align-items:center; gap:8px; font-weight:500">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    ${fmtD(o.created_at)}
-                  </div>
-                  <div style="color:var(--tx2); background:rgba(255,255,255,0.06); padding:6px 10px; border-radius:8px; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; display:flex; align-items:center; gap:6px">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
-                    ${esc(o.payment_method)}
-                  </div>
+                  <div style="color:var(--tx3); font-weight:500">${fmtD(o.created_at)}</div>
+                  <div style="color:var(--tx2); background:rgba(255,255,255,0.06); padding:6px 10px; border-radius:8px; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; font-weight:600">${esc(o.payment_method || '—')}</div>
                 </div>
-                
-              </div>
-            `).join('')}
+                ${o.can_cancel || o.can_continue ? `
+                  <div class="order-action-row">
+                    ${o.can_continue ? `<button class="btn bsm" type="button" onclick="continueStoreOrder(${o.id})">Continue payment</button>` : ''}
+                    ${o.can_cancel ? `<button class="bto bsm" type="button" onclick="cancelStoreOrder(${o.id})">Cancel</button>` : ''}
+                    <span style="font-size:0.72rem;color:var(--tx3);align-self:center">Expires in 24h if unpaid</span>
+                  </div>` : ''}
+              </div>`;
+            }).join('')}
           </div>
         `;
       } catch (e) { el.innerHTML = `<div class="empty" style="color:var(--r2)">Error loading history: ${e.message}</div>`; }

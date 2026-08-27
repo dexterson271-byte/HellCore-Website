@@ -53,6 +53,7 @@ DEFAULT_STORE_URL = "https://store.hellcore.net"
 DEFAULT_MAIN_URL = "https://www.hellcore.net"
 STORE_DOMAIN = os.environ.get("STORE_DOMAIN", DEFAULT_STORE_URL)
 MAIN_DOMAIN = os.environ.get("MAIN_DOMAIN", DEFAULT_MAIN_URL)
+ORDER_PENDING_HOURS = 24
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
@@ -802,6 +803,22 @@ def find_order_for_user(c, user_id, *, session_id="", order_code=""):
     if not session_id:
         return None
 
+    # Prefer Stripe client_reference_id (order id) — most reliable after payment
+    if stripe.api_key:
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            order_id = session.get("client_reference_id") or (session.get("metadata") or {}).get("order_id")
+            if order_id:
+                c.execute(
+                    f"SELECT * FROM hc_store_orders WHERE id={ph()} AND user_id={ph()}",
+                    (order_id, user_id),
+                )
+                row = c.fetchone()
+                if row:
+                    return to_dict(row)
+        except Exception as e:
+            print(f"[STRIPE LOOKUP ERROR] {e}")
+
     c.execute(
         f"SELECT * FROM hc_store_orders WHERE user_id={ph()} ORDER BY created_at DESC, id DESC LIMIT 25",
         (user_id,),
@@ -820,9 +837,9 @@ def serialize_store_order(row):
     order = to_dict(row) if not isinstance(row, dict) else dict(row)
     order["created_at"] = ts(order.get("created_at", ""))
     try:
-        parsed_items = json.loads(order.get("items", "[]"))
+        parsed_items = json.loads(order.get("items", "[]") if isinstance(order.get("items"), str) else json.dumps(order.get("items") or []))
     except Exception:
-        parsed_items = []
+        parsed_items = order.get("items") if isinstance(order.get("items"), list) else []
     normalized_items = []
     for item in parsed_items:
         if isinstance(item, dict):
@@ -835,7 +852,120 @@ def serialize_store_order(row):
     total_usd = float(order.get("total") or 0)
     order["total_inr"] = round(total_usd * USD_TO_INR, 2)
     order["rank_label"] = ", ".join(i["name"] for i in normalized_items) or "—"
+    status = str(order.get("status") or "").lower()
+    pay = str(order.get("payment_status") or "").lower()
+    method = str(order.get("payment_method") or "").lower()
+    pending_like = status in ("pending",) and pay in ("pending", "awaiting_proof", "")
+    order["can_cancel"] = pending_like and status not in ("completed", "cancelled", "expired")
+    order["can_continue"] = pending_like and method == "stripe"
+    order["expires_in_hours"] = ORDER_PENDING_HOURS if order["can_cancel"] else None
     return order
+
+
+def parse_order_created_at(value):
+    if isinstance(value, datetime):
+        return value
+    if not value:
+        return None
+    text = str(value).replace("Z", "")
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(text[:26], fmt)
+        except Exception:
+            continue
+    return None
+
+
+def expire_stale_pending_orders(c, user_id=None):
+    """Mark unpaid pending orders older than 24h as expired."""
+    cutoff = datetime.now() - timedelta(hours=ORDER_PENDING_HOURS)
+    params = []
+    where_user = ""
+    if user_id is not None:
+        where_user = f" AND user_id={ph()}"
+        params.append(user_id)
+    c.execute(
+        f"""SELECT id, created_at, status, payment_status FROM hc_store_orders
+            WHERE status='pending'
+              AND payment_status IN ('pending', 'awaiting_proof')
+              {where_user}
+            ORDER BY id DESC
+            LIMIT 200""",
+        tuple(params),
+    )
+    expired_ids = []
+    for row in to_list(c.fetchall()):
+        created = parse_order_created_at(row.get("created_at"))
+        if created and created < cutoff:
+            expired_ids.append(row["id"])
+    for oid in expired_ids:
+        c.execute(
+            f"UPDATE hc_store_orders SET status='expired', payment_status='expired' WHERE id={ph()}",
+            (oid,),
+        )
+    return len(expired_ids)
+
+
+def merge_order_details(c, order_id, patch):
+    c.execute(f"SELECT details_json FROM hc_store_orders WHERE id={ph()}", (order_id,))
+    row = c.fetchone()
+    details = {}
+    if row:
+        raw = row["details_json"] if isinstance(row, dict) else (row[0] if row else "{}")
+        try:
+            details = json.loads(raw or "{}")
+        except Exception:
+            details = {}
+    details.update(patch or {})
+    c.execute(f"UPDATE hc_store_orders SET details_json={ph()} WHERE id={ph()}", (json.dumps(details), order_id))
+    return details
+
+
+def create_stripe_session_for_order(c, user, order):
+    try:
+        items = json.loads(order.get("items") or "[]")
+    except Exception:
+        items = []
+    cart_items = order_items_to_cart(items)
+    if not cart_items:
+        raise ValueError("Order has no items")
+
+    line_items = []
+    for item in cart_items:
+        amount_paise = max(100, int(round(float(item["item_price"]) * 100)))  # Stripe min ~₹1
+        line_items.append({
+            "price_data": {
+                "currency": "inr",
+                "product_data": {
+                    "name": item["item_name"],
+                    "description": f"Fulfillment for Minecraft User: {user.get('username') or user.get('mc_username') or 'player'}",
+                },
+                "unit_amount": amount_paise,
+            },
+            "quantity": 1,
+        })
+
+    store_base = store_public_url()
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=line_items,
+        mode="payment",
+        success_url=store_base + "/history?success=true&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url=store_base + "/history?canceled=true",
+        client_reference_id=str(order["id"]),
+        customer_email=user.get("email"),
+        metadata={
+            "order_id": str(order["id"]),
+            "order_code": order.get("order_code") or "",
+            "user_id": str(user.get("id")),
+            "username": user.get("username") or "",
+        },
+    )
+    merge_order_details(c, order["id"], {
+        "stripe_session_id": checkout_session.id,
+        "stripe_url": checkout_session.url,
+    })
+    return checkout_session
 
 # ═══════════════════════════════════════════════════════
 # CORS & HEADERS
@@ -1063,9 +1193,11 @@ def create_checkout():
                 }
             )
             
-            # Update order with stripe session ID
-            c.execute(f"UPDATE hc_store_orders SET details_json={ph()} WHERE id={ph()}", 
-                      (json.dumps({"stripe_session_id": checkout_session.id}), result["order_id"]))
+            # Update order with stripe session ID (merge, don't wipe details)
+            merge_order_details(c, result["order_id"], {
+                "stripe_session_id": checkout_session.id,
+                "stripe_url": checkout_session.url,
+            })
             
             db.commit(); c.close(); db.close()
             return jsonify({"stripe_url": checkout_session.url})
@@ -1090,16 +1222,103 @@ def create_checkout():
 @auth_required
 def store_order_history():
     db = get_db(); c = db_cursor(db)
-    c.execute(
-        f"""SELECT id, order_code, items, total, status, payment_method, payment_status, created_at, mc_username
-            FROM hc_store_orders
-            WHERE user_id={ph()}
-            ORDER BY created_at DESC, id DESC""",
-        (request.cu["id"],)
-    )
-    rows = [serialize_store_order(row) for row in to_list(c.fetchall())]
-    c.close(); db.close()
-    return jsonify(rows)
+    try:
+        expire_stale_pending_orders(c, request.cu["id"])
+        db.commit()
+        c.execute(
+            f"""SELECT id, order_code, items, total, status, payment_method, payment_status, created_at, mc_username
+                FROM hc_store_orders
+                WHERE user_id={ph()}
+                ORDER BY created_at DESC, id DESC""",
+            (request.cu["id"],)
+        )
+        rows = [serialize_store_order(row) for row in to_list(c.fetchall())]
+        return jsonify(rows)
+    finally:
+        c.close(); db.close()
+
+
+@app.route("/api/store/orders/<int:order_id>/cancel", methods=["POST"])
+@auth_required
+def store_order_cancel(order_id):
+    db = get_db(); c = db_cursor(db)
+    try:
+        c.execute(
+            f"SELECT * FROM hc_store_orders WHERE id={ph()} AND user_id={ph()}",
+            (order_id, request.cu["id"]),
+        )
+        order = to_dict(c.fetchone())
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+        status = str(order.get("status") or "").lower()
+        pay = str(order.get("payment_status") or "").lower()
+        if status == "completed" or pay == "completed":
+            return jsonify({"error": "Paid orders cannot be cancelled"}), 400
+        if status in ("cancelled", "expired"):
+            return jsonify({"ok": True, "order": serialize_store_order(order)})
+        c.execute(
+            f"UPDATE hc_store_orders SET status='cancelled', payment_status='cancelled' WHERE id={ph()}",
+            (order_id,),
+        )
+        db.commit()
+        c.execute(f"SELECT * FROM hc_store_orders WHERE id={ph()}", (order_id,))
+        return jsonify({"ok": True, "order": serialize_store_order(c.fetchone())})
+    finally:
+        c.close(); db.close()
+
+
+@app.route("/api/store/orders/<int:order_id>/continue", methods=["POST"])
+@auth_required
+def store_order_continue(order_id):
+    """Resume Stripe checkout for a pending unpaid order."""
+    if not stripe_is_configured():
+        return jsonify({"error": "Card checkout is not configured right now."}), 503
+    db = get_db(); c = db_cursor(db)
+    try:
+        expire_stale_pending_orders(c, request.cu["id"])
+        db.commit()
+        c.execute(
+            f"SELECT * FROM hc_store_orders WHERE id={ph()} AND user_id={ph()}",
+            (order_id, request.cu["id"]),
+        )
+        order = to_dict(c.fetchone())
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+        status = str(order.get("status") or "").lower()
+        pay = str(order.get("payment_status") or "").lower()
+        if status in ("expired", "cancelled"):
+            return jsonify({"error": "This order expired or was cancelled. Add items to cart again."}), 400
+        if status == "completed" or pay == "completed":
+            return jsonify({"error": "This order is already paid."}), 400
+        if str(order.get("payment_method") or "").lower() != "stripe":
+            return jsonify({"error": "Continue payment is only available for card orders."}), 400
+
+        # Reuse open Stripe session when possible
+        try:
+            details = json.loads(order.get("details_json") or "{}")
+        except Exception:
+            details = {}
+        old_session_id = details.get("stripe_session_id")
+        if old_session_id:
+            try:
+                old = stripe.checkout.Session.retrieve(old_session_id)
+                if old.status == "open" and old.url:
+                    return jsonify({"stripe_url": old.url})
+                if old.payment_status == "paid":
+                    finalize_paid_order(c, order, notify=True)
+                    db.commit()
+                    return jsonify({"ok": True, "already_paid": True, "redirect": "/history?success=true&order=" + (order.get("order_code") or "")})
+            except Exception as e:
+                print(f"[STRIPE CONTINUE LOOKUP] {e}")
+
+        session = create_stripe_session_for_order(c, request.cu, order)
+        db.commit()
+        return jsonify({"stripe_url": session.url})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        c.close(); db.close()
 
 
 @app.route("/api/store/orders/confirm")
@@ -1114,20 +1333,29 @@ def store_order_confirm():
         if not order:
             return jsonify({"error": "Order not found"}), 404
 
-        if order.get("payment_method") == "stripe" and session_id and stripe.api_key:
+        if order.get("payment_method") == "stripe" and stripe.api_key:
             try:
-                session = stripe.checkout.Session.retrieve(session_id)
-                if session.payment_status == "paid":
-                    finalize_paid_order(c, order, notify=True)
-                    db.commit()
-                    order = find_order_for_user(c, request.cu["id"], session_id=session_id, order_code=order_code)
+                sid = session_id
+                if not sid:
+                    try:
+                        details = json.loads(order.get("details_json") or "{}")
+                        sid = details.get("stripe_session_id") or ""
+                    except Exception:
+                        sid = ""
+                if sid:
+                    session = stripe.checkout.Session.retrieve(sid)
+                    if session.payment_status == "paid":
+                        finalize_paid_order(c, order, notify=True)
+                        merge_order_details(c, order["id"], {"stripe_session_id": sid})
+                        db.commit()
+                        order = find_order_for_user(c, request.cu["id"], session_id=sid, order_code=order.get("order_code") or order_code)
             except Exception as e:
                 print(f"[STRIPE CONFIRM ERROR] {e}")
 
         payload = serialize_store_order(order)
         payload["mc_username"] = payload.get("mc_username") or request.cu.get("mc_username") or request.cu.get("username") or "—"
         payload["message"] = (
-            "Your rank should appear within a few minutes. Log in to mc.hellcore.net to check."
+            "Thank you for your purchase. Your rank should appear within a few minutes — log in to mc.hellcore.net to check."
             if payload.get("payment_status") == "completed"
             else "Payment received — your order is being processed."
         )
