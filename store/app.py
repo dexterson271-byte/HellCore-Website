@@ -198,7 +198,7 @@ def stripe_is_configured():
     return bool((stripe.api_key or "").strip())
 
 
-STORE_SPA_ROUTES = {"", "admin", "cart", "home", "ranks", "ticket-view", "tickets"}
+STORE_SPA_ROUTES = {"", "admin", "cart", "history", "home", "ranks", "ticket-view", "tickets"}
 
 # ═══════════════════════════════════════════════════════
 # INIT STORE TABLES
