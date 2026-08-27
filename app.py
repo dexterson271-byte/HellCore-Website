@@ -6520,6 +6520,9 @@ def robots_txt():
 # -------------------------------------------------------
 @app.route("/<path:p>")
 def catch_all(p):
+    # Standalone forums product
+    if p == "forums" or p.startswith("forums/"):
+        return redirect("https://forums.hellcore.net/", code=302)
     if is_known_main_spa_path("/" + p):
         return build_main_spa_response()
     return "Not Found", 404

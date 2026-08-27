@@ -1,0 +1,472 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ThreadState {
+  NORMAL
+  PINNED
+  LOCKED
+  SOLVED
+  FEATURED
+  STAFF_ONLY
+  ARCHIVED
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  FIRE
+  FUNNY
+  WOW
+  DISLIKE
+}
+
+enum NotificationType {
+  REPLY
+  MENTION
+  REACTION
+  FOLLOW
+  BEST_ANSWER
+  MOD
+  SYSTEM
+  PM
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model ForumUser {
+  id            Int      @id @default(autoincrement())
+  hellcoreId    Int      @unique
+  username      String   @unique
+  displayName   String?
+  email         String?
+  mcUsername    String?
+  avatarUrl     String?
+  bannerUrl     String?
+  bio           String?  @db.Text
+  role          String   @default("member")
+  reputation    Int      @default(0)
+  xp            Int      @default(0)
+  level         Int      @default(1)
+  postCount     Int      @default(0)
+  threadCount   Int      @default(0)
+  lastActiveAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  threads           Thread[]           @relation("ThreadAuthor")
+  posts             Post[]             @relation("PostAuthor")
+  reactions         Reaction[]
+  bookmarks         Bookmark[]
+  threadFollows     ThreadFollow[]
+  following         UserFollow[]       @relation("Follower")
+  followers         UserFollow[]       @relation("Following")
+  notifications     Notification[]     @relation("NotifyUser")
+  actorNotifications Notification[]    @relation("NotifyActor")
+  pollVotes         PollVote[]
+  attachments       Attachment[]
+  reports           Report[]           @relation("Reporter")
+  modActions        ModerationAction[] @relation("ModActor")
+  bansIssued        Ban[]              @relation("BanIssuer")
+  bansReceived      Ban[]              @relation("BannedUser")
+  mutesIssued       Mute[]             @relation("MuteIssuer")
+  mutesReceived     Mute[]             @relation("MutedUser")
+  badges            UserBadge[]
+  achievements      UserAchievement[]
+  categoryMods      CategoryModerator[]
+  conversationsA    ConversationParticipant[]
+  messages          ConversationMessage[]
+  postEdits         PostEdit[]
+  analytics         AnalyticsEvent[]
+
+  @@index([reputation])
+  @@index([xp])
+  @@index([lastActiveAt])
+}
+
+model CategoryGroup {
+  id          Int         @id @default(autoincrement())
+  name        String
+  slug        String      @unique
+  sortOrder   Int         @default(0)
+  categories  Category[]
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  groupId     Int?
+  group       CategoryGroup? @relation(fields: [groupId], references: [id])
+  name        String
+  slug        String    @unique
+  description String?   @db.Text
+  icon        String?
+  color       String    @default("#FF6B2C")
+  bannerUrl   String?
+  sortOrder   Int       @default(0)
+  permissions Json?
+  threadCount Int       @default(0)
+  postCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  threads     Thread[]
+  moderators  CategoryModerator[]
+
+  @@index([sortOrder])
+}
+
+model CategoryModerator {
+  id         Int      @id @default(autoincrement())
+  categoryId Int
+  userId     Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user       ForumUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, userId])
+}
+
+model Thread {
+  id            Int         @id @default(autoincrement())
+  categoryId    Int
+  authorId      Int
+  title         String
+  slug          String
+  state         ThreadState @default(NORMAL)
+  isPinned      Boolean     @default(false)
+  isLocked      Boolean     @default(false)
+  isSolved      Boolean     @default(false)
+  isFeatured    Boolean     @default(false)
+  isStaffOnly   Boolean     @default(false)
+  isArchived    Boolean     @default(false)
+  isAnnouncement Boolean    @default(false)
+  views         Int         @default(0)
+  replyCount    Int         @default(0)
+  reactionScore Int         @default(0)
+  searchText    String?     @db.Text
+  bestAnswerId  Int?
+  lastActivityAt DateTime   @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  category      Category    @relation(fields: [categoryId], references: [id])
+  author        ForumUser   @relation("ThreadAuthor", fields: [authorId], references: [id])
+  posts         Post[]
+  bookmarks     Bookmark[]
+  follows       ThreadFollow[]
+  poll          Poll?
+  reports       Report[]
+
+  @@unique([categoryId, slug])
+  @@index([lastActivityAt])
+  @@index([createdAt])
+  @@index([isPinned, lastActivityAt])
+  @@index([isFeatured])
+  @@index([isAnnouncement])
+}
+
+model Post {
+  id            Int       @id @default(autoincrement())
+  threadId      Int
+  authorId      Int
+  parentId      Int?
+  body          String    @db.Text
+  bodyHtml      String?   @db.Text
+  isBestAnswer  Boolean   @default(false)
+  depth         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  thread        Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author        ForumUser @relation("PostAuthor", fields: [authorId], references: [id])
+  parent        Post?     @relation("PostReplies", fields: [parentId], references: [id])
+  children      Post[]    @relation("PostReplies")
+  reactions     Reaction[]
+  attachments   Attachment[]
+  edits         PostEdit[]
+  reports       Report[]
+
+  @@index([threadId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
+}
+
+model PostEdit {
+  id        Int       @id @default(autoincrement())
+  postId    Int
+  editorId  Int
+  body      String    @db.Text
+  createdAt DateTime  @default(now())
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  editor    ForumUser @relation(fields: [editorId], references: [id])
+}
+
+model Reaction {
+  id        Int          @id @default(autoincrement())
+  postId    Int
+  userId    Int
+  type      ReactionType
+  createdAt DateTime     @default(now())
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      ForumUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, type])
+  @@index([postId])
+}
+
+model Poll {
+  id        Int          @id @default(autoincrement())
+  threadId  Int          @unique
+  question  String
+  endsAt    DateTime?
+  multiple  Boolean      @default(false)
+  thread    Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  options   PollOption[]
+}
+
+model PollOption {
+  id     Int        @id @default(autoincrement())
+  pollId Int
+  label  String
+  votes  Int        @default(0)
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  ballots PollVote[]
+}
+
+model PollVote {
+  id       Int        @id @default(autoincrement())
+  optionId Int
+  userId   Int
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user     ForumUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+}
+
+model Attachment {
+  id        Int       @id @default(autoincrement())
+  postId    Int?
+  userId    Int
+  url       String
+  filename  String
+  mime      String
+  size      Int
+  createdAt DateTime  @default(now())
+  post      Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  user      ForumUser @relation(fields: [userId], references: [id])
+}
+
+model Bookmark {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  threadId  Int
+  createdAt DateTime  @default(now())
+  user      ForumUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
+}
+
+model ThreadFollow {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  threadId  Int
+  createdAt DateTime  @default(now())
+  user      ForumUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    Thread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
+}
+
+model UserFollow {
+  id          Int       @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  createdAt   DateTime  @default(now())
+  follower    ForumUser @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   ForumUser @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  actorId   Int?
+  type      NotificationType
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  user      ForumUser        @relation("NotifyUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor     ForumUser?       @relation("NotifyActor", fields: [actorId], references: [id])
+
+  @@index([userId, readAt, createdAt])
+}
+
+model Conversation {
+  id           Int                       @id @default(autoincrement())
+  subject      String?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     ConversationMessage[]
+}
+
+model ConversationParticipant {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  userId         Int
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           ForumUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model ConversationMessage {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  authorId       Int
+  body           String       @db.Text
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author         ForumUser    @relation(fields: [authorId], references: [id])
+
+  @@index([conversationId, createdAt])
+}
+
+model Report {
+  id         Int          @id @default(autoincrement())
+  reporterId Int
+  threadId   Int?
+  postId     Int?
+  reason     String
+  details    String?      @db.Text
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  resolvedAt DateTime?
+  reporter   ForumUser    @relation("Reporter", fields: [reporterId], references: [id])
+  thread     Thread?      @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  post       Post?        @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
+
+model ModerationAction {
+  id        Int       @id @default(autoincrement())
+  actorId   Int
+  action    String
+  targetType String
+  targetId  Int
+  details   String?   @db.Text
+  createdAt DateTime  @default(now())
+  actor     ForumUser @relation("ModActor", fields: [actorId], references: [id])
+
+  @@index([createdAt])
+}
+
+model Ban {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  issuerId  Int
+  reason    String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  user      ForumUser @relation("BannedUser", fields: [userId], references: [id])
+  issuer    ForumUser @relation("BanIssuer", fields: [issuerId], references: [id])
+}
+
+model Mute {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  issuerId  Int
+  reason    String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  user      ForumUser @relation("MutedUser", fields: [userId], references: [id])
+  issuer    ForumUser @relation("MuteIssuer", fields: [issuerId], references: [id])
+}
+
+model Role {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  permissions Json
+  sortOrder   Int    @default(0)
+}
+
+model Badge {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  icon        String?
+  color       String      @default("#FF6B2C")
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  badgeId   Int
+  awardedAt DateTime  @default(now())
+  user      ForumUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge     @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+model Achievement {
+  id          Int               @id @default(autoincrement())
+  key         String            @unique
+  name        String
+  description String?
+  xpReward    Int               @default(0)
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  achievementId Int
+  unlockedAt    DateTime    @default(now())
+  user          ForumUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model AnalyticsEvent {
+  id        Int        @id @default(autoincrement())
+  userId    Int?
+  type      String
+  meta      Json?
+  createdAt DateTime   @default(now())
+  user      ForumUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+}
+
+model FeatureFlag {
+  id      Int     @id @default(autoincrement())
+  key     String  @unique
+  enabled Boolean @default(false)
+  meta    Json?
+}
+
+model RateLimitBucket {
+  id        String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+}
