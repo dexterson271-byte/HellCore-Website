@@ -71,6 +71,28 @@ from flask import Flask, request, jsonify, render_template, send_from_directory,
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "hc-shield-" + hashlib.sha256(b"hellcore-net-2026").hexdigest()[:32])
 
+# Canonical public site (apex redirects / old links should use www)
+DEFAULT_PUBLIC_URL = "https://www.hellcore.net"
+
+
+def cookie_domain():
+    """Shared auth cookie across www / store / apex."""
+    return ".hellcore.net" if "hellcore.net" in (request.host or "") else None
+
+
+def public_base_url():
+    env = (os.environ.get("WEBSITE_PUBLIC_URL") or "").strip().rstrip("/")
+    if env:
+        # Prefer www when someone still has the apex env value
+        if env in ("https://hellcore.net", "http://hellcore.net"):
+            return DEFAULT_PUBLIC_URL
+        return env
+    host = (request.host or "").split(":")[0].lower()
+    if host.endswith("hellcore.net"):
+        return DEFAULT_PUBLIC_URL
+    return request.host_url.rstrip("/")
+
+
 # ═══════════════════════════════════════════════════════════════════
 # ██████  DDoS PROTECTION SYSTEM  ██████████████████████████████████
 # ═══════════════════════════════════════════════════════════════════
@@ -1975,7 +1997,7 @@ def _ddos_send_discord_alert(event_type: str, ip: str, detail: str):
 
     payload = {
         "username": "Hellcore Shield",
-        "avatar_url": "https://hellcore.net/static/logo.png",
+        "avatar_url": "https://www.hellcore.net/static/logo.png",
         "embeds": [{
             "title": "🚨 DDoS Attack Detected!",
             "color": color,
@@ -2614,7 +2636,7 @@ def register():
             tok,
             max_age=60*60*24*30,
             path="/",
-            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            domain=cookie_domain(),
             samesite="None",
             secure=True
         )
@@ -2695,7 +2717,7 @@ def login():
             tok, 
             max_age=60*60*24*30, 
             path="/", 
-            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            domain=cookie_domain(),
             samesite="None",
             secure=True
         )
@@ -2723,7 +2745,7 @@ def logout():
     c.execute(f"UPDATE hc_users SET session_token=NULL WHERE id={ph()}", (request.cu["id"],))
     db.commit()
     resp = jsonify({"ok":True})
-    resp.set_cookie("hc_token", "", expires=0, path="/", domain=".hellcore.net" if "hellcore.net" in request.host else None, samesite="None", secure=True)
+    resp.set_cookie("hc_token", "", expires=0, path="/", domain=cookie_domain(), samesite="None", secure=True)
     return resp
 
 @app.route("/api/auth/me")
@@ -2796,7 +2818,7 @@ def session_warmup():
         tok, 
         max_age=60*60*24*30, 
         path="/", 
-        domain=".hellcore.net" if "hellcore.net" in request.host else None,
+        domain=cookie_domain(),
         samesite="None",
         secure=True
     )
@@ -3164,9 +3186,6 @@ def tournament_user_blocker(user):
     return ""
 
 
-def public_base_url():
-    return os.environ.get("WEBSITE_PUBLIC_URL", request.host_url.rstrip("/")).rstrip("/")
-
 
 def send_tournament_webhook(action_type, user=None, staff=None, team=None, details=None):
     url = os.environ.get("TOURNAMENT_WEBHOOK_URL", "").strip()
@@ -3362,7 +3381,9 @@ def assert_tournament_joinable(user, team_id=None):
 @auth_required
 def discord_oauth_start():
     client_id = os.environ.get("DISCORD_CLIENT_ID", "").strip()
-    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{request.host_url.rstrip('/')}/auth/discord/callback").strip()
+    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{public_base_url()}/auth/discord/callback").strip()
+    if redirect_uri.startswith("https://hellcore.net/") or redirect_uri == "https://hellcore.net/auth/discord/callback":
+        redirect_uri = f"{DEFAULT_PUBLIC_URL}/auth/discord/callback"
     if not client_id:
         return Response("Discord OAuth is not configured.", status=500, mimetype="text/plain")
     state = secrets.token_urlsafe(24)
@@ -3388,7 +3409,9 @@ def discord_oauth_callback():
         return Response("Missing Discord OAuth code.", status=400, mimetype="text/plain")
     client_id = os.environ.get("DISCORD_CLIENT_ID", "").strip()
     client_secret = os.environ.get("DISCORD_CLIENT_SECRET", "").strip()
-    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{request.host_url.rstrip('/')}/auth/discord/callback").strip()
+    redirect_uri = os.environ.get("DISCORD_REDIRECT_URI", f"{public_base_url()}/auth/discord/callback").strip()
+    if redirect_uri.startswith("https://hellcore.net/") or redirect_uri == "https://hellcore.net/auth/discord/callback":
+        redirect_uri = f"{DEFAULT_PUBLIC_URL}/auth/discord/callback"
     if not client_id or not client_secret:
         return Response("Discord OAuth is not configured.", status=500, mimetype="text/plain")
 
@@ -3980,7 +4003,7 @@ def bot_ticket_transcript_upload():
         )
     db.commit()
 
-    url = f"{request.host_url.rstrip('/')}/tickets/{ticket_id}"
+    url = f"{public_base_url()}/tickets/{ticket_id}"
     return jsonify({"ok": True, "ticket_id": ticket_id, "url": url, "transcript_url": url})
 
 
@@ -4035,14 +4058,14 @@ def discord_ticket_log_upload():
         values[:15] + (100, "approved", "Auto approved."),
     )
     db.commit()
-    public_base = os.environ.get("WEBSITE_PUBLIC_URL", "https://hellcore.net").rstrip("/")
+    public_base = public_base_url()
     ticket_url = f"{public_base}/?ticket_id={urllib.parse.quote(ticket_id)}"
     return jsonify({"ok": True, "ticket_id": ticket_id, "url": ticket_url, "ticket_url": ticket_url}), 201
 
 
 @app.route("/api/tickets/docs")
 def discord_ticket_upload_docs():
-    base_url = request.host_url.rstrip("/")
+    base_url = public_base_url()
     sample = {
         "ticket_id": "ticket-12345",
         "user_id": "123456789012345678",
@@ -4077,7 +4100,7 @@ code{{padding:2px 5px}}pre{{padding:16px;overflow:auto}}.ok{{color:#35d07f}}.err
 <h2>Example Request Body</h2>
 <pre>{html_escape(json.dumps(sample, indent=2))}</pre>
 <h2>Responses</h2>
-<pre class="ok">201 Created: {{"ok": true, "ticket_id": "ticket-12345", "ticket_url": "https://hellcore.net/?ticket_id=ticket-12345"}}</pre>
+<pre class="ok">201 Created: {{"ok": true, "ticket_id": "ticket-12345", "ticket_url": "https://www.hellcore.net/?ticket_id=ticket-12345"}}</pre>
 <pre class="err">400 Bad Request: invalid or missing fields
 401 Unauthorized: missing or invalid API key
 409 Conflict: ticket_id was already uploaded</pre>
@@ -6489,7 +6512,7 @@ def news_article(slug):
 
 @app.route("/robots.txt")
 def robots_txt():
-    content = "User-agent: *\nAllow: /\nSitemap: https://hellcore.net/sitemap.xml"
+    content = "User-agent: *\nAllow: /\nSitemap: https://www.hellcore.net/sitemap.xml"
     return Response(content, mimetype="text/plain")
 
 # -------------------------------------------------------

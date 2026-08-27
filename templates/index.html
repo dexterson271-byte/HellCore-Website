@@ -9523,7 +9523,7 @@
 
         // Success! Redirect to the main site ticket chat immediately.
         // We use the Deep Linking structure to open the specific ticket.
-        const mainSite = window.location.hostname.includes('hellcore.net') ? 'https://hellcore.net' : window.location.origin;
+        const mainSite = window.location.hostname.includes('hellcore.net') ? 'https://www.hellcore.net' : window.location.origin;
         window.location.href = `${mainSite}/tickets?id=${r.ticket_id}`;
       } catch (e) {
         toast('err', 'Checkout failed: ' + e.message);

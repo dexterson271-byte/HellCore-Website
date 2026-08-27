@@ -2398,7 +2398,7 @@
   <div id="APP">
     <!-- ═══ NAVBAR ═══ -->
     <nav id="NAV">
-      <a class="nlogo" href="https://hellcore.net">
+      <a class="nlogo" href="https://www.hellcore.net">
         <img src="/static/logo-glow.png" alt="Hellcore" onerror="this.src='/static/logo.png'">
         <div class="nlogo-t"><b>Hellcore</b><small>Store · Asia</small></div>
       </a>
@@ -2679,8 +2679,8 @@
     <!-- ═══ FOOTER ═══ -->
     <div class="store-footer">
       <p>&copy; 2024–2026 Hellcore Network. All rights reserved.</p>
-      <p style="margin-top:8px"><a href="https://hellcore.net">Main Site</a> · <a href="https://hellcore.net/news">News</a> · <a
-          href="https://discord.gg/hellcore">Discord</a> · <a href="https://hellcore.net/rules">Rules</a> · <a href="https://hellcore.net/privacy">Privacy</a> · <a href="https://hellcore.net/terms">Terms</a></p>
+      <p style="margin-top:8px"><a href="https://www.hellcore.net">Main Site</a> · <a href="https://www.hellcore.net/news">News</a> · <a
+          href="https://discord.gg/hellcore">Discord</a> · <a href="https://www.hellcore.net/rules">Rules</a> · <a href="https://www.hellcore.net/privacy">Privacy</a> · <a href="https://www.hellcore.net/terms">Terms</a></p>
     </div>
   </div>
 
@@ -2696,7 +2696,7 @@
       <div class="ferr" id="L-ERR"></div>
       <button class="btn" style="width:100%; margin-top:8px" onclick="doLogin()">Login</button>
       <p style="color:var(--tx3); text-align:center; margin-top:16px; font-size:0.82rem">Don't have an account? <a
-          href="https://hellcore.net" style="color:var(--g)">Register on main site</a></p>
+          href="https://www.hellcore.net" style="color:var(--g)">Register on main site</a></p>
     </div>
   </div>
 
@@ -2793,13 +2793,13 @@
   </div>
 
   <script>
-    const MAIN_DOMAIN = "https://hellcore.net";
+    const MAIN_DOMAIN = "https://www.hellcore.net";
     let ME = null;
     let PRODUCTS = [];
     let CART = [];
     const STORE_XP_PER_INR = 2.5;
     const ADMIN_ROLES = ['helper', 'mod', 'dev', 'admin', 'owner', 'founder'];
-    const MAIN_SITE = 'https://hellcore.net';
+    const MAIN_SITE = 'https://www.hellcore.net';
 
     function I(id) { return document.getElementById(id); }
     function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -2814,7 +2814,7 @@
     async function API(url, opts = {}) {
       const isProd = window.location.hostname.includes('hellcore.net');
       const isRemote = url.includes('/api/tickets') || url.includes('/api/auth');
-      const base = (isProd && isRemote) ? 'https://hellcore.net' : '';
+      const base = (isProd && isRemote) ? MAIN_SITE : '';
       const fullUrl = url.startsWith('http') ? url : (base + url);
 
       console.log(`[API] ${opts.method || 'GET'} ${fullUrl}`);

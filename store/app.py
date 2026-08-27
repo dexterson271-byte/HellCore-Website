@@ -54,6 +54,9 @@ MAIN_DOMAIN    = os.environ.get("MAIN_DOMAIN", "http://localhost:5000")
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
+def cookie_domain():
+    return ".hellcore.net" if "hellcore.net" in (request.host or "") else None
+
 # ═══════════════════════════════════════════════════════
 # DATABASE CONFIGURATION (shared with main site)
 # ═══════════════════════════════════════════════════════
@@ -1088,7 +1091,7 @@ def login():
             tok,
             max_age=60*60*24*30,
             path="/",
-            domain=".hellcore.net" if "hellcore.net" in request.host else None,
+            domain=cookie_domain(),
             samesite="None",
             secure=True
         )
