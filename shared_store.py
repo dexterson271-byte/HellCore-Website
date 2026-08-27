@@ -129,35 +129,44 @@ def build_purchase_metadata(user, items, rank_info, payment_method, payment_stat
 
 def notify_discord_ticket(ticket_id, title, description, author_name, category="general", order_code=None):
     """Sends a Discord notification via webhook for a new ticket."""
-    webhook_url = os.environ.get("STAFF_WEBHOOK", "https://discord.com/api/webhooks/1495099642671792261/LA6pwnEjA74swShTjPwX5qT5iBh_xHUBh6elQS8RK_OZF7anxO5hsXoIlBUsPSRvPavj")
-    
+    webhook_url = os.environ.get("STAFF_WEBHOOK", "").strip()
+    if not webhook_url:
+        return
+
+    public_base = (os.environ.get("WEBSITE_PUBLIC_URL") or "https://www.hellcore.net").strip().rstrip("/")
+    if public_base in ("https://hellcore.net", "http://hellcore.net"):
+        public_base = "https://www.hellcore.net"
+    ticket_url = f"{public_base}/tickets?id={ticket_id}"
+
     def run():
         try:
             color = 0x3498db # Blue (General)
             if category == "purchase": color = 0x2ecc71 # Green (Purchase)
             elif category == "bug": color = 0xe74c3c # Red (Bug)
-            
+
             content = f"🎫 **New Ticket #{ticket_id}** created by **{author_name}**"
             if category == "purchase":
                 content = f"🛒 **New Order Ticket #{ticket_id}** by **{author_name}**"
-            
+
             embed = {
                 "title": title,
                 "description": description[:1000],
+                "url": ticket_url,
                 "color": color,
                 "fields": [
                     {"name": "Category", "value": category.capitalize(), "inline": True},
-                    {"name": "Author", "value": author_name, "inline": True}
+                    {"name": "Author", "value": author_name, "inline": True},
+                    {"name": "Open Ticket", "value": f"[View on website]({ticket_url})", "inline": False},
                 ],
                 "footer": {"text": f"Hellcore Ticket System • ID: {ticket_id}"},
                 "timestamp": datetime.utcnow().isoformat()
             }
-            
+
             if order_code:
                 embed["fields"].append({"name": "Order Code", "value": f"`{order_code}`", "inline": True})
-                
+
             requests.post(webhook_url, json={"content": content, "embeds": [embed]}, timeout=5)
-        except:
+        except Exception:
             pass
-            
+
     threading.Thread(target=run, daemon=True).start()
