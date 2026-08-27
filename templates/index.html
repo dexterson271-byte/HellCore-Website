@@ -133,10 +133,21 @@
       background-repeat: no-repeat;
     }
 
+    #BG-VIDEO {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      z-index: 0;
+    }
+
     #BG::before {
       content: '';
       position: absolute;
       inset: 0;
+      z-index: 1;
       background:
         radial-gradient(ellipse 55% 45% at 50% 42%, rgba(8, 4, 12, 0.55), transparent 70%),
         radial-gradient(ellipse 80% 55% at 50% 40%, rgba(255, 107, 44, 0.08), transparent 65%);
@@ -147,6 +158,7 @@
       content: '';
       position: absolute;
       inset: 0;
+      z-index: 2;
       background: linear-gradient(180deg,
         rgba(8, 5, 4, 0.62) 0%,
         rgba(8, 5, 4, 0.68) 40%,
@@ -4434,6 +4446,7 @@
 
     /* ═══════ ACCESSIBILITY — Apple reduced-motion / transparency ═══════ */
     @media (prefers-reduced-motion: reduce) {
+      #BG-VIDEO { display: none; }
       *,
       *::before,
       *::after {
@@ -4906,7 +4919,11 @@
     </symbol>
   </svg>
 
-  <div id="BG"></div>
+  <div id="BG">
+    <video id="BG-VIDEO" autoplay muted loop playsinline preload="auto" poster="/static/bg-hellcore.jpg?v=1">
+      <source src="/static/bg-video.mp4" type="video/mp4">
+    </video>
+  </div>
   <div class="grid-bg"></div>
   <div id="APP">
 
