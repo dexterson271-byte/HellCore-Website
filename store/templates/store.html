@@ -1065,6 +1065,65 @@
       margin-left: auto;
     }
 
+    .payment-success-card {
+      display: none;
+      margin-bottom: 28px;
+      padding: 28px 30px;
+      border-radius: 24px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      background:
+        radial-gradient(circle at top right, rgba(74, 222, 128, 0.12), transparent 45%),
+        linear-gradient(135deg, rgba(18, 28, 22, 0.96), rgba(10, 10, 10, 0.98));
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    .payment-success-card.show {
+      display: block;
+    }
+
+    .payment-success-card h2 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+      color: #4ade80;
+    }
+
+    .payment-success-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin: 22px 0;
+    }
+
+    .payment-success-stat {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .payment-success-stat .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--tx3);
+      margin-bottom: 6px;
+    }
+
+    .payment-success-stat .value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .payment-success-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
     .store-hero,
     .section-head,
     .section-pill {
@@ -2638,9 +2697,9 @@
         <div class="chat-box">
           <div class="chat-msgs" id="TIX-MSGS"></div>
           <div class="chat-input">
-            <input class="inp" id="TIX-INP" placeholder="Type your message..."
-              onkeydown="if(event.key==='Enter') sendTixMsg()">
-            <button class="btn" onclick="sendTixMsg()">Send</button>
+            <textarea class="inp" id="TIX-INP" rows="3" placeholder="Type your message… (Enter to send, Shift+Enter for new line)"
+              onkeydown="handleStoreTixKey(event)"></textarea>
+            <button class="btn" id="TIX-SEND-BTN" type="button" onclick="sendTixMsg()">Send</button>
           </div>
         </div>
       </div>
@@ -2670,6 +2729,34 @@
       <div class="W" style="max-width:900px">
         <div class="stitle" style="font-size:2rem; margin-bottom:4px">📜 Purchase History</div>
         <p class="ssub">All your past orders and rank upgrades across the network</p>
+        <div id="PAYMENT-SUCCESS" class="payment-success-card">
+          <h2>✓ Payment successful</h2>
+          <p id="PAYMENT-SUCCESS-MSG" style="color:var(--tx2); margin:0; line-height:1.7; font-size:0.95rem">
+            Your rank should appear within a few minutes. Log in to <strong style="color:#fff">mc.hellcore.net</strong> to check.
+          </p>
+          <div class="payment-success-grid">
+            <div class="payment-success-stat">
+              <div class="label">Minecraft username</div>
+              <div class="value" id="PAY-SUCCESS-MC">—</div>
+            </div>
+            <div class="payment-success-stat">
+              <div class="label">Rank purchased</div>
+              <div class="value" id="PAY-SUCCESS-RANK">—</div>
+            </div>
+            <div class="payment-success-stat">
+              <div class="label">Amount paid</div>
+              <div class="value" id="PAY-SUCCESS-AMT">—</div>
+            </div>
+            <div class="payment-success-stat">
+              <div class="label">Payment method</div>
+              <div class="value" id="PAY-SUCCESS-METHOD">—</div>
+            </div>
+          </div>
+          <div class="payment-success-actions">
+            <button class="btn bsm" type="button" onclick="GO('tickets')">Having an issue? Create Ticket</button>
+            <a class="btn bsm bgrn" href="https://discord.gg/hellcore" target="_blank" rel="noopener">Join Discord</a>
+          </div>
+        </div>
         <div id="HISTORY-LIST">
           <div class="ld"><div class="sp"></div></div>
         </div>
@@ -2860,6 +2947,14 @@
     // TICKETS
     // ════════════════════════════════════════════════════════
     let CUR_TIX_ID = null;
+    let TIX_SENDING = false;
+
+    function handleStoreTixKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendTixMsg();
+      }
+    }
 
     async function loadTickets() {
       const email = localStorage.getItem('guest_email') || '';
@@ -2951,18 +3046,26 @@
     }
 
     async function sendTixMsg() {
+      if (TIX_SENDING) return;
       const inp = I('TIX-INP');
       const txt = inp.value.trim();
       if (!txt) return;
       const email = localStorage.getItem('guest_email') || '';
+      TIX_SENDING = true;
+      const sendBtn = I('TIX-SEND-BTN');
+      if (sendBtn) sendBtn.disabled = true;
       try {
         await API(`/api/tickets/${CUR_TIX_ID}/msg`, {
           method: 'POST',
           body: { content: txt, email }
         });
         inp.value = '';
-        viewTicket(CUR_TIX_ID); // Refresh
+        viewTicket(CUR_TIX_ID);
       } catch (e) { toast('err', e.message); }
+      finally {
+        TIX_SENDING = false;
+        if (sendBtn) sendBtn.disabled = false;
+      }
     }
 
     function GO(id, push = true) {
@@ -2989,11 +3092,33 @@
 
     async function loadHistory() {
       if (!ME) { GO('home'); return; }
-      
+
       const params = new URLSearchParams(window.location.search);
-      if (params.get('success')) {
-        toast('ok', 'Payment successful! Your order is being processed.');
-        // Clean URL
+      const successCard = I('PAYMENT-SUCCESS');
+      if (successCard) successCard.classList.remove('show');
+
+      const sessionId = params.get('session_id') || '';
+      const orderCode = params.get('order') || sessionStorage.getItem('store_payment_order') || '';
+      if (params.get('success') || sessionStorage.getItem('store_payment_success')) {
+        try {
+          const q = new URLSearchParams();
+          if (sessionId) q.set('session_id', sessionId);
+          if (orderCode) q.set('order', orderCode);
+          const confirmed = await API('/api/store/orders/confirm?' + q.toString());
+          if (successCard) {
+            successCard.classList.add('show');
+            I('PAYMENT-SUCCESS-MSG').textContent = confirmed.message || 'Your rank should appear within a few minutes. Log in to mc.hellcore.net to check.';
+            I('PAY-SUCCESS-MC').textContent = confirmed.mc_username || ME.mc_username || ME.username || '—';
+            I('PAY-SUCCESS-RANK').textContent = confirmed.rank_label || (confirmed.items || []).map(i => i.name).join(', ') || '—';
+            const method = (confirmed.payment_method || 'card').toUpperCase();
+            I('PAY-SUCCESS-AMT').textContent = confirmed.amount_label || `₹${Number(confirmed.total_inr || 0).toFixed(0)}`;
+            I('PAY-SUCCESS-METHOD').textContent = method;
+          }
+        } catch (e) {
+          toast('ok', 'Payment successful! Your order is being processed.');
+        }
+        sessionStorage.removeItem('store_payment_success');
+        sessionStorage.removeItem('store_payment_order');
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
@@ -3447,6 +3572,10 @@
           updateAuthUI();
           updateStoreProfile();
           updateCartCount();
+          if (d.order_code) {
+            sessionStorage.setItem('store_payment_success', '1');
+            sessionStorage.setItem('store_payment_order', d.order_code);
+          }
           GO('history');
         } else if (d.stripe_url) {
           window.location.href = d.stripe_url;

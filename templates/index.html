@@ -18,12 +18,12 @@
 
   <!-- Embed / Social Meta Tags -->
   <meta name="description"
-    content="Hellcore Network is the #1 Indian Cracked Bedwars Server. Experience low ping in Asia, competitive gameplay, and the best Minecraft Bedwars community. IP: mc.hellcore.net">
+    content="Hellcore Network — #1 Indian Cracked Bedwars &amp; SkyWars server. Join via mc.hellcore.net, hellcore.net, bistarwars.com, play.hellcore.net, or play.bistarwars.com. Low ping in Asia. SkyWars OUT NOW — battle across floating sky islands.">
   <meta property="og:title" content="Hellcore Network — mc.hellcore.net">
   <meta property="og:description"
-    content="Hellcore Network is the #1 Indian Cracked Bedwars Server. Experience low ping in Asia, competitive gameplay, and the best Minecraft Bedwars community. IP: mc.hellcore.net">
-  <meta property="og:image" content="https://hellcore.net/static/logo.png">
-  <meta property="og:url" content="https://hellcore.net">
+    content="Hellcore Network — #1 Indian Cracked Bedwars &amp; SkyWars server. Join via mc.hellcore.net, hellcore.net, bistarwars.com, play.hellcore.net, or play.bistarwars.com. SkyWars OUT NOW.">
+  <meta property="og:image" content="https://www.hellcore.net/static/logo.png">
+  <meta property="og:url" content="https://www.hellcore.net">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#1C1C1E">
@@ -38,21 +38,28 @@
       "name": "What is the Hellcore Network IP?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The IP address to join the Hellcore Network Minecraft server is mc.hellcore.net. You can use this IP to play Bedwars, Skywars, and other minigames on version 1.8 to 1.20+."
+        "text": "The primary IP to join Hellcore Network is mc.hellcore.net. You can also connect using hellcore.net or bistarwars.com (main proxy), or play.hellcore.net and play.bistarwars.com (alternate proxy). Play Bedwars, SkyWars, and other minigames on Java 1.8 to 1.21+."
+      }
+    }, {
+      "@type": "Question",
+      "name": "What are all Hellcore Network connection addresses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Main proxy (use any one): mc.hellcore.net, hellcore.net, or bistarwars.com. Alternate proxy (use any one): play.hellcore.net or play.bistarwars.com. All addresses connect to the same Hellcore Network Minecraft server."
       }
     }, {
       "@type": "Question",
       "name": "What is the best cracked Bedwars server in India?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Hellcore Network (IP: mc.hellcore.net) is the #1 cracked Bedwars server in India and Asia. It offers extremely low ping, lag-free gameplay, and a massive competitive community for Bedwars players."
+        "text": "Hellcore Network (mc.hellcore.net) is the #1 cracked Bedwars server in India and Asia. It offers extremely low ping, lag-free gameplay, and a massive competitive community. SkyWars is OUT NOW — battle across floating sky islands."
       }
     }, {
       "@type": "Question",
       "name": "How do I join Hellcore Network?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Open Minecraft, go to Multiplayer, click Add Server, and enter the server IP: mc.hellcore.net. It is cracked, meaning both premium and non-premium players can join and experience the best low ping Asian server."
+        "text": "Open Minecraft Java Edition, go to Multiplayer, click Add Server, and enter mc.hellcore.net (or hellcore.net, bistarwars.com, play.hellcore.net, play.bistarwars.com). Cracked and premium players can both join."
       }
     }]
   }
@@ -131,6 +138,10 @@
       background-size: cover;
       background-position: center 45%;
       background-repeat: no-repeat;
+    }
+
+    #BG.bg-static-only #BG-VIDEO {
+      display: none !important;
     }
 
     #BG-VIDEO {
@@ -4967,6 +4978,7 @@
         <div class="srv">
           <div class="dot" id="DOT"></div><span id="STXT">Checking…</span>
         </div>
+        <button class="bto bsm" id="BG-TOGGLE" type="button" onclick="toggleSiteBackground()" title="Switch background mode" style="font-size:.72rem;padding:6px 10px">Video</button>
         <div id="A-OUT" style="display:flex;gap:8px;align-items:center">
           <button class="bto bsm" onclick="openM('ML')">Login</button>
           <button class="btn bsm" onclick="openM('MR')">Register</button>
@@ -5131,8 +5143,11 @@
         </div>
         <div class="p" style="text-align:center;padding:24px">
           <div style="font-family: var(--font);color:var(--g);margin-bottom:7px">Ready to play?</div>
-          <p style="color:var(--tx2);margin-bottom:14px">Java Edition · <strong
+          <p style="color:var(--tx2);margin-bottom:8px;font-size:.88rem">Java Edition · <strong
               style="color:var(--g)">mc.hellcore.net</strong></p>
+          <p style="color:var(--tx3);margin-bottom:14px;font-size:.75rem;line-height:1.6">Also:
+            <strong>hellcore.net</strong>, <strong>bistarwars.com</strong>,
+            <strong>play.hellcore.net</strong>, <strong>play.bistarwars.com</strong></p>
           <button class="btn" onclick="copyIP()"><svg class="ic">
               <use href="#ic-clipboard" />
             </svg> Copy Server IP</button>
@@ -5898,8 +5913,16 @@
             <div class="stitle">Server Info</div>
             <table style="width:100%;font-size:.82rem;border-collapse:collapse">
               <tr>
-                <td style="color:var(--tx2);padding:4px 0">IP</td>
-                <td style="color:var(--g);font-weight:700">mc.hellcore.net</td>
+                <td style="color:var(--tx2);padding:4px 0;vertical-align:top">Main IP</td>
+                <td style="color:var(--g);font-weight:700;line-height:1.55">mc.hellcore.net<br>
+                  <span style="color:var(--tx2);font-weight:500;font-size:.78rem">hellcore.net · bistarwars.com</span>
+                </td>
+              </tr>
+              <tr>
+                <td style="color:var(--tx2);padding:4px 0;vertical-align:top">Alt IP</td>
+                <td style="color:var(--g);font-weight:700;line-height:1.55">play.hellcore.net<br>
+                  <span style="color:var(--tx2);font-weight:500;font-size:.78rem">play.bistarwars.com</span>
+                </td>
               </tr>
               <tr>
                 <td style="color:var(--tx2);padding:4px 0">Version</td>
@@ -5915,11 +5938,11 @@
               </tr>
               <tr>
                 <td style="color:var(--tx2);padding:4px 0">Modes</td>
-                <td>5 + Hub</td>
+                <td>Bedwars, SkyWars, RBW + Hub</td>
               </tr>
               <tr>
-                <td style="color:var(--tx2);padding:4px 0">Practice</td>
-                <td>2 Servers Combined</td>
+                <td style="color:var(--tx2);padding:4px 0">SkyWars</td>
+                <td><span style="color:#4ade80;font-weight:700">OUT NOW</span> — Battle across floating sky islands</td>
               </tr>
             </table>
           </div>
@@ -6075,8 +6098,8 @@
                 <span id="TIX-INTERNAL-BADGE" style="display:none;font-size:.7rem;color:#fbbf24">Internal note
                   mode</span>
               </div>
-              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message..."
-                oninput="ticketTyping()"></textarea>
+              <textarea id="TIX-RPLY" class="inp" rows="3" placeholder="Write a message… (Enter to send, Shift+Enter for new line)"
+                oninput="ticketTyping()" onkeydown="handleTixReplyKey(event)"></textarea>
               <div id="TIX-TYPING" style="display:none;margin-top:6px;font-size:.75rem;color:var(--tx2)"></div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
                 <div style="display:flex;gap:8px;align-items:center">
@@ -6084,8 +6107,9 @@
                     onchange="previewTicketImage(this)">
                   <button class="bto bsm" onclick="I('TIX-IMG').click()">Attach</button>
                   <span id="TIX-IMG-NM" style="font-size:.72rem;color:var(--tx2)"></span>
+                  <span style="font-size:.68rem;color:var(--tx3)">Enter · send · Shift+Enter · new line</span>
                 </div>
-                <button class="btn bsm" onclick="sendActiveTixMsg()">Send</button>
+                <button class="btn bsm" id="TIX-SEND-BTN" type="button" onclick="sendActiveTixMsg()">Send</button>
               </div>
             </div>
           </section>
@@ -6329,7 +6353,48 @@
     const STAFF_ROLES = ['helper', 'mod', 'admin', 'dev', 'owner', 'founder'];
     let CUR_FORUM = null;
     let PENDING_ROUTE = null, PENDING_TICKET_ID = null, NEXT_AFTER_AUTH = null;
-    let STAFF_PUSH_READY = false, TIX_TYPING_TIMER = null, TIX_TYPING_HIDE = null;
+    let STAFF_PUSH_READY = false, TIX_TYPING_TIMER = null, TIX_TYPING_HIDE = null, TIX_SENDING = false;
+    let CURRENT_PG = 'home';
+    let SITE_BG_MODE = localStorage.getItem('hc_bg_mode') || 'video';
+
+    function applySiteBackground(pageId) {
+      const bg = I('BG');
+      const vid = I('BG-VIDEO');
+      const toggle = I('BG-TOGGLE');
+      if (!bg) return;
+      const onHome = pageId === 'home';
+      const useVideo = SITE_BG_MODE === 'video' && onHome;
+      bg.classList.toggle('bg-static-only', !useVideo);
+      if (vid) {
+        if (useVideo) {
+          vid.style.display = '';
+          vid.play().catch(() => { });
+        } else {
+          vid.pause();
+          vid.style.display = 'none';
+        }
+      }
+      if (toggle) {
+        toggle.textContent = SITE_BG_MODE === 'video' ? 'Video' : 'Static';
+        toggle.title = onHome
+          ? `Background: ${SITE_BG_MODE} (click to switch)`
+          : 'Video plays on Home only — click to change preference';
+      }
+    }
+
+    function toggleSiteBackground() {
+      SITE_BG_MODE = SITE_BG_MODE === 'video' ? 'static' : 'video';
+      localStorage.setItem('hc_bg_mode', SITE_BG_MODE);
+      applySiteBackground(CURRENT_PG);
+      toast('ok', SITE_BG_MODE === 'video' ? 'Video background on Home' : 'Static background');
+    }
+
+    function handleTixReplyKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendActiveTixMsg();
+      }
+    }
     let isCheckingSession = false;
     let XP_STATE = { current_xp: 0, rank: null, ads_today: 0, ads_remaining: 60, next_ad: null };
     let STORE_RANKS_CACHE = [];
@@ -6625,6 +6690,9 @@
 
       if (id === 'admin' && !isAdmin()) { GO('home'); return; }
       if (id === 'staff' && !isStaff()) { GO('home'); return; }
+
+      CURRENT_PG = id;
+      applySiteBackground(id);
 
       document.querySelectorAll('.pg').forEach(p => p.classList.remove('ON'));
       document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
@@ -9160,6 +9228,7 @@
     }
     async function sendActiveTixMsg() { if (TIX.activeId) await sendTixMsg(TIX.activeId); }
     async function sendTixMsg(id) {
+      if (TIX_SENDING) return;
       const c = V('TIX-RPLY')?.trim();
       const file = I('TIX-IMG')?.files[0];
       if (!c && !file) return;
@@ -9171,6 +9240,9 @@
           reader.readAsDataURL(file);
         });
       }
+      TIX_SENDING = true;
+      const sendBtn = I('TIX-SEND-BTN');
+      if (sendBtn) sendBtn.disabled = true;
       try {
         const r = await API(`/api/tickets/${id}/msg`, {
           method: 'POST',
@@ -9187,6 +9259,10 @@
         tixMarkSeen(id, last);
         loadTix();
       } catch (e) { toast('err', e.message); }
+      finally {
+        TIX_SENDING = false;
+        if (sendBtn) sendBtn.disabled = false;
+      }
     }
     async function ticketAction(action, body = {}) {
       if (!TIX.activeId) return;

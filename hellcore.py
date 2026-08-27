@@ -334,7 +334,7 @@ async def update_status_embed():
         # Build Embed
         embed = discord.Embed(
             title="HELLCORE NETWORK | [1.8-1.21]",
-            description="Bedwars • Practice • Survival • Lifesteal",
+            description="Bedwars • SkyWars • RBW • Lifesteal",
             color=discord.Color.from_rgb(85, 255, 255) if online else discord.Color.red(),
             timestamp=datetime.utcnow()
         )

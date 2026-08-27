@@ -127,6 +127,38 @@ def build_purchase_metadata(user, items, rank_info, payment_method, payment_stat
     }
 
 
+def notify_discord_store_payment(order_code, username, items_desc, amount_display, payment_method):
+    """Staff webhook when a store order is paid (no support ticket)."""
+    webhook_url = os.environ.get("STAFF_WEBHOOK", "").strip()
+    if not webhook_url:
+        return
+
+    def run():
+        try:
+            embed = {
+                "title": f"💰 Store Payment — {order_code}",
+                "description": f"Automatic **{payment_method.upper()}** payment received.",
+                "color": 0x22c55e,
+                "fields": [
+                    {"name": "Minecraft", "value": username or "—", "inline": True},
+                    {"name": "Amount", "value": amount_display or "—", "inline": True},
+                    {"name": "Method", "value": payment_method.upper(), "inline": True},
+                    {"name": "Items", "value": items_desc[:900] or "—", "inline": False},
+                ],
+                "footer": {"text": f"Hellcore Store • {order_code}"},
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            requests.post(
+                webhook_url,
+                json={"content": f"🛒 **Paid order `{order_code}`** — **{username}**", "embeds": [embed]},
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def notify_discord_ticket(ticket_id, title, description, author_name, category="general", order_code=None):
     """Sends a Discord notification via webhook for a new ticket."""
     webhook_url = os.environ.get("STAFF_WEBHOOK", "").strip()

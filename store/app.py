@@ -24,7 +24,7 @@ import re
 import datetime as dt
 from datetime import datetime, timedelta
 from functools import wraps
-from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket
+from shared_store import build_purchase_metadata, rank_payload, notify_discord_ticket, notify_discord_store_payment
 import stripe
 
 # Load environment variables
@@ -49,10 +49,25 @@ app = Flask(__name__)
 UPI_ID = "lakshitdhirani@fam"
 USD_TO_INR = 83.0
 XP_PER_INR = 2.5
-STORE_DOMAIN   = os.environ.get("STORE_DOMAIN", "http://localhost:5001")
-MAIN_DOMAIN    = os.environ.get("MAIN_DOMAIN", "http://localhost:5000")
+DEFAULT_STORE_URL = "https://store.hellcore.net"
+DEFAULT_MAIN_URL = "https://www.hellcore.net"
+STORE_DOMAIN = os.environ.get("STORE_DOMAIN", DEFAULT_STORE_URL)
+MAIN_DOMAIN = os.environ.get("MAIN_DOMAIN", DEFAULT_MAIN_URL)
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+
+def store_public_url():
+    """Public store base URL for Stripe redirects (never localhost in production)."""
+    env = (os.environ.get("STORE_DOMAIN") or "").strip().rstrip("/")
+    if env and "localhost" not in env and "127.0.0.1" not in env:
+        if env.startswith("http://") and "hellcore.net" in env:
+            env = "https://" + env[len("http://"):]
+        return env
+    host = (request.headers.get("X-Forwarded-Host") or request.host or "").split(",")[0].strip()
+    if host and not host.startswith("localhost") and not host.startswith("127.0.0.1"):
+        proto = (request.headers.get("X-Forwarded-Proto") or request.scheme or "https").split(",")[0].strip()
+        return f"{proto}://{host}".rstrip("/")
+    return DEFAULT_STORE_URL
 
 def cookie_domain():
     return ".hellcore.net" if "hellcore.net" in (request.host or "") else None
@@ -495,7 +510,7 @@ def build_store_spa_response():
     return render_template("store.html"), 200
 
 
-def create_purchase_order_record(c, user, cart_items, source_app="store", payment_method="upi", payment_status="awaiting_proof"):
+def create_purchase_order_record(c, user, cart_items, source_app="store", payment_method="upi", payment_status="awaiting_proof", create_ticket=True):
     if not user:
         raise ValueError("Authenticated user required")
     if not cart_items:
@@ -518,23 +533,24 @@ def create_purchase_order_record(c, user, cart_items, source_app="store", paymen
         source_app=source_app,
     )
     now = meta["created_at"]
-    c.execute(
-        f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,status,last_message_at) "
-        f"VALUES({phs(9)})",
-        (meta["ticket_title"], meta["ticket_desc"], user["id"], user.get("email", ""), "store", "purchase", "high", "open", now),
-    )
-    ticket_id = c.lastrowid
-    c.execute(
-        f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type,meta_json) VALUES({phs(5)})",
-        (ticket_id, 1, meta["system_message"], "system", meta["details_json"]),
-    )
-    c.execute(
-        f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
-        (ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}"),
-    )
+    ticket_id = 0
+    if create_ticket:
+        c.execute(
+            f"INSERT INTO hc_tickets(title,description,author_id,email,source,category,priority,status,last_message_at) "
+            f"VALUES({phs(9)})",
+            (meta["ticket_title"], meta["ticket_desc"], user["id"], user.get("email", ""), "store", "purchase", "high", "open", now),
+        )
+        ticket_id = c.lastrowid
+        c.execute(
+            f"INSERT INTO hc_ticket_msgs(ticket_id,author_id,content,message_type,meta_json) VALUES({phs(5)})",
+            (ticket_id, 1, meta["system_message"], "system", meta["details_json"]),
+        )
+        c.execute(
+            f"INSERT INTO hc_ticket_activity(ticket_id,actor_id,action,details) VALUES({phs(4)})",
+            (ticket_id, user["id"], "order_created", f"{meta['order_code']} from {source_app}"),
+        )
+        notify_discord_ticket(ticket_id, meta["ticket_title"], meta["ticket_desc"], user["username"], "purchase", meta["order_code"])
 
-    # Discord Notification
-    notify_discord_ticket(ticket_id, meta["ticket_title"], meta["ticket_desc"], user["username"], "purchase", meta["order_code"])
     c.execute(
         f"""INSERT INTO hc_store_orders
             (user_id, ticket_id, order_code, items, total, status, payment_method, payment_status, source_app, details_json, rank_snapshot, mc_username)
@@ -545,22 +561,27 @@ def create_purchase_order_record(c, user, cart_items, source_app="store", paymen
             meta["order_code"],
             meta["items_json"],
             meta["total_usd"],
-            "pending",
+            "pending" if payment_method == "stripe" else ("completed" if payment_status == "completed" else "pending"),
             payment_method,
             payment_status,
             source_app,
             meta["details_json"],
             meta["rank_snapshot"],
-            user.get("mc_username", "") or "",
+            user.get("mc_username", "") or user.get("username", "") or "",
         ),
     )
     order_id = c.lastrowid
     return {
-        "ticket_id": ticket_id,
+        "ticket_id": ticket_id or None,
         "order_id": order_id,
         "order_code": meta["order_code"],
-        "redirect_url": f"/tickets?id={ticket_id}",
+        "redirect_url": f"/tickets?id={ticket_id}" if ticket_id else f"/history?success=true&order={meta['order_code']}",
         "details": json.loads(meta["details_json"]),
+        "mc_username": user.get("mc_username", "") or user.get("username", "") or "",
+        "items": meta["items"],
+        "total_usd": meta["total_usd"],
+        "total_inr": total_inr,
+        "payment_method": payment_method,
     }
 
 def track_event(event_type, product_id=None, product_name="", user_id=None, metadata=""):
@@ -714,6 +735,107 @@ def queue_store_fulfillment(c, user, cart_items, ticket_id=None):
             )
 
     return queued_commands
+
+def order_items_to_cart(items):
+    cart_items = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        cart_items.append({
+            "item_id": item.get("item_id") or item.get("id") or "",
+            "item_name": item.get("item_name") or item.get("name") or "Store item",
+            "item_price": item.get("item_price") or item.get("price") or 0,
+            "gamemode": item.get("gamemode") or "global",
+        })
+    return cart_items
+
+
+def finalize_paid_order(c, order, *, notify=True):
+    """Apply ranks / rewards for a paid order (Stripe, XP). Idempotent."""
+    if not order:
+        return False
+    if str(order.get("status") or "").lower() == "completed" and str(order.get("payment_status") or "").lower() == "completed":
+        return False
+
+    c.execute(f"SELECT * FROM hc_users WHERE id={ph()}", (order["user_id"],))
+    user = to_dict(c.fetchone())
+    if not user:
+        raise ValueError("User not found for order")
+
+    try:
+        items = json.loads(order.get("items") or "[]")
+    except Exception:
+        items = []
+    cart_items = order_items_to_cart(items)
+    queue_store_fulfillment(c, user, cart_items, ticket_id=None)
+    c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (order["user_id"],))
+    c.execute(
+        f"UPDATE hc_store_orders SET payment_status='completed', status='completed' WHERE id={ph()}",
+        (order["id"],),
+    )
+
+    if notify:
+        items_desc = ", ".join(
+            f"{i.get('name') or i.get('item_name') or 'Item'} ({i.get('gamemode') or 'global'})"
+            for i in items if isinstance(i, dict)
+        ) or "Store purchase"
+        amount_inr = round(float(order.get("total") or 0) * USD_TO_INR, 2)
+        notify_discord_store_payment(
+            order.get("order_code") or f"#{order.get('id')}",
+            order.get("mc_username") or user.get("mc_username") or user.get("username") or "—",
+            items_desc,
+            f"₹{amount_inr:.0f} (${float(order.get('total') or 0):.2f})",
+            order.get("payment_method") or "store",
+        )
+    return True
+
+
+def find_order_for_user(c, user_id, *, session_id="", order_code=""):
+    if order_code:
+        c.execute(
+            f"SELECT * FROM hc_store_orders WHERE user_id={ph()} AND order_code={ph()} ORDER BY id DESC LIMIT 1",
+            (user_id, order_code),
+        )
+        row = c.fetchone()
+        return to_dict(row) if row else None
+
+    if not session_id:
+        return None
+
+    c.execute(
+        f"SELECT * FROM hc_store_orders WHERE user_id={ph()} ORDER BY created_at DESC, id DESC LIMIT 25",
+        (user_id,),
+    )
+    for row in to_list(c.fetchall()):
+        try:
+            details = json.loads(row.get("details_json") or "{}")
+        except Exception:
+            details = {}
+        if details.get("stripe_session_id") == session_id:
+            return to_dict(row)
+    return None
+
+
+def serialize_store_order(row):
+    order = to_dict(row) if not isinstance(row, dict) else dict(row)
+    order["created_at"] = ts(order.get("created_at", ""))
+    try:
+        parsed_items = json.loads(order.get("items", "[]"))
+    except Exception:
+        parsed_items = []
+    normalized_items = []
+    for item in parsed_items:
+        if isinstance(item, dict):
+            normalized_items.append({
+                "name": item.get("item_name") or item.get("name") or "Store item",
+                "price": item.get("item_price") or item.get("price") or 0,
+                "gamemode": item.get("gamemode") or "",
+            })
+    order["items"] = normalized_items
+    total_usd = float(order.get("total") or 0)
+    order["total_inr"] = round(total_usd * USD_TO_INR, 2)
+    order["rank_label"] = ", ".join(i["name"] for i in normalized_items) or "—"
+    return order
 
 # ═══════════════════════════════════════════════════════
 # CORS & HEADERS
@@ -881,8 +1003,11 @@ def create_checkout():
             c.execute(f"UPDATE hc_users SET current_xp={ph()} WHERE id={ph()}", (new_xp, request.cu["id"]))
             
             # Create order with 'completed' status since XP is instant
-            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="xp", payment_status="completed")
-            queued_commands = queue_store_fulfillment(c, request.cu, cart_items, result["ticket_id"])
+            result = create_purchase_order_record(
+                c, request.cu, cart_items, source_app="store",
+                payment_method="xp", payment_status="completed", create_ticket=False,
+            )
+            queued_commands = queue_store_fulfillment(c, request.cu, cart_items, ticket_id=None)
             c.execute(
                 f"UPDATE hc_store_orders SET status='completed', payment_status='completed' WHERE id={ph()}",
                 (result["order_id"],),
@@ -916,14 +1041,18 @@ def create_checkout():
                 })
 
             # Create a pending order record first
-            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", payment_method="stripe", payment_status="pending")
-            
+            result = create_purchase_order_record(
+                c, request.cu, cart_items, source_app="store",
+                payment_method="stripe", payment_status="pending", create_ticket=False,
+            )
+            store_base = store_public_url()
+
             checkout_session = stripe.checkout.Session.create(
                 payment_method_types=['card'], # 'upi' can be added if enabled in dashboard
                 line_items=line_items,
                 mode='payment',
-                success_url=STORE_DOMAIN + '/history?success=true&session_id={CHECKOUT_SESSION_ID}',
-                cancel_url=STORE_DOMAIN + '/cart?canceled=true',
+                success_url=store_base + '/history?success=true&session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=store_base + '/cart?canceled=true',
                 client_reference_id=str(result["order_id"]),
                 customer_email=request.cu["email"],
                 metadata={
@@ -942,8 +1071,8 @@ def create_checkout():
             return jsonify({"stripe_url": checkout_session.url})
 
         else:
-            # Default to UPI (Ticket System)
-            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store")
+            # Default to UPI (Ticket System — manual proof required)
+            result = create_purchase_order_record(c, request.cu, cart_items, source_app="store", create_ticket=True)
             c.execute(f"DELETE FROM hc_cart WHERE user_id={ph()}", (request.cu["id"],))
             db.commit(); c.close(); db.close()
             track_event("checkout", None, "", request.cu["id"], json.dumps({"order_code": result["order_code"], "method": pay_method}))
@@ -962,29 +1091,53 @@ def create_checkout():
 def store_order_history():
     db = get_db(); c = db_cursor(db)
     c.execute(
-        f"""SELECT id, order_code, items, total, status, payment_method, payment_status, created_at
+        f"""SELECT id, order_code, items, total, status, payment_method, payment_status, created_at, mc_username
             FROM hc_store_orders
             WHERE user_id={ph()}
             ORDER BY created_at DESC, id DESC""",
         (request.cu["id"],)
     )
-    rows = to_list(c.fetchall()); c.close(); db.close()
-    for row in rows:
-        row["created_at"] = ts(row.get("created_at", ""))
-        try:
-            parsed_items = json.loads(row.get("items", "[]"))
-        except Exception:
-            parsed_items = []
-        normalized_items = []
-        for item in parsed_items:
-            if isinstance(item, dict):
-                normalized_items.append({
-                    "name": item.get("item_name") or item.get("name") or "Store item",
-                    "price": item.get("item_price") or item.get("price") or 0,
-                    "gamemode": item.get("gamemode") or "",
-                })
-        row["items"] = normalized_items
+    rows = [serialize_store_order(row) for row in to_list(c.fetchall())]
+    c.close(); db.close()
     return jsonify(rows)
+
+
+@app.route("/api/store/orders/confirm")
+@auth_required
+def store_order_confirm():
+    """Return paid-order details for the post-checkout success screen."""
+    session_id = (request.args.get("session_id") or "").strip()
+    order_code = (request.args.get("order") or request.args.get("order_code") or "").strip()
+    db = get_db(); c = db_cursor(db)
+    try:
+        order = find_order_for_user(c, request.cu["id"], session_id=session_id, order_code=order_code)
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+
+        if order.get("payment_method") == "stripe" and session_id and stripe.api_key:
+            try:
+                session = stripe.checkout.Session.retrieve(session_id)
+                if session.payment_status == "paid":
+                    finalize_paid_order(c, order, notify=True)
+                    db.commit()
+                    order = find_order_for_user(c, request.cu["id"], session_id=session_id, order_code=order_code)
+            except Exception as e:
+                print(f"[STRIPE CONFIRM ERROR] {e}")
+
+        payload = serialize_store_order(order)
+        payload["mc_username"] = payload.get("mc_username") or request.cu.get("mc_username") or request.cu.get("username") or "—"
+        payload["message"] = (
+            "Your rank should appear within a few minutes. Log in to mc.hellcore.net to check."
+            if payload.get("payment_status") == "completed"
+            else "Payment received — your order is being processed."
+        )
+        if payload.get("payment_method") == "xp":
+            payload["amount_label"] = f"{int(float(order.get('total') or 0) * XP_PER_INR)} XP"
+        else:
+            payload["amount_label"] = f"₹{payload['total_inr']:.0f}"
+        return jsonify(payload)
+    finally:
+        c.close(); db.close()
 
 
 @app.route("/api/stripe/webhook", methods=["POST"])
@@ -1008,18 +1161,14 @@ def stripe_webhook():
         if order_id:
             db = get_db(); c = db_cursor(db)
             try:
-                c.execute(f"UPDATE hc_store_orders SET payment_status='completed', status='completed' WHERE id={ph()}", (order_id,))
                 c.execute(f"SELECT * FROM hc_store_orders WHERE id={ph()}", (order_id,))
                 order = to_dict(c.fetchone())
                 if order:
-                    notify_discord_ticket(
-                        title=f"💰 Stripe Payment Received — #{order['order_code']}",
-                        message=f"**User:** {order['mc_username']}\n**Total:** ₹{order['total']}\n**Items:** {order['items']}\n\nPayment verified via Stripe.",
-                        color=0x22c55e
-                    )
+                    finalize_paid_order(c, order, notify=True)
                 db.commit()
             except Exception as e:
                 print(f"[STRIPE WEBHOOK ERROR] {e}")
+                traceback.print_exc()
             finally:
                 c.close(); db.close()
 
