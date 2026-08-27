@@ -9,7 +9,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npx prisma generate
 RUN npm run build
 
 FROM node:22-slim AS runner
@@ -26,4 +25,4 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 RUN mkdir -p uploads && chown -R nextjs:nodejs /app
 USER nextjs
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma db push && npm run start"]
+CMD ["npm", "run", "start"]
