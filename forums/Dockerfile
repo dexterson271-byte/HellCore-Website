@@ -1,14 +1,3 @@
-ChatGPT:
-Yes. For your setup — Next.js + Prisma 5.22.0 + PostgreSQL/Railway + node:22-slim — use this Dockerfile.
-
-The important fixes are:
-
-Install OpenSSL in the stages that need it.
-Run prisma generate after copying schema.prisma.
-Run prisma migrate deploy before starting Next.js.
-Make sure Prisma generates for the OpenSSL 3 environment.
-Don't use the old debian-openssl-1.1.x engine.
-Working Dockerfile
 FROM node:22-slim AS deps
 
 WORKDIR /app
