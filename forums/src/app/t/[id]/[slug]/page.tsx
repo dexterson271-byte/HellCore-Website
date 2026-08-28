@@ -3,12 +3,25 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isMod, isStaff } from "@/lib/types";
+import { formatPostDate } from "@/lib/thread-ui";
 import { ThreadClient } from "./ThreadClient";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string; slug: string }> };
+
+const authorSelect = {
+  id: true,
+  username: true,
+  role: true,
+  level: true,
+  reputation: true,
+  avatarUrl: true,
+  mcUsername: true,
+  postCount: true,
+  createdAt: true,
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -28,8 +41,8 @@ export default async function ThreadPage({ params }: Props) {
   const thread = await prisma.thread.findFirst({
     where: { id: threadId, deletedAt: null },
     include: {
-      author: true,
-      category: true,
+      author: { select: authorSelect },
+      category: { include: { group: true } },
       poll: { include: { options: true } },
       bookmarks: session ? { where: { userId: session.forumUserId } } : false,
       follows: session ? { where: { userId: session.forumUserId } } : false,
@@ -44,12 +57,15 @@ export default async function ThreadPage({ params }: Props) {
     where: { threadId, deletedAt: null, parentId: null },
     orderBy: { createdAt: "asc" },
     include: {
-      author: true,
+      author: { select: authorSelect },
       reactions: true,
       children: {
         where: { deletedAt: null },
         orderBy: { createdAt: "asc" },
-        include: { author: true, reactions: true },
+        include: {
+          author: { select: authorSelect },
+          reactions: true,
+        },
       },
     },
   });
@@ -68,28 +84,44 @@ export default async function ThreadPage({ params }: Props) {
   };
 
   return (
-    <div className="container" style={{ display: "grid", gap: 16 }}>
+    <main className="thread-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="forum-frame">
-        <div className="forum-toolbar">
-          <div className="breadcrumb">
-            <Link href="/forums">Forums</Link> <span className="muted">›</span>{" "}
-            <Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link>
-          </div>
+
+      <nav className="thread-crumb">
+        <Link href="/">Home</Link>
+        <span>›</span>
+        <Link href="/forums">Forums</Link>
+        <span>›</span>
+        {thread.category.group && (
+          <>
+            <span>{thread.category.group.name}</span>
+            <span>›</span>
+          </>
+        )}
+        <Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link>
+        <span>›</span>
+      </nav>
+
+      <header className="thread-header">
+        <div className="thread-states">
+          {thread.isPinned && <span className="tag">Pinned</span>}
+          {thread.isLocked && <span className="tag">Locked</span>}
+          {thread.isSolved && <span className="tag solved">Solved</span>}
+          {thread.isFeatured && <span className="tag">Featured</span>}
         </div>
-        <header style={{ padding: "1rem 1.1rem", borderBottom: "1px solid var(--frame-border)" }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {thread.isPinned && <span className="tag">Pinned</span>}
-            {thread.isLocked && <span className="tag">Locked</span>}
-            {thread.isSolved && <span className="tag" style={{ background: "rgba(74,222,128,0.12)", color: "var(--good)" }}>Solved</span>}
-            {thread.isFeatured && <span className="tag">Featured</span>}
-          </div>
-          <h1 style={{ margin: "0 0 8px", fontSize: "1.35rem", color: "var(--gold-light)" }}>{thread.title}</h1>
-          <div className="muted" style={{ fontSize: "0.82rem" }}>
-            by <Link href={`/u/${thread.author.username}`} style={{ color: "var(--gold-light)", fontWeight: 700 }}>{thread.author.username}</Link>
-            {" · "}{thread.views} views · {thread.replyCount} replies
-          </div>
-        </header>
+        <h1>{thread.title}</h1>
+        <p className="thread-meta">
+          <Link href={`/u/${thread.author.username}`}>{thread.author.username}</Link>
+          <span>·</span>
+          <time dateTime={thread.createdAt.toISOString()}>{formatPostDate(thread.createdAt.toISOString())}</time>
+          <span>·</span>
+          <span>{thread.views} views</span>
+          <span>·</span>
+          <span>{thread.replyCount} replies</span>
+        </p>
+      </header>
+
+      <div className="thread-frame">
         <ThreadClient
           threadId={thread.id}
           slug={slug || thread.slug}
@@ -102,6 +134,6 @@ export default async function ThreadPage({ params }: Props) {
           poll={thread.poll ? JSON.parse(JSON.stringify(thread.poll)) : null}
         />
       </div>
-    </div>
+    </main>
   );
 }
