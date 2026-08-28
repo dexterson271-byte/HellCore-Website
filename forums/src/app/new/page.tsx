@@ -1,12 +1,10 @@
 import { Suspense } from "react";
-import NewThreadForm from "./NewThreadForm";
+import NewThreadPageClient from "./NewThreadPageClient";
 
 export default function NewThreadPage() {
   return (
-    <div className="container">
-      <Suspense fallback={<div className="muted">Loading…</div>}>
-        <NewThreadForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="muted" style={{ padding: "2rem" }}>Loading…</div>}>
+      <NewThreadPageClient />
+    </Suspense>
   );
 }

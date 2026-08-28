@@ -1,5 +1,5 @@
-import { SiteNav } from "@/components/SiteNav";
-import { ForumHero } from "@/components/ForumHero";
+import { ForumChrome } from "@/components/ForumChrome";
+import { SiteFooter } from "@/components/SiteFooter";
 import { getSession } from "@/lib/auth";
 import "./globals.css";
 import type { Metadata } from "next";
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: "Hellcore Forums",
     template: "%s · Hellcore Forums",
   },
-  description: "Official Hellcore Network community forums — Bedwars, SkyWars, support, and more.",
+  description: "Official Hellcore Network community forums — support, community, and more.",
   metadataBase: new URL(process.env.FORUMS_PUBLIC_URL || "https://forums.hellcore.net"),
 };
 
@@ -19,19 +19,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <ForumHero />
-        <SiteNav user={user} />
-        {children}
-        <footer className="site-footer">
-          <span>© Hellcore Network Forums</span>
-          <div>
-            <a href="https://www.hellcore.net">Main site</a>
-            {" · "}
-            <a href="https://store.hellcore.net">Store</a>
-            {" · "}
-            <a href="https://discord.gg/hellcore">Discord</a>
-          </div>
-        </footer>
+        <ForumChrome user={user}>{children}</ForumChrome>
+        <SiteFooter />
       </body>
     </html>
   );
