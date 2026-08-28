@@ -43,7 +43,7 @@ const GROUPS = [
   },
 ];
 
-async function main() {
+export async function seed() {
   for (const [i, g] of GROUPS.entries()) {
     const group = await prisma.categoryGroup.upsert({
       where: { slug: g.slug },
@@ -121,9 +121,13 @@ async function main() {
   console.log("Seed complete");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Only run automatically when this file is executed directly (e.g. `npm run db:seed`),
+// not when imported (e.g. by the temporary /api/seed route).
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seed()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
