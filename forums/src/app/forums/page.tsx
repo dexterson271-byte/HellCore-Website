@@ -6,7 +6,7 @@ import { getForumIndexData } from "@/lib/forum-data";
 export const dynamic = "force-dynamic";
 
 export default async function ForumsPage() {
-  const { groups, latestByCategory, session, userProfile, onlineUsers, stats } = await getForumIndexData();
+  const { groups, latestByCategory, session, userProfile, onlineUsers, latestPosts, stats } = await getForumIndexData();
 
   return (
     <div className="container forum-layout">
@@ -51,6 +51,7 @@ export default async function ForumsPage() {
         user={session}
         userProfile={userProfile}
         onlineUsers={onlineUsers}
+        latestPosts={latestPosts}
         stats={stats}
       />
     </div>

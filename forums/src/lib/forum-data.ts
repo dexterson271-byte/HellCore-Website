@@ -5,12 +5,12 @@ export async function getForumSidebarData() {
   const onlineCutoff = new Date(Date.now() - 5 * 60_000);
   const session = await getSession();
 
-  const [onlineUsers, members, online, threadCount, postCount, userProfile] = await Promise.all([
+  const [onlineUsers, members, online, threadCount, postCount, userProfile, latestPosts] = await Promise.all([
     prisma.forumUser.findMany({
       where: { lastActiveAt: { gte: onlineCutoff } },
       take: 40,
       orderBy: { lastActiveAt: "desc" },
-      select: { id: true, username: true, mcUsername: true, role: true },
+      select: { id: true, username: true, mcUsername: true, role: true, avatarUrl: true },
     }),
     prisma.forumUser.count(),
     prisma.forumUser.count({ where: { lastActiveAt: { gte: onlineCutoff } } }),
@@ -31,12 +31,22 @@ export async function getForumSidebarData() {
           },
         })
       : null,
+    prisma.thread.findMany({
+      where: { deletedAt: null },
+      orderBy: { lastActivityAt: "desc" },
+      take: 8,
+      include: {
+        author: { select: { username: true, mcUsername: true, role: true, avatarUrl: true } },
+        category: { select: { name: true, slug: true, color: true } },
+      },
+    }),
   ]);
 
   return {
     session,
     userProfile,
     onlineUsers,
+    latestPosts,
     stats: { members, online, threads: threadCount, posts: postCount },
   };
 }
@@ -55,7 +65,9 @@ export async function getForumIndexData() {
         where: { deletedAt: null, categoryId: { in: categoryIds } },
         orderBy: { lastActivityAt: "desc" },
         distinct: ["categoryId"],
-        include: { author: { select: { username: true, mcUsername: true } } },
+        include: {
+          author: { select: { username: true, mcUsername: true, role: true, avatarUrl: true } },
+        },
       })
     : [];
 
@@ -83,13 +95,4 @@ export function categoryIcon(icon?: string | null, name?: string) {
   return "📁";
 }
 
-export function roleLabel(role: string) {
-  const r = role.toLowerCase();
-  if (r === "owner" || r === "founder") return "Owner";
-  if (r === "admin") return "Administrator";
-  if (r === "dev") return "Developer";
-  if (r === "mod") return "Moderator";
-  if (r === "helper") return "Helper";
-  if (r === "vip") return "VIP";
-  return "Member";
-}
+export { roleLabel, roleColor } from "./roles";

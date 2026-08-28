@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { avatarUrl } from "@/lib/avatars";
+import { UserAvatar, Username } from "@/components/UserAvatar";
 
 type ThreadRowProps = {
   id: number;
@@ -13,7 +13,7 @@ type ThreadRowProps = {
   isSolved?: boolean;
   isFeatured?: boolean;
   lastActivityAt: string | Date;
-  author: { username: string; mcUsername?: string | null; level?: number };
+  author: { username: string; mcUsername?: string | null; level?: number; role?: string; avatarUrl?: string | null };
   category?: { name: string; slug: string; color?: string };
   showCategory?: boolean;
 };
@@ -21,6 +21,13 @@ type ThreadRowProps = {
 export function ThreadRow(t: ThreadRowProps) {
   return (
     <div className="forum-row thread-row">
+      <UserAvatar
+        username={t.author.username}
+        mcUsername={t.author.mcUsername}
+        avatarUrl={t.author.avatarUrl}
+        size={40}
+        className="thread-row-avatar"
+      />
       <div className="forum-row-main">
         <div className="thread-states">
           {t.isPinned && <span className="tag">Pinned</span>}
@@ -41,15 +48,7 @@ export function ThreadRow(t: ThreadRowProps) {
           {t.title}
         </Link>
         <div className="forum-row-desc">
-          <img
-            className="user-avatar-sm"
-            src={avatarUrl(t.author.username, t.author.mcUsername, 28)}
-            alt=""
-            style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }}
-          />
-          <Link href={`/u/${t.author.username}`} style={{ color: "var(--gold-light)", fontWeight: 700 }}>
-            {t.author.username}
-          </Link>
+          <Username username={t.author.username} role={t.author.role} />
           {t.author.level ? ` · L${t.author.level}` : ""}
           {" · "}
           {formatDistanceToNow(new Date(t.lastActivityAt), { addSuffix: true })}

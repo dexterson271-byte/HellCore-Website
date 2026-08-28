@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { categoryIcon } from "@/lib/forum-data";
+import { UserAvatar, Username } from "@/components/UserAvatar";
 
 type Category = {
   id: number;
@@ -18,7 +19,12 @@ type LatestThread = {
   title: string;
   slug: string;
   lastActivityAt: Date;
-  author: { username: string };
+  author: {
+    username: string;
+    mcUsername?: string | null;
+    role?: string;
+    avatarUrl?: string | null;
+  };
 };
 
 export function ForumCategorySection({
@@ -58,16 +64,24 @@ export function ForumCategorySection({
             </div>
             <div className="forum-row-latest">
               {latest ? (
-                <>
-                  <Link href={`/t/${latest.id}/${latest.slug}`} className="thread-title">
-                    {latest.title}
-                  </Link>
-                  <div className="meta">
-                    <Link href={`/u/${latest.author.username}`}>{latest.author.username}</Link>
-                    {" · "}
-                    {formatDistanceToNow(new Date(latest.lastActivityAt), { addSuffix: true })}
+                <div className="latest-post-cell">
+                  <UserAvatar
+                    username={latest.author.username}
+                    mcUsername={latest.author.mcUsername}
+                    avatarUrl={latest.author.avatarUrl}
+                    size={36}
+                  />
+                  <div className="latest-post-text">
+                    <Link href={`/t/${latest.id}/${latest.slug}`} className="thread-title">
+                      {latest.title}
+                    </Link>
+                    <div className="meta">
+                      {formatDistanceToNow(new Date(latest.lastActivityAt), { addSuffix: true })}
+                      {" · "}
+                      <Username username={latest.author.username} role={latest.author.role} />
+                    </div>
                   </div>
-                </>
+                </div>
               ) : (
                 <span className="muted">No posts yet</span>
               )}

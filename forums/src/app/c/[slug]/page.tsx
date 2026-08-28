@@ -26,7 +26,7 @@ export default async function CategoryPage({ params }: Props) {
       where: { categoryId: category.id, deletedAt: null },
       orderBy: [{ isPinned: "desc" }, { lastActivityAt: "desc" }],
       take: 40,
-      include: { author: { select: { username: true, mcUsername: true, level: true } } },
+      include: { author: { select: { username: true, mcUsername: true, level: true, role: true, avatarUrl: true } } },
     }),
     getForumSidebarData(),
   ]);
@@ -52,7 +52,8 @@ export default async function CategoryPage({ params }: Props) {
             </div>
           )}
 
-          <div className="forum-col-headers" style={{ gridTemplateColumns: "1fr auto auto" }}>
+          <div className="forum-col-headers" style={{ gridTemplateColumns: "44px 1fr 70px 70px" }}>
+            <span />
             <span>Thread</span>
             <span className="col-stat">Replies</span>
             <span className="col-stat">Views</span>
@@ -77,6 +78,7 @@ export default async function CategoryPage({ params }: Props) {
         user={sidebar.session}
         userProfile={sidebar.userProfile}
         onlineUsers={sidebar.onlineUsers}
+        latestPosts={sidebar.latestPosts}
         stats={sidebar.stats}
       />
     </div>

@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const data = await getForumIndexData();
-  const { groups, latestByCategory, session, userProfile, onlineUsers, stats } = data;
+  const { groups, latestByCategory, session, userProfile, onlineUsers, latestPosts, stats } = data;
 
   const announcements = await prisma.thread.findMany({
     where: { deletedAt: null, isAnnouncement: true },
     orderBy: { createdAt: "desc" },
     take: 5,
-    include: { author: { select: { username: true, mcUsername: true } } },
+    include: { author: { select: { username: true, mcUsername: true, role: true, avatarUrl: true, level: true } } },
   });
 
   return (
@@ -68,6 +68,7 @@ export default async function HomePage() {
         user={session}
         userProfile={userProfile}
         onlineUsers={onlineUsers}
+        latestPosts={latestPosts}
         stats={stats}
       />
     </div>
