@@ -2,10 +2,12 @@ import { prisma } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
 import { handleApiError, json } from "@/lib/api";
 import { slugify } from "@/lib/types";
+import { visibleGroupFilter } from "@/lib/forum-data";
 
 export async function GET() {
   try {
     const groups = await prisma.categoryGroup.findMany({
+      where: visibleGroupFilter(),
       orderBy: { sortOrder: "asc" },
       include: {
         categories: {

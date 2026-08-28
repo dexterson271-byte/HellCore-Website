@@ -13,16 +13,6 @@ const GROUPS = [
     ],
   },
   {
-    name: "Gameplay",
-    slug: "gameplay",
-    cats: [
-      ["BedWars", "bedwars", "Strategies, LFG, and competitive BedWars talk."],
-      ["SkyWars", "skywars", "Sky island PvP discussion and clips."],
-      ["Lifesteal", "lifesteal", "Hearts, bases, and SMP discussion."],
-      ["Ranked", "ranked", "RBW and competitive ranked play."],
-    ],
-  },
-  {
     name: "Community",
     slug: "community",
     cats: [
@@ -44,6 +34,11 @@ const GROUPS = [
 ];
 
 export async function seed() {
+  await prisma.category.deleteMany({
+    where: { slug: { in: ["bedwars", "skywars", "lifesteal", "ranked"] } },
+  });
+  await prisma.categoryGroup.deleteMany({ where: { slug: "gameplay" } });
+
   for (const [i, g] of GROUPS.entries()) {
     const group = await prisma.categoryGroup.upsert({
       where: { slug: g.slug },

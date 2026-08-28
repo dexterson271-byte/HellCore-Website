@@ -1,6 +1,13 @@
 import { prisma } from "./db";
 import { getSession } from "./auth";
 
+/** Category groups hidden from the public forum index and category pickers. */
+export const HIDDEN_GROUP_SLUGS = ["gameplay"];
+
+export function visibleGroupFilter() {
+  return { slug: { notIn: HIDDEN_GROUP_SLUGS } };
+}
+
 export async function getForumSidebarData() {
   const onlineCutoff = new Date(Date.now() - 5 * 60_000);
   const session = await getSession();
@@ -55,6 +62,7 @@ export async function getForumIndexData() {
   const sidebar = await getForumSidebarData();
 
   const groups = await prisma.categoryGroup.findMany({
+    where: visibleGroupFilter(),
     orderBy: { sortOrder: "asc" },
     include: { categories: { orderBy: { sortOrder: "asc" } } },
   });

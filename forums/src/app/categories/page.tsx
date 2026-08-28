@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { categoryIconClass, visibleGroupFilter } from "@/lib/forum-data";
 import { prisma } from "@/lib/db";
-import { categoryIconClass } from "@/lib/forum-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
   const groups = await prisma.categoryGroup.findMany({
+    where: visibleGroupFilter(),
     orderBy: { sortOrder: "asc" },
     include: { categories: { orderBy: { sortOrder: "asc" } } },
   });
