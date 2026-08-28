@@ -32,34 +32,39 @@ export default function DiscoverClient({ initial }: { initial: Record<string, Th
   }, [initial, tab, sort]);
 
   return (
-    <div className="container" style={{ display: "grid", gap: 16 }}>
-      <div>
-        <h1 style={{ margin: 0 }}>Discover</h1>
-        <p className="muted">Trending, popular, unanswered, and staff picks</p>
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TABS.map((t) => (
-          <button key={t} className={tab === t ? "btn" : "btn-ghost"} onClick={() => setTab(t)} style={{ textTransform: "capitalize" }}>
-            {t}
-          </button>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {[
-          ["activity", "Most active"],
-          ["new", "Latest"],
-          ["replies", "Most replies"],
-          ["views", "Most viewed"],
-        ].map(([k, label]) => (
-          <button key={k} className={sort === k ? "btn" : "btn-ghost"} onClick={() => setSort(k)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div style={{ display: "grid", gap: 10 }}>
+    <div className="container">
+      <div className="forum-frame">
+        <div className="forum-toolbar">
+          <div>
+            <h1 style={{ margin: 0, fontSize: "1.1rem", color: "var(--gold-light)" }}>Discover</h1>
+            <p className="muted" style={{ margin: "4px 0 0", fontSize: "0.82rem" }}>Trending, popular, unanswered, and staff picks</p>
+          </div>
+        </div>
+        <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--frame-border)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {TABS.map((t) => (
+            <button key={t} className={tab === t ? "btn btn-sm" : "btn-ghost btn-sm"} onClick={() => setTab(t)} style={{ textTransform: "capitalize" }}>
+              {t}
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: "0.5rem 1rem", borderBottom: "1px solid var(--frame-border)", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            ["activity", "Most active"],
+            ["new", "Latest"],
+            ["replies", "Most replies"],
+            ["views", "Most viewed"],
+          ].map(([k, label]) => (
+            <button key={k} className={sort === k ? "btn btn-sm" : "btn-ghost btn-sm"} onClick={() => setSort(k)}>
+              {label}
+            </button>
+          ))}
+        </div>
         {list.map((t) => (
-          <ThreadCard key={t.id} {...t} />
+          <ThreadCard key={t.id} {...t} showCategory />
         ))}
+        {!list.length && (
+          <div style={{ padding: "2rem", textAlign: "center" }} className="muted">No discussions found.</div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { SiteNav } from "@/components/SiteNav";
+import { ForumHero } from "@/components/ForumHero";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import "./globals.css";
@@ -26,8 +27,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body>
         <SiteNav user={user} unread={unread} />
-        <main style={{ padding: "1.5rem 0 3rem" }}>{children}</main>
-        <footer style={{ borderTop: "1px solid var(--bd)", padding: "1.5rem 0", color: "var(--tx3)", fontSize: "0.85rem" }}>
+        <ForumHero />
+        <main style={{ padding: "1.25rem 0 3rem" }}>{children}</main>
+        <footer style={{ borderTop: "2px solid var(--frame-border)", padding: "1.25rem 0", color: "var(--tx3)", fontSize: "0.8rem", background: "rgba(0,0,0,0.4)" }}>
           <div className="container" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <span>© Hellcore Network Forums</span>
             <span>

@@ -1,61 +1,58 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { ThreadCard } from "@/components/ThreadCard";
+import { ForumSidebar } from "@/components/ForumSidebar";
+import { ForumCategorySection } from "@/components/ForumCategorySection";
+import { getForumIndexData } from "@/lib/forum-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function ForumsPage() {
-  const groups = await prisma.categoryGroup.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: { categories: { orderBy: { sortOrder: "asc" } } },
-  });
-  const recent = await prisma.thread.findMany({
-    where: { deletedAt: null },
-    orderBy: { lastActivityAt: "desc" },
-    take: 10,
-    include: { author: true, category: true },
-  });
+  const { groups, latestByCategory, session, userProfile, onlineUsers, stats } = await getForumIndexData();
 
   return (
-    <div className="container" style={{ display: "grid", gap: 22 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Forums</h1>
-          <p className="muted" style={{ margin: "6px 0 0" }}>Browse every Hellcore category</p>
-        </div>
-        <Link href="/new" className="btn">Create Thread</Link>
-      </div>
-
-      <div style={{ display: "grid", gap: 16 }}>
-        {groups.map((g) => (
-          <section key={g.id} className="card" style={{ padding: "1rem" }}>
-            <h2 style={{ margin: "0 0 12px", fontSize: "0.95rem", letterSpacing: "0.08em", color: "var(--tx2)" }}>{g.name}</h2>
-            <div style={{ display: "grid", gap: 8 }}>
-              {g.categories.map((c) => (
-                <Link key={c.id} href={`/c/${c.slug}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "0.75rem 0.5rem", borderTop: "1px solid var(--bd)" }}>
-                  <div>
-                    <div style={{ fontWeight: 800, color: c.color }}>{c.name}</div>
-                    <div className="muted" style={{ fontSize: "0.85rem" }}>{c.description}</div>
-                  </div>
-                  <div className="muted" style={{ textAlign: "right", fontSize: "0.8rem" }}>
-                    <div>{c.threadCount} threads</div>
-                    <div>{c.postCount} posts</div>
-                  </div>
-                </Link>
-              ))}
+    <div className="container forum-layout">
+      <div>
+        <div className="forum-frame">
+          <div className="forum-toolbar">
+            <div className="breadcrumb">
+              <Link href="/">Home</Link> <span className="muted">›</span> <strong>Forum list</strong>
             </div>
-          </section>
-        ))}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Link href="/discover?tab=new" className="btn-ghost btn-sm">New posts</Link>
+              <Link href="/new" className="btn btn-sm">Post thread…</Link>
+            </div>
+          </div>
+
+          <div className="forum-col-headers">
+            <span />
+            <span>Forum</span>
+            <span className="col-stat">Threads</span>
+            <span className="col-stat">Messages</span>
+            <span className="col-latest">Latest post</span>
+          </div>
+
+          {groups.map((g) => (
+            <ForumCategorySection
+              key={g.id}
+              groupName={g.name}
+              categories={g.categories}
+              latestByCategory={latestByCategory}
+            />
+          ))}
+
+          {!groups.length && (
+            <div style={{ padding: "2rem", textAlign: "center" }} className="muted">
+              No forum categories yet. Check back soon.
+            </div>
+          )}
+        </div>
       </div>
 
-      <section>
-        <h2 style={{ fontSize: "1.1rem" }}>Active right now</h2>
-        <div style={{ display: "grid", gap: 10 }}>
-          {recent.map((t) => (
-            <ThreadCard key={t.id} {...t} lastActivityAt={t.lastActivityAt} />
-          ))}
-        </div>
-      </section>
+      <ForumSidebar
+        user={session}
+        userProfile={userProfile}
+        onlineUsers={onlineUsers}
+        stats={stats}
+      />
     </div>
   );
 }

@@ -10,7 +10,6 @@ COPY package.json package-lock.json ./
 
 RUN npm ci
 
-
 FROM node:22-slim AS builder
 
 WORKDIR /app
@@ -31,7 +30,6 @@ RUN npx prisma generate
 
 # Build Next.js
 RUN npm run build
-
 
 FROM node:22-slim AS runner
 

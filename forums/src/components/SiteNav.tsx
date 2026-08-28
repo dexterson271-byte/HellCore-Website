@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SessionUser } from "@/lib/types";
 
 const MAIN = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://www.hellcore.net";
@@ -19,42 +22,46 @@ export function SiteNav({
   user: SessionUser | null;
   unread?: number;
 }) {
+  const pathname = usePathname();
+
   return (
-    <header className="nav-shell">
-      <div className="container" style={{ display: "flex", alignItems: "center", gap: 16, minHeight: 64 }}>
-        <Link href="/" style={{ fontWeight: 900, letterSpacing: "-0.03em", fontSize: "1.15rem" }}>
-          HELLCORE <span style={{ color: "var(--accent)" }}>Forums</span>
-        </Link>
-        <nav className="desktop-nav" style={{ display: "flex", gap: 6, flex: 1, flexWrap: "wrap" }}>
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="btn-ghost" style={{ padding: "0.4rem 0.7rem", fontSize: "0.85rem" }}>
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/search" className="btn-ghost" style={{ padding: "0.45rem 0.7rem" }}>Search</Link>
+    <>
+      <div className="util-bar">
+        <div className="container" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 14, minHeight: 32, padding: "4px 0" }}>
           {user ? (
             <>
-              <Link href="/notifications" className="btn-ghost" style={{ padding: "0.45rem 0.7rem", position: "relative" }}>
+              <Link href={`/u/${user.username}`}>Profile</Link>
+              <Link href="/messages">Messages</Link>
+              <Link href="/notifications">
                 Alerts{unread > 0 ? ` (${unread})` : ""}
               </Link>
-              <Link href="/messages" className="btn-ghost" style={{ padding: "0.45rem 0.7rem" }}>Messages</Link>
-              <Link href={`/u/${user.username}`} className="btn-ghost" style={{ padding: "0.45rem 0.7rem" }}>
-                {user.username}
-              </Link>
-              <Link href="/new" className="btn">Create Thread</Link>
               {["mod", "admin", "dev", "owner", "founder"].includes(user.role) && (
-                <Link href="/admin" className="btn-ghost">Admin</Link>
+                <Link href="/admin">Admin</Link>
               )}
             </>
           ) : (
-            <a className="btn" href={`${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`}>
-              Login
-            </a>
+            <a href={`${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`}>Login</a>
           )}
         </div>
       </div>
-    </header>
+
+      <header className="nav-shell">
+        <div className="container">
+          <nav className="nav-tabs desktop-nav">
+            {links.map((l) => {
+              const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+              return (
+                <Link key={l.href} href={l.href} className={`nav-tab${active ? " active" : ""}`}>
+                  {l.label}
+                </Link>
+              );
+            })}
+            <Link href="/search" className="nav-tab" style={{ marginLeft: "auto" }}>
+              🔍 Search
+            </Link>
+          </nav>
+        </div>
+      </header>
+    </>
   );
 }

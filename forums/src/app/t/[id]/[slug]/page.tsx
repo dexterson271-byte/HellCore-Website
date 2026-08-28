@@ -70,32 +70,38 @@ export default async function ThreadPage({ params }: Props) {
   return (
     <div className="container" style={{ display: "grid", gap: 16 }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="muted" style={{ fontSize: "0.85rem" }}>
-        <Link href="/forums">Forums</Link> / <Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link>
+      <div className="forum-frame">
+        <div className="forum-toolbar">
+          <div className="breadcrumb">
+            <Link href="/forums">Forums</Link> <span className="muted">›</span>{" "}
+            <Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link>
+          </div>
+        </div>
+        <header style={{ padding: "1rem 1.1rem", borderBottom: "1px solid var(--frame-border)" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {thread.isPinned && <span className="tag">Pinned</span>}
+            {thread.isLocked && <span className="tag">Locked</span>}
+            {thread.isSolved && <span className="tag" style={{ background: "rgba(74,222,128,0.12)", color: "var(--good)" }}>Solved</span>}
+            {thread.isFeatured && <span className="tag">Featured</span>}
+          </div>
+          <h1 style={{ margin: "0 0 8px", fontSize: "1.35rem", color: "var(--gold-light)" }}>{thread.title}</h1>
+          <div className="muted" style={{ fontSize: "0.82rem" }}>
+            by <Link href={`/u/${thread.author.username}`} style={{ color: "var(--gold-light)", fontWeight: 700 }}>{thread.author.username}</Link>
+            {" · "}{thread.views} views · {thread.replyCount} replies
+          </div>
+        </header>
+        <ThreadClient
+          threadId={thread.id}
+          slug={slug || thread.slug}
+          initialPosts={JSON.parse(JSON.stringify(posts))}
+          locked={thread.isLocked}
+          canModerate={isMod(session?.role)}
+          isAuthor={session?.forumUserId === thread.authorId}
+          bookmarked={Array.isArray(thread.bookmarks) && thread.bookmarks.length > 0}
+          following={Array.isArray(thread.follows) && thread.follows.length > 0}
+          poll={thread.poll ? JSON.parse(JSON.stringify(thread.poll)) : null}
+        />
       </div>
-      <header className="card" style={{ padding: "1.2rem" }}>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-          {thread.isPinned && <span className="tag">Pinned</span>}
-          {thread.isLocked && <span className="tag">Locked</span>}
-          {thread.isSolved && <span className="tag" style={{ background: "rgba(48,209,88,0.15)", color: "#86efac" }}>Solved</span>}
-          {thread.isFeatured && <span className="tag">Featured</span>}
-        </div>
-        <h1 style={{ margin: "0 0 8px" }}>{thread.title}</h1>
-        <div className="muted">
-          by <Link href={`/u/${thread.author.username}`}>{thread.author.username}</Link> · {thread.views} views · {thread.replyCount} replies
-        </div>
-      </header>
-      <ThreadClient
-        threadId={thread.id}
-        slug={slug || thread.slug}
-        initialPosts={JSON.parse(JSON.stringify(posts))}
-        locked={thread.isLocked}
-        canModerate={isMod(session?.role)}
-        isAuthor={session?.forumUserId === thread.authorId}
-        bookmarked={Array.isArray(thread.bookmarks) && thread.bookmarks.length > 0}
-        following={Array.isArray(thread.follows) && thread.follows.length > 0}
-        poll={thread.poll ? JSON.parse(JSON.stringify(thread.poll)) : null}
-      />
     </div>
   );
 }
