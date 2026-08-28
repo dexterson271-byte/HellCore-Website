@@ -14,7 +14,7 @@ export default async function CategoriesPage() {
   return (
     <main className="page">
       <div className="breadcrumb" style={{ marginBottom: 16 }}>
-        <Link href="/">Home</Link> › <strong>Categories</strong>
+        <Link href="/">Forums</Link> › <strong>Categories</strong>
       </div>
       {groups.map((g) => (
         <section key={g.id} className="forum-section" style={{ marginBottom: 16 }}>

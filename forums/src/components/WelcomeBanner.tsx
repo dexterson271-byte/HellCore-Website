@@ -8,7 +8,7 @@ export function WelcomeBanner() {
         <div className="welcome-shield" aria-hidden />
         <div>
           <h2 className="welcome-title">Welcome to Hellcore Forums</h2>
-          <p className="welcome-sub">Join the community — discuss Bedwars, SkyWars, get support, and more.</p>
+          <p className="welcome-sub">Join the community — discuss the server, get support, and meet other players.</p>
         </div>
       </div>
       <div className="welcome-actions">

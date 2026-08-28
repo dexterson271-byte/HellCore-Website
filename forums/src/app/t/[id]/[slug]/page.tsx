@@ -88,7 +88,7 @@ export default async function ThreadPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <nav className="thread-crumb">
-        <Link href="/">Home</Link>
+        <Link href="/">Forums</Link>
         <span>›</span>
         <Link href="/forums">Forums</Link>
         <span>›</span>

@@ -133,7 +133,7 @@ export function ThreadPostCard({
                 title={r.label}
                 onClick={() => onReact(post.id, r.type)}
               >
-                <span className="thread-reaction-emoji">{r.emoji}</span>
+                <span className="thread-reaction-label">{r.label}</span>
                 {count > 0 && <span className="thread-reaction-count">{count}</span>}
               </button>
             );
@@ -143,8 +143,8 @@ export function ThreadPostCard({
         {!!activeReactions.length && (
           <div className="thread-reaction-summary">
             {activeReactions.map((r) => (
-              <span key={r.type} title={r.label}>
-                {r.emoji}
+              <span key={r.type} className="thread-reaction-summary-label">
+                {r.label}
               </span>
             ))}
           </div>

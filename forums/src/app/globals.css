@@ -841,6 +841,24 @@ button, input, textarea, select { font: inherit; }
   border-color: #3a2820;
 }
 
+.thread-reaction-label {
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.thread-reaction-summary-label {
+  padding: 2px 6px;
+  border: 1px solid #3a2820;
+  border-radius: 3px;
+  color: #bbb;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .thread-reaction-emoji {
   font-size: 18px;
   line-height: 1;

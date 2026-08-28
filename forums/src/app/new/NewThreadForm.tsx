@@ -105,7 +105,7 @@ export default function NewThreadForm() {
   return (
     <div className="post-thread-page">
       <nav className="post-thread-crumb">
-        <Link href="/">Home</Link>
+        <Link href="/">Forums</Link>
         <span>›</span>
         <Link href="/forums">Forums</Link>
         <span>›</span>

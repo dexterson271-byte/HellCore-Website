@@ -1,4 +1,4 @@
-import { ForumChrome } from "@/components/ForumChrome";
+import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { getSession } from "@/lib/auth";
 import "./globals.css";
@@ -19,7 +19,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <ForumChrome user={user}>{children}</ForumChrome>
+        <SiteNav user={user} />
+        {children}
         <SiteFooter />
       </body>
     </html>

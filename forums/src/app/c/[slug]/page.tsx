@@ -36,7 +36,7 @@ export default async function CategoryPage({ params }: Props) {
       <div className="content">
         <section className="main-column">
           <div className="breadcrumb">
-            <Link href="/">Home</Link> › <Link href="/forums">Forums</Link> › <strong>{category.name}</strong>
+            <Link href="/">Forums</Link> › <strong>{category.name}</strong>
           </div>
 
           <div className="forum-header">

@@ -1,12 +1,12 @@
 import { roleColor, roleLabel } from "./roles";
 
 export const THREAD_REACTIONS = [
-  { type: "LIKE", label: "Like", emoji: "👍" },
-  { type: "LOVE", label: "Love", emoji: "❤️" },
-  { type: "FIRE", label: "Fire", emoji: "🔧" },
-  { type: "FUNNY", label: "Funny", emoji: "😂" },
-  { type: "WOW", label: "Wow", emoji: "🚂" },
-  { type: "DISLIKE", label: "Dislike", emoji: "👎" },
+  { type: "LIKE", label: "Like" },
+  { type: "LOVE", label: "Love" },
+  { type: "FIRE", label: "Fire" },
+  { type: "FUNNY", label: "Funny" },
+  { type: "WOW", label: "Wow" },
+  { type: "DISLIKE", label: "Dislike" },
 ] as const;
 
 export type ThreadAuthor = {

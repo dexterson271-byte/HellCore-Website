@@ -11,8 +11,7 @@ const MAIN = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://www.hellcore.net"
 const LOGIN = `${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`;
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/forums", label: "Forums" },
+  { href: "/", label: "Forums" },
   { href: "/discover", label: "What's New" },
   { href: "/members", label: "Members" },
   { href: STORE, label: "Store", external: true },
