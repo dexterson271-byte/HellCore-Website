@@ -10,25 +10,16 @@ export default async function ForumsPage() {
   const { groups, latestByCategory, session, userProfile, onlineUsers, latestPosts, stats } = await getForumIndexData();
 
   return (
-    <div className="container forum-layout">
-      <div>
-        <div className="forum-frame">
-          <div className="forum-toolbar">
-            <div className="breadcrumb">
-              <Link href="/">Home</Link> <span className="muted">›</span> <strong>Forum list</strong>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href="/discover?tab=new" className="btn-ghost btn-sm">New posts</Link>
-              <Link href="/new" className="btn btn-sm">Post thread…</Link>
-            </div>
+    <main className="page">
+      <div className="content">
+        <section className="main-column">
+          <div className="breadcrumb">
+            <Link href="/">Home</Link> › <strong>Forum list</strong>
           </div>
 
-          <div className="forum-col-headers">
-            <span />
-            <span>Forum</span>
-            <span className="col-stat">Threads</span>
-            <span className="col-stat">Messages</span>
-            <span className="col-latest">Last post</span>
+          <div className="forum-header">
+            <Link href="/discover?tab=new" className="btn">New posts</Link>
+            <Link href="/new" className="btn primary">POST THREAD...</Link>
           </div>
 
           {groups.map((g) => (
@@ -40,28 +31,17 @@ export default async function ForumsPage() {
             />
           ))}
 
-          {!groups.length && (
-            <div style={{ padding: "2rem", textAlign: "center" }} className="muted">
-              No forum categories yet. Check back soon.
-            </div>
-          )}
-        </div>
+          <ForumStatsFooter members={stats.members} threads={stats.threads} posts={stats.posts} />
+        </section>
 
-        <ForumStatsFooter
-          members={stats.members}
-          threads={stats.threads}
-          posts={stats.posts}
-          online={stats.online}
+        <ForumSidebar
+          user={session}
+          userProfile={userProfile}
+          onlineUsers={onlineUsers}
+          latestPosts={latestPosts}
+          stats={stats}
         />
       </div>
-
-      <ForumSidebar
-        user={session}
-        userProfile={userProfile}
-        onlineUsers={onlineUsers}
-        latestPosts={latestPosts}
-        stats={stats}
-      />
-    </div>
+    </main>
   );
 }

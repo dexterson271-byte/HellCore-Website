@@ -18,7 +18,6 @@ type UserProfile = {
   role: string;
   reputation: number;
   postCount: number;
-  threadCount: number;
   level: number;
   avatarUrl?: string | null;
 };
@@ -49,109 +48,88 @@ export function ForumSidebar({
   userProfile: UserProfile | null;
   onlineUsers: OnlineUser[];
   latestPosts?: LatestPost[];
-  stats: { members: number; online: number; threads: number; posts: number };
+  stats: { members: number; online: number };
 }) {
-  return (
-    <aside className="forum-sidebar">
-      <div className="sidebar-card">
-        <div className="sidebar-card-header">Your Profile</div>
-        <div className="sidebar-card-body">
-          {user && userProfile ? (
-            <>
-              <div className="user-card">
-                <img
-                  className="user-avatar"
-                  src={userProfile.avatarUrl || avatarUrl(userProfile.username, userProfile.mcUsername, 48)}
-                  alt={userProfile.username}
-                />
-                <div>
-                  <Username username={userProfile.username} role={userProfile.role} />
-                  <div className="user-rank">{roleLabel(userProfile.role)}</div>
-                </div>
-              </div>
-              <div className="user-stats">
-                <span>
-                  <strong>{userProfile.postCount}</strong> messages
-                </span>
-                <span>
-                  <strong>{userProfile.reputation}</strong> reputation
-                </span>
-                <span>
-                  L<strong>{userProfile.level}</strong>
-                </span>
-              </div>
-            </>
-          ) : (
-            <div>
-              <p className="muted" style={{ margin: "0 0 10px", fontSize: "0.82rem", lineHeight: 1.5 }}>
-                Sign in with your Hellcore account to post, react, and message.
-              </p>
-              <a className="btn btn-sm" href={`${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`}>
-                Login
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
+  const guestEstimate = Math.max(0, Math.floor(stats.members * 0.6));
 
-      <div className="sidebar-card">
-        <div className="sidebar-card-header">
-          Players Online
-          <span className="online-dot" />
-        </div>
-        <div className="sidebar-card-body">
-          <div className="online-count">{stats.online.toLocaleString()}</div>
-          {onlineUsers.length ? (
-            <>
-              <div className="online-avatars">
-                {onlineUsers.slice(0, 16).map((u) => (
-                  <Link key={u.id} href={`/u/${u.username}`} title={u.username} className="online-avatar-link">
-                    <UserAvatar
-                      username={u.username}
-                      mcUsername={u.mcUsername}
-                      avatarUrl={u.avatarUrl}
-                      size={32}
-                    />
-                  </Link>
-                ))}
+  return (
+    <aside className="sidebar">
+      <section className="side-card">
+        <h3 className="side-card-title">YOUR PROFILE</h3>
+        {user && userProfile ? (
+          <>
+            <div className="profile">
+              <img
+                src={userProfile.avatarUrl || avatarUrl(userProfile.username, userProfile.mcUsername, 44)}
+                alt={userProfile.username}
+              />
+              <div>
+                <strong>{userProfile.username}</strong>
+                <small>{roleLabel(userProfile.role)}</small>
               </div>
-              <p className="online-guests">… and {Math.max(0, stats.members - onlineUsers.length).toLocaleString()} other members</p>
-            </>
-          ) : (
-            <p className="muted" style={{ margin: 0, fontSize: "0.82rem" }}>
-              No players online right now.
+            </div>
+            <div className="profile-stats">
+              {userProfile.postCount} messages &nbsp; {userProfile.reputation} reputation &nbsp; L{userProfile.level}
+            </div>
+          </>
+        ) : (
+          <div className="profile">
+            <p style={{ margin: 0, fontSize: 13, color: "#888", lineHeight: 1.5 }}>
+              Sign in with your Hellcore account to post and react.
             </p>
-          )}
-        </div>
-      </div>
+            <a href={`${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`} className="btn primary btn-sm" style={{ marginTop: 10, display: "inline-block" }}>
+              Log In
+            </a>
+          </div>
+        )}
+      </section>
+
+      <section className="side-card">
+        <h3 className="side-card-title">
+          PLAYERS ONLINE
+          <span className="online-dot" />
+        </h3>
+        <div className="online-number">{stats.online.toLocaleString()}</div>
+        {onlineUsers.length > 0 && (
+          <div className="avatars">
+            {onlineUsers.slice(0, 16).map((u) => (
+              <Link key={u.id} href={`/u/${u.username}`} title={u.username}>
+                <img
+                  src={u.avatarUrl || avatarUrl(u.username, u.mcUsername, 38)}
+                  alt={u.username}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
+        <span className="online-text">… and {guestEstimate.toLocaleString()} guests</span>
+      </section>
 
       {latestPosts.length > 0 && (
-        <div className="sidebar-card">
-          <div className="sidebar-card-header">Recent Posts</div>
-          <div className="sidebar-card-body" style={{ padding: 0 }}>
-            {latestPosts.map((t) => (
-              <Link key={t.id} href={`/t/${t.id}/${t.slug}`} className="latest-post-item">
+        <section className="side-card">
+          <h3 className="side-card-title">RECENT POSTS</h3>
+          <div className="recent-posts-list">
+            {latestPosts.slice(0, 6).map((t) => (
+              <Link key={t.id} href={`/t/${t.id}/${t.slug}`} className="recent-post-item">
                 <UserAvatar
                   username={t.author.username}
                   mcUsername={t.author.mcUsername}
                   avatarUrl={t.author.avatarUrl}
                   size={36}
                 />
-                <div className="latest-post-item-text">
-                  <div className="latest-post-item-title">{t.title}</div>
-                  <div className="latest-post-item-meta">
+                <div className="recent-post-text">
+                  <div className="recent-post-title">{t.title}</div>
+                  <div className="recent-post-meta">
                     By <Username username={t.author.username} role={t.author.role} />
                     {" — "}
                     {formatDistanceToNow(new Date(t.lastActivityAt), { addSuffix: true })}
                   </div>
-                  <div className="latest-post-item-forum" style={{ color: t.category.color }}>
-                    {t.category.name}
-                  </div>
+                  <div className="recent-post-forum">{t.category.name}</div>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </aside>
   );

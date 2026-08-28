@@ -11,7 +11,7 @@ export function roleLabel(role: string) {
 
 export function roleColor(role: string) {
   const r = role.toLowerCase();
-  if (["owner", "founder", "admin"].includes(r)) return "var(--hc-red-bright)";
+  if (["owner", "founder", "admin"].includes(r)) return "#e63a2d";
   if (["mod", "helper"].includes(r)) return "#ff8844";
   if (r === "dev") return "#c084fc";
   if (r === "vip") return "#ffaa44";

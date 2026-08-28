@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { categoryIcon } from "@/lib/forum-data";
+import { categoryIconClass } from "@/lib/forum-data";
 import { UserAvatar, Username } from "@/components/UserAvatar";
 
 type Category = {
@@ -27,6 +27,12 @@ type LatestThread = {
   };
 };
 
+function formatCount(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(2).replace(/\.?0+$/, "")}K`;
+  return n.toLocaleString();
+}
+
 export function ForumCategorySection({
   groupName,
   categories,
@@ -39,51 +45,52 @@ export function ForumCategorySection({
   if (!categories.length) return null;
 
   return (
-    <section className="forum-group">
-      <h2 className="forum-group-title">{groupName}</h2>
+    <section className="forum-section">
+      <h2 className="forum-section-title">{groupName}</h2>
       {categories.map((c) => {
         const latest = latestByCategory.get(c.id);
+        const iconClass = categoryIconClass(c.slug, c.name);
         return (
           <div key={c.id} className="forum-row">
-            <div className="forum-row-icon" style={{ color: c.color }}>
-              {categoryIcon(c.icon, c.name)}
+            <div className={`forum-icon ${iconClass}`} aria-hidden />
+            <div className="forum-info">
+              <h3>
+                <Link href={`/c/${c.slug}`}>{c.name}</Link>
+              </h3>
+              {c.description && <p>{c.description}</p>}
             </div>
-            <div className="forum-row-main">
-              <Link href={`/c/${c.slug}`} className="forum-row-title" style={{ color: c.color }}>
-                {c.name}
-              </Link>
-              {c.description && <div className="forum-row-desc">{c.description}</div>}
+            <div className="forum-stats">
+              <div className="stat-col">
+                <small>Threads</small>
+                <strong>{formatCount(c.threadCount)}</strong>
+              </div>
+              <div className="stat-col">
+                <small>Messages</small>
+                <strong>{formatCount(c.postCount)}</strong>
+              </div>
             </div>
-            <div className="forum-row-stats">
-              <div className="num">{c.threadCount.toLocaleString()}</div>
-              <div className="lbl">Threads</div>
-            </div>
-            <div className="forum-row-stats">
-              <div className="num">{c.postCount.toLocaleString()}</div>
-              <div className="lbl">Messages</div>
-            </div>
-            <div className="forum-row-latest">
+            <div className="last-post">
               {latest ? (
-                <div className="latest-post-cell">
+                <div className="last-post-inner">
                   <UserAvatar
                     username={latest.author.username}
                     mcUsername={latest.author.mcUsername}
                     avatarUrl={latest.author.avatarUrl}
                     size={36}
                   />
-                  <div className="latest-post-text">
-                    <Link href={`/t/${latest.id}/${latest.slug}`} className="thread-title">
-                      {latest.title}
+                  <div className="last-post-text">
+                    <Link href={`/t/${latest.id}/${latest.slug}`}>
+                      <strong>{latest.title}</strong>
                     </Link>
-                    <div className="meta">
+                    <small>
                       {formatDistanceToNow(new Date(latest.lastActivityAt), { addSuffix: true })}
                       {" · "}
                       <Username username={latest.author.username} role={latest.author.role} />
-                    </div>
+                    </small>
                   </div>
                 </div>
               ) : (
-                <span className="muted">No posts yet</span>
+                <small>No posts yet</small>
               )}
             </div>
           </div>

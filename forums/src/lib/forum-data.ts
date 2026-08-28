@@ -76,23 +76,27 @@ export async function getForumIndexData() {
   return { ...sidebar, groups, latestByCategory };
 }
 
-export function categoryIcon(icon?: string | null, name?: string) {
-  if (icon) return icon;
+export function categoryIconClass(slug: string, name?: string) {
+  const s = slug.toLowerCase();
   const n = (name || "").toLowerCase();
-  if (n.includes("announce")) return "📢";
-  if (n.includes("news")) return "📰";
-  if (n.includes("bed")) return "🛏️";
-  if (n.includes("sky")) return "☁️";
-  if (n.includes("help") || n.includes("support")) return "❓";
-  if (n.includes("bug")) return "🐛";
-  if (n.includes("suggest")) return "💡";
-  if (n.includes("media")) return "🎬";
-  if (n.includes("clan")) return "⚔️";
-  if (n.includes("dev")) return "💻";
-  if (n.includes("event")) return "🎉";
-  if (n.includes("appeal")) return "📋";
-  if (n.includes("general") || n.includes("intro")) return "💬";
-  return "📁";
+  if (s.includes("announce") || n.includes("announce")) return "cat-icon-announce";
+  if (s.includes("server-discussion") || n.includes("server discussion")) return "cat-icon-discuss";
+  if (s.includes("suggest") || n.includes("suggest")) return "cat-icon-suggest";
+  if (s.includes("bed")) return "cat-icon-bed";
+  if (s.includes("sky")) return "cat-icon-sky";
+  if (s.includes("help") || s.includes("support")) return "cat-icon-help";
+  if (s.includes("bug")) return "cat-icon-bug";
+  if (s.includes("media")) return "cat-icon-media";
+  if (s.includes("clan")) return "cat-icon-clan";
+  if (s.includes("dev")) return "cat-icon-dev";
+  if (s.includes("event")) return "cat-icon-event";
+  if (s.includes("general") || s.includes("intro")) return "cat-icon-chat";
+  return "cat-icon-default";
+}
+
+/** @deprecated use categoryIconClass */
+export function categoryIcon(icon?: string | null, name?: string) {
+  return categoryIconClass(name || "default", name);
 }
 
 export { roleLabel, roleColor } from "./roles";

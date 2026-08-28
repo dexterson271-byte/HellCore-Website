@@ -2,29 +2,26 @@ export function ForumStatsFooter({
   members,
   threads,
   posts,
-  online,
+  serversOnline = 4,
 }: {
   members: number;
   threads: number;
   posts: number;
-  online: number;
+  serversOnline?: number;
 }) {
   const items = [
-    { icon: "⚔️", num: members.toLocaleString(), label: "Total Players" },
-    { icon: "💀", num: threads.toLocaleString(), label: "Total Threads" },
-    { icon: "🧪", num: posts.toLocaleString(), label: "Total Messages" },
-    { icon: "🛡️", num: online.toLocaleString(), label: "Players Online" },
+    { num: members.toLocaleString(), label: "TOTAL PLAYERS" },
+    { num: threads.toLocaleString(), label: "TOTAL THREADS" },
+    { num: posts.toLocaleString(), label: "TOTAL MESSAGES" },
+    { num: String(serversOnline), label: "SERVERS ONLINE" },
   ];
 
   return (
-    <div className="hc-stats-footer">
+    <div className="stats">
       {items.map((s) => (
-        <div key={s.label} className="hc-stat-box">
-          <span className="hc-stat-icon" aria-hidden>{s.icon}</span>
-          <div>
-            <div className="hc-stat-num">{s.num}</div>
-            <div className="hc-stat-label">{s.label}</div>
-          </div>
+        <div key={s.label} className="stat">
+          <span className="stat-number">{s.num}</span>
+          <span className="stat-label">{s.label}</span>
         </div>
       ))}
     </div>

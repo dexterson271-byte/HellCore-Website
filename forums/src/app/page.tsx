@@ -1,80 +1,50 @@
 import Link from "next/link";
 import { ForumSidebar } from "@/components/ForumSidebar";
 import { ForumCategorySection } from "@/components/ForumCategorySection";
-import { ThreadRow } from "@/components/ThreadCard";
-import { WelcomeBanner } from "@/components/WelcomeBanner";
 import { ForumStatsFooter } from "@/components/ForumStatsFooter";
+import { WelcomeBanner } from "@/components/WelcomeBanner";
 import { getForumIndexData } from "@/lib/forum-data";
-import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const data = await getForumIndexData();
-  const { groups, latestByCategory, session, userProfile, onlineUsers, latestPosts, stats } = data;
-
-  const announcements = await prisma.thread.findMany({
-    where: { deletedAt: null, isAnnouncement: true },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: { author: { select: { username: true, mcUsername: true, role: true, avatarUrl: true, level: true } } },
-  });
+  const { groups, latestByCategory, session, userProfile, onlineUsers, latestPosts, stats } = await getForumIndexData();
 
   return (
-    <div className="container">
-      {!session && <WelcomeBanner />}
+    <main className="page">
+      <div className="content">
+        <section className="main-column">
+          {!session && <WelcomeBanner />}
 
-      <div className="forum-layout">
-        <div style={{ display: "grid", gap: 16 }}>
-          {announcements.length > 0 && (
-            <div className="forum-frame">
-              <div className="forum-toolbar">
-                <div className="breadcrumb">
-                  <strong>Staff Announcements</strong>
-                </div>
-              </div>
-              {announcements.map((a) => (
-                <ThreadRow key={a.id} {...a} showCategory={false} />
-              ))}
-            </div>
-          )}
-
-          <div className="forum-frame">
-            <div className="forum-toolbar">
-              <div className="breadcrumb">
-                <Link href="/">Home</Link> <span className="muted">›</span> <strong>Forum list</strong>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <Link href="/discover?tab=new" className="btn-ghost btn-sm">New posts</Link>
-                <Link href="/new" className="btn btn-sm">Post thread…</Link>
-              </div>
-            </div>
-
-            <div className="forum-col-headers">
-              <span />
-              <span>Forum</span>
-              <span className="col-stat">Threads</span>
-              <span className="col-stat">Messages</span>
-              <span className="col-latest">Last post</span>
-            </div>
-
-            {groups.map((g) => (
-              <ForumCategorySection
-                key={g.id}
-                groupName={g.name}
-                categories={g.categories}
-                latestByCategory={latestByCategory}
-              />
-            ))}
+          <div className="breadcrumb">
+            Home › <strong>Forum list</strong>
           </div>
 
-          <ForumStatsFooter
-            members={stats.members}
-            threads={stats.threads}
-            posts={stats.posts}
-            online={stats.online}
-          />
-        </div>
+          <div className="forum-header">
+            <Link href="/discover?tab=new" className="btn">New posts</Link>
+            <Link href="/new" className="btn primary">POST THREAD...</Link>
+          </div>
+
+          {groups.map((g) => (
+            <ForumCategorySection
+              key={g.id}
+              groupName={g.name}
+              categories={g.categories}
+              latestByCategory={latestByCategory}
+            />
+          ))}
+
+          {!groups.length && (
+            <section className="forum-section">
+              <h2 className="forum-section-title">Categories</h2>
+              <div style={{ padding: "2rem", textAlign: "center", color: "#888" }}>
+                No categories yet. Run <code>npm run db:seed</code> on the server.
+              </div>
+            </section>
+          )}
+
+          <ForumStatsFooter members={stats.members} threads={stats.threads} posts={stats.posts} />
+        </section>
 
         <ForumSidebar
           user={session}
@@ -84,6 +54,6 @@ export default async function HomePage() {
           stats={stats}
         />
       </div>
-    </div>
+    </main>
   );
 }

@@ -44,10 +44,10 @@ export function ThreadRow(t: ThreadRowProps) {
             </Link>
           )}
         </div>
-        <Link href={`/t/${t.id}/${t.slug}`} className="forum-row-title">
+        <Link href={`/t/${t.id}/${t.slug}`} className="forum-row-title" style={{ color: "#e64638", fontWeight: 800, fontSize: 16 }}>
           {t.title}
         </Link>
-        <div className="forum-row-desc">
+        <div className="forum-row-desc" style={{ fontSize: 13, color: "#888" }}>
           <Username username={t.author.username} role={t.author.role} />
           {t.author.level ? ` · L${t.author.level}` : ""}
           {" · "}
@@ -55,12 +55,18 @@ export function ThreadRow(t: ThreadRowProps) {
         </div>
       </div>
       <div className="forum-row-stats">
-        <div className="num">{t.replyCount}</div>
-        <div className="lbl">Replies</div>
+        <span>
+          {t.replyCount}
+          <br />
+          <small>REPLIES</small>
+        </span>
       </div>
       <div className="forum-row-stats">
-        <div className="num">{t.views.toLocaleString()}</div>
-        <div className="lbl">Views</div>
+        <span>
+          {t.views.toLocaleString()}
+          <br />
+          <small>VIEWS</small>
+        </span>
       </div>
     </div>
   );

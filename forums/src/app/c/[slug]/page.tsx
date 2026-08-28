@@ -32,55 +32,46 @@ export default async function CategoryPage({ params }: Props) {
   ]);
 
   return (
-    <div className="container forum-layout">
-      <div>
-        <div className="forum-frame">
-          <div className="forum-toolbar">
-            <div className="breadcrumb">
-              <Link href="/">Home</Link> <span className="muted">›</span>{" "}
-              <Link href="/forums">Forums</Link> <span className="muted">›</span>{" "}
-              <strong style={{ color: category.color }}>{category.name}</strong>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href={`/new?category=${category.id}`} className="btn btn-sm">Post thread…</Link>
-            </div>
+    <main className="page">
+      <div className="content">
+        <section className="main-column">
+          <div className="breadcrumb">
+            <Link href="/">Home</Link> › <Link href="/forums">Forums</Link> › <strong>{category.name}</strong>
           </div>
 
-          {category.description && (
-            <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--frame-border)", fontSize: "0.85rem" }} className="muted">
-              {category.description}
-            </div>
-          )}
-
-          <div className="forum-col-headers" style={{ gridTemplateColumns: "44px 1fr 70px 70px" }}>
-            <span />
-            <span>Thread</span>
-            <span className="col-stat">Replies</span>
-            <span className="col-stat">Views</span>
+          <div className="forum-header">
+            <Link href={`/new?category=${category.id}`} className="btn primary">POST THREAD...</Link>
           </div>
 
-          {threads.map((t) => (
-            <ThreadRow key={t.id} {...t} />
-          ))}
+          <section className="forum-section">
+            <h2 className="forum-section-title">{category.name}</h2>
+            {category.description && (
+              <div style={{ padding: "12px 15px", borderBottom: "1px solid #281313", color: "#888", fontSize: 13 }}>
+                {category.description}
+              </div>
+            )}
+            {threads.map((t) => (
+              <ThreadRow key={t.id} {...t} />
+            ))}
+            {!threads.length && (
+              <div style={{ padding: "2rem", textAlign: "center", color: "#888" }}>
+                No threads yet.{" "}
+                <Link href={`/new?category=${category.id}`} style={{ color: "#e64638" }}>
+                  Start the first discussion
+                </Link>
+              </div>
+            )}
+          </section>
+        </section>
 
-          {!threads.length && (
-            <div style={{ padding: "2rem", textAlign: "center" }} className="muted">
-              No threads yet.{" "}
-              <Link href={`/new?category=${category.id}`} style={{ color: "var(--gold-light)" }}>
-                Start the first discussion
-              </Link>
-            </div>
-          )}
-        </div>
+        <ForumSidebar
+          user={sidebar.session}
+          userProfile={sidebar.userProfile}
+          onlineUsers={sidebar.onlineUsers}
+          latestPosts={sidebar.latestPosts}
+          stats={sidebar.stats}
+        />
       </div>
-
-      <ForumSidebar
-        user={sidebar.session}
-        userProfile={sidebar.userProfile}
-        onlineUsers={sidebar.onlineUsers}
-        latestPosts={sidebar.latestPosts}
-        stats={sidebar.stats}
-      />
-    </div>
+    </main>
   );
 }
