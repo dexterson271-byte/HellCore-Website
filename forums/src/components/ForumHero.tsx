@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { HeroLogo } from "@/components/HeroLogo";
 
 const MAIN = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://www.hellcore.net";
 const WORLD_BG = `${MAIN}/static/bg-hellcore.jpg`;
-const LOGO = `${MAIN}/static/logo-glow.png`;
 
 export function ForumHero() {
   return (
@@ -11,7 +11,7 @@ export function ForumHero() {
       <div className="hero-overlay" />
       <div className="hero-brand">
         <Link href="/">
-          <img src={LOGO} alt="HELLCORE" onError={(e) => { (e.target as HTMLImageElement).src = `${MAIN}/static/logo.png`; }} />
+          <HeroLogo />
         </Link>
       </div>
     </section>
