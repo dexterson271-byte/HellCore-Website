@@ -31,9 +31,8 @@ button, input, textarea, select { font: inherit; }
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: center center;
+  background-position: center top;
   background-repeat: no-repeat;
-  transform: scale(1.02);
 }
 
 .hero-overlay {
