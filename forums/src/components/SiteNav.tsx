@@ -1,67 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { SessionUser } from "@/lib/types";
+import { usePathname, useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 
+const STORE = "https://store.hellcore.net";
 const MAIN = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "https://www.hellcore.net";
 
 const links = [
-  { href: "/", label: "Home" },
-  { href: "/discover", label: "Discover" },
-  { href: "/forums", label: "Forums" },
-  { href: "/categories", label: "Categories" },
-  { href: "/members", label: "Members" },
-  { href: "/leaderboards", label: "Leaderboards" },
+  { href: "/", label: "Home", icon: "🏠" },
+  { href: "/forums", label: "Forums", icon: "💬" },
+  { href: "/discover", label: "What's New", icon: "✨" },
+  { href: "/members", label: "Members", icon: "👥" },
+  { href: STORE, label: "Store", icon: "🛒", external: true },
+  { href: `${MAIN}/#rules`, label: "Rules", icon: "📜", external: true },
+  { href: "/categories", label: "More", icon: "⋯" },
 ];
 
-export function SiteNav({
-  user,
-  unread = 0,
-}: {
-  user: SessionUser | null;
-  unread?: number;
-}) {
+export function SiteNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [q, setQ] = useState("");
+
+  function onSearch(e: FormEvent) {
+    e.preventDefault();
+    const term = q.trim();
+    router.push(term ? `/search?q=${encodeURIComponent(term)}` : "/search");
+  }
 
   return (
-    <>
-      <div className="util-bar">
-        <div className="container" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 14, minHeight: 32, padding: "4px 0" }}>
-          {user ? (
-            <>
-              <Link href={`/u/${user.username}`}>Profile</Link>
-              <Link href="/messages">Messages</Link>
-              <Link href="/notifications">
-                Alerts{unread > 0 ? ` (${unread})` : ""}
-              </Link>
-              {["mod", "admin", "dev", "owner", "founder"].includes(user.role) && (
-                <Link href="/admin">Admin</Link>
-              )}
-            </>
-          ) : (
-            <a href={`${MAIN}/?next=${encodeURIComponent("https://forums.hellcore.net")}`}>Login</a>
-          )}
-        </div>
-      </div>
-
-      <header className="nav-shell">
-        <div className="container">
-          <nav className="nav-tabs desktop-nav">
-            {links.map((l) => {
-              const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-              return (
-                <Link key={l.href} href={l.href} className={`nav-tab${active ? " active" : ""}`}>
-                  {l.label}
-                </Link>
-              );
-            })}
-            <Link href="/search" className="nav-tab" style={{ marginLeft: "auto" }}>
-              🔍 Search
+    <header className="nav-shell">
+      <div className="container nav-inner">
+        {links.map((l) => {
+          const active = !l.external && (l.href === "/" ? pathname === "/" : pathname.startsWith(l.href));
+          const cls = `nav-tab${active ? " active" : ""}`;
+          if (l.external) {
+            return (
+              <a key={l.href} href={l.href} className={cls} target={l.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">
+                <span>{l.icon}</span> {l.label}
+              </a>
+            );
+          }
+          return (
+            <Link key={l.href} href={l.href} className={cls}>
+              <span>{l.icon}</span> {l.label}
             </Link>
-          </nav>
-        </div>
-      </header>
-    </>
+          );
+        })}
+        <form className="nav-search" onSubmit={onSearch}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search forums…"
+            aria-label="Search forums"
+          />
+          <button type="submit">🔍</button>
+        </form>
+      </div>
+    </header>
   );
 }

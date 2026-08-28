@@ -96,14 +96,15 @@ export function ForumSidebar({
 
       <div className="sidebar-card">
         <div className="sidebar-card-header">
-          Online Now
-          <span className="online-dot" /> {stats.online}
+          Players Online
+          <span className="online-dot" />
         </div>
         <div className="sidebar-card-body">
+          <div className="online-count">{stats.online.toLocaleString()}</div>
           {onlineUsers.length ? (
             <>
               <div className="online-avatars">
-                {onlineUsers.slice(0, 14).map((u) => (
+                {onlineUsers.slice(0, 16).map((u) => (
                   <Link key={u.id} href={`/u/${u.username}`} title={u.username} className="online-avatar-link">
                     <UserAvatar
                       username={u.username}
@@ -114,18 +115,11 @@ export function ForumSidebar({
                   </Link>
                 ))}
               </div>
-              <div className="online-list" style={{ marginTop: 10 }}>
-                {onlineUsers.map((u, i) => (
-                  <span key={u.id}>
-                    {i > 0 && <span className="sep">, </span>}
-                    <Username username={u.username} role={u.role} />
-                  </span>
-                ))}
-              </div>
+              <p className="online-guests">… and {Math.max(0, stats.members - onlineUsers.length).toLocaleString()} other members</p>
             </>
           ) : (
             <p className="muted" style={{ margin: 0, fontSize: "0.82rem" }}>
-              No members online right now.
+              No players online right now.
             </p>
           )}
         </div>
@@ -133,7 +127,7 @@ export function ForumSidebar({
 
       {latestPosts.length > 0 && (
         <div className="sidebar-card">
-          <div className="sidebar-card-header">Latest Posts</div>
+          <div className="sidebar-card-header">Recent Posts</div>
           <div className="sidebar-card-body" style={{ padding: 0 }}>
             {latestPosts.map((t) => (
               <Link key={t.id} href={`/t/${t.id}/${t.slug}`} className="latest-post-item">
@@ -147,7 +141,7 @@ export function ForumSidebar({
                   <div className="latest-post-item-title">{t.title}</div>
                   <div className="latest-post-item-meta">
                     By <Username username={t.author.username} role={t.author.role} />
-                    {" · "}
+                    {" — "}
                     {formatDistanceToNow(new Date(t.lastActivityAt), { addSuffix: true })}
                   </div>
                   <div className="latest-post-item-forum" style={{ color: t.category.color }}>
@@ -159,24 +153,6 @@ export function ForumSidebar({
           </div>
         </div>
       )}
-
-      <div className="sidebar-card">
-        <div className="sidebar-card-header">Forum Statistics</div>
-        <div className="sidebar-card-body" style={{ fontSize: "0.8rem", lineHeight: 1.7 }}>
-          <div>
-            <span className="muted">Members:</span> <strong>{stats.members.toLocaleString()}</strong>
-          </div>
-          <div>
-            <span className="muted">Online:</span> <strong style={{ color: "var(--good)" }}>{stats.online}</strong>
-          </div>
-          <div>
-            <span className="muted">Threads:</span> <strong>{stats.threads.toLocaleString()}</strong>
-          </div>
-          <div>
-            <span className="muted">Posts:</span> <strong>{stats.posts.toLocaleString()}</strong>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

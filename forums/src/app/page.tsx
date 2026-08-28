@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ForumSidebar } from "@/components/ForumSidebar";
 import { ForumCategorySection } from "@/components/ForumCategorySection";
 import { ThreadRow } from "@/components/ThreadCard";
+import { WelcomeBanner } from "@/components/WelcomeBanner";
+import { ForumStatsFooter } from "@/components/ForumStatsFooter";
 import { getForumIndexData } from "@/lib/forum-data";
 import { prisma } from "@/lib/db";
 
@@ -19,58 +21,69 @@ export default async function HomePage() {
   });
 
   return (
-    <div className="container forum-layout">
-      <div style={{ display: "grid", gap: 16 }}>
-        {announcements.length > 0 && (
+    <div className="container">
+      {!session && <WelcomeBanner />}
+
+      <div className="forum-layout">
+        <div style={{ display: "grid", gap: 16 }}>
+          {announcements.length > 0 && (
+            <div className="forum-frame">
+              <div className="forum-toolbar">
+                <div className="breadcrumb">
+                  <strong>Staff Announcements</strong>
+                </div>
+              </div>
+              {announcements.map((a) => (
+                <ThreadRow key={a.id} {...a} showCategory={false} />
+              ))}
+            </div>
+          )}
+
           <div className="forum-frame">
             <div className="forum-toolbar">
               <div className="breadcrumb">
-                <strong>Staff Announcements</strong>
+                <Link href="/">Home</Link> <span className="muted">›</span> <strong>Forum list</strong>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Link href="/discover?tab=new" className="btn-ghost btn-sm">New posts</Link>
+                <Link href="/new" className="btn btn-sm">Post thread…</Link>
               </div>
             </div>
-            {announcements.map((a) => (
-              <ThreadRow key={a.id} {...a} showCategory={false} />
+
+            <div className="forum-col-headers">
+              <span />
+              <span>Forum</span>
+              <span className="col-stat">Threads</span>
+              <span className="col-stat">Messages</span>
+              <span className="col-latest">Last post</span>
+            </div>
+
+            {groups.map((g) => (
+              <ForumCategorySection
+                key={g.id}
+                groupName={g.name}
+                categories={g.categories}
+                latestByCategory={latestByCategory}
+              />
             ))}
           </div>
-        )}
 
-        <div className="forum-frame">
-          <div className="forum-toolbar">
-            <div className="breadcrumb">
-              <Link href="/">Home</Link> <span className="muted">›</span> <strong>Forum list</strong>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href="/discover?tab=new" className="btn-ghost btn-sm">New posts</Link>
-              <Link href="/new" className="btn btn-sm">Post thread…</Link>
-            </div>
-          </div>
-
-          <div className="forum-col-headers">
-            <span />
-            <span>Forum</span>
-            <span className="col-stat">Threads</span>
-            <span className="col-stat">Messages</span>
-            <span className="col-latest">Latest post</span>
-          </div>
-
-          {groups.map((g) => (
-            <ForumCategorySection
-              key={g.id}
-              groupName={g.name}
-              categories={g.categories}
-              latestByCategory={latestByCategory}
-            />
-          ))}
+          <ForumStatsFooter
+            members={stats.members}
+            threads={stats.threads}
+            posts={stats.posts}
+            online={stats.online}
+          />
         </div>
-      </div>
 
-      <ForumSidebar
-        user={session}
-        userProfile={userProfile}
-        onlineUsers={onlineUsers}
-        latestPosts={latestPosts}
-        stats={stats}
-      />
+        <ForumSidebar
+          user={session}
+          userProfile={userProfile}
+          onlineUsers={onlineUsers}
+          latestPosts={latestPosts}
+          stats={stats}
+        />
+      </div>
     </div>
   );
 }

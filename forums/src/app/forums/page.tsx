@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ForumSidebar } from "@/components/ForumSidebar";
 import { ForumCategorySection } from "@/components/ForumCategorySection";
+import { ForumStatsFooter } from "@/components/ForumStatsFooter";
 import { getForumIndexData } from "@/lib/forum-data";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export default async function ForumsPage() {
             <span>Forum</span>
             <span className="col-stat">Threads</span>
             <span className="col-stat">Messages</span>
-            <span className="col-latest">Latest post</span>
+            <span className="col-latest">Last post</span>
           </div>
 
           {groups.map((g) => (
@@ -45,6 +46,13 @@ export default async function ForumsPage() {
             </div>
           )}
         </div>
+
+        <ForumStatsFooter
+          members={stats.members}
+          threads={stats.threads}
+          posts={stats.posts}
+          online={stats.online}
+        />
       </div>
 
       <ForumSidebar

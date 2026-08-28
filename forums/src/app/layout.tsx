@@ -26,10 +26,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <SiteNav user={user} unread={unread} />
-        <ForumHero />
-        <main style={{ padding: "1.25rem 0 3rem" }}>{children}</main>
-        <footer style={{ borderTop: "2px solid var(--frame-border)", padding: "1.25rem 0", color: "var(--tx3)", fontSize: "0.8rem", background: "rgba(0,0,0,0.4)" }}>
+        <ForumHero user={user} unread={unread} />
+        <SiteNav />
+        <main style={{ padding: "1.25rem 0 2rem" }}>{children}</main>
+        <footer className="site-footer">
           <div className="container" style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <span>© Hellcore Network Forums</span>
             <span>
