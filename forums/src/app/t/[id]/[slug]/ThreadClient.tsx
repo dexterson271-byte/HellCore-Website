@@ -1,10 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import {
-  ThreadPost,
-  flattenThreadPosts,
-} from "@/lib/thread-ui";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ThreadPost, flattenThreadPosts } from "@/lib/thread-ui";
 import { ThreadPagination, ThreadPostCard } from "./ThreadPost";
 
 const POSTS_PER_PAGE = 10;
@@ -30,6 +28,10 @@ export function ThreadClient({
   following: boolean;
   poll?: { id: number; question: string; options: { id: number; label: string; votes: number }[] } | null;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlPage = Math.max(1, Number(searchParams.get("page") || 1));
+
   const [posts, setPosts] = useState(initialPosts);
   const [content, setContent] = useState("");
   const [parentId, setParentId] = useState<number | null>(null);
@@ -38,15 +40,11 @@ export function ThreadClient({
   const [fol, setFol] = useState(following);
   const [pollState, setPollState] = useState(poll || null);
   const [error, setError] = useState("");
-  const [page, setPage] = useState(1);
 
   const flatPosts = useMemo(() => flattenThreadPosts(posts), [posts]);
   const totalPages = Math.max(1, Math.ceil(flatPosts.length / POSTS_PER_PAGE));
+  const page = Math.min(urlPage, totalPages);
   const pagePosts = flatPosts.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE);
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
@@ -69,13 +67,12 @@ export function ThreadClient({
           }
           return [...prev, data.post];
         });
-        setPage(Math.ceil((flatPosts.length + 1) / POSTS_PER_PAGE));
       });
     });
     return () => {
       try { pusher?.unsubscribe(`thread-${threadId}`); } catch { /* */ }
     };
-  }, [threadId, flatPosts.length]);
+  }, [threadId]);
 
   function findPost(list: ThreadPost[], id: number): ThreadPost | undefined {
     for (const p of list) {
@@ -111,7 +108,8 @@ export function ThreadClient({
       }
       return [...prev, post];
     });
-    setPage(Math.ceil((flatPosts.length + 1) / POSTS_PER_PAGE));
+    const lastPage = Math.ceil((flatPosts.length + 1) / POSTS_PER_PAGE);
+    router.push(`/t/${threadId}/${slug}?page=${lastPage}#posts`);
   }
 
   async function react(postId: number, type: string) {
@@ -177,31 +175,25 @@ export function ThreadClient({
   }
 
   return (
-    <div className="thread-view">
-      <div className="thread-toolbar">
-        <button type="button" className="thread-tool-btn" onClick={() => toggle("bookmark")}>
-          {bm ? "Bookmarked" : "Bookmark"}
-        </button>
-        <button type="button" className="thread-tool-btn" onClick={() => toggle("follow")}>
-          {fol ? "Following" : "Follow"}
-        </button>
+    <>
+      <div className="thread-tools">
+        <button type="button" onClick={() => toggle("bookmark")}>{bm ? "Bookmarked" : "Bookmark"}</button>
+        <button type="button" onClick={() => toggle("follow")}>{fol ? "Following" : "Follow"}</button>
         {(canModerate || isAuthor) && (
-          <button type="button" className="thread-tool-btn" onClick={() => mod({ isSolved: true })}>
-            Mark solved
-          </button>
+          <button type="button" onClick={() => mod({ isSolved: true })}>Mark solved</button>
         )}
         {canModerate && (
           <>
-            <button type="button" className="thread-tool-btn" onClick={() => mod({ isPinned: true })}>Pin</button>
-            <button type="button" className="thread-tool-btn" onClick={() => mod({ isLocked: true })}>Lock</button>
-            <button type="button" className="thread-tool-btn" onClick={() => mod({ isFeatured: true })}>Feature</button>
+            <button type="button" onClick={() => mod({ isPinned: true })}>Pin</button>
+            <button type="button" onClick={() => mod({ isLocked: true })}>Lock</button>
+            <button type="button" onClick={() => mod({ isFeatured: true })}>Feature</button>
           </>
         )}
-        <button type="button" className="thread-tool-btn" onClick={report}>Report</button>
+        <button type="button" onClick={report}>Report</button>
       </div>
 
       {locked && (
-        <div className="thread-locked-bar">
+        <div className="thread-status-bar">
           This thread is not open for further replies.
         </div>
       )}
@@ -226,43 +218,48 @@ export function ThreadClient({
         </div>
       )}
 
-      <ThreadPagination page={page} totalPages={totalPages} onChange={setPage} />
+      <span className="u-anchorTarget" id="posts" />
 
-      <div className="thread-posts">
-        {pagePosts.map((post, i) => {
-          const postNumber = (page - 1) * POSTS_PER_PAGE + i + 1;
-          return (
-            <ThreadPostCard
-              key={post.id}
-              post={post}
-              postNumber={postNumber}
-              onReply={handleReply}
-              onQuote={handleQuote}
-              onReact={react}
-              onReport={report}
-              onBest={canModerate || isAuthor ? () => mod({ bestAnswerId: post.id }) : undefined}
-            />
-          );
-        })}
+      <ThreadPagination threadId={threadId} slug={slug} page={page} totalPages={totalPages} />
+
+      <div className="block-container lbContainer">
+        <div className="block-body js-replyNewMessageContainer">
+          {pagePosts.map((post, i) => {
+            const postNumber = (page - 1) * POSTS_PER_PAGE + i + 1;
+            return (
+              <ThreadPostCard
+                key={post.id}
+                post={post}
+                postNumber={postNumber}
+                threadId={threadId}
+                slug={slug}
+                onReply={handleReply}
+                onQuote={handleQuote}
+                onReact={react}
+                onReport={report}
+                onBest={canModerate || isAuthor ? () => mod({ bestAnswerId: post.id }) : undefined}
+              />
+            );
+          })}
+        </div>
       </div>
 
-      <ThreadPagination page={page} totalPages={totalPages} onChange={setPage} />
+      <ThreadPagination threadId={threadId} slug={slug} page={page} totalPages={totalPages} />
 
       {!locked ? (
-        <form id="thread-reply-form" onSubmit={submit} className="thread-reply-form">
+        <form id="thread-reply-form" onSubmit={submit} className="xf-reply-box">
           <div className="thread-reply-head">
             {parentId ? `Replying to #${parentId}` : "Post a reply"}
           </div>
           {error && <div className="post-thread-error">{error}</div>}
           <textarea
-            className="thread-reply-editor"
             rows={8}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write your reply… Markdown supported"
             required
           />
-          <div className="thread-reply-actions">
+          <div className="xf-reply-actions">
             {parentId && (
               <button type="button" className="btn" onClick={() => { setParentId(null); setContent(""); }}>
                 Cancel quote
@@ -274,8 +271,6 @@ export function ThreadClient({
       ) : (
         <div className="thread-locked-note muted">This thread is locked.</div>
       )}
-
-      <div className="thread-url-slug muted">/t/{threadId}/{slug}</div>
-    </div>
+    </>
   );
 }

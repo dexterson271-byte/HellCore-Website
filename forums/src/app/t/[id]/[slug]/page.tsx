@@ -1,15 +1,19 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isMod, isStaff } from "@/lib/types";
 import { formatPostDate } from "@/lib/thread-ui";
 import { ThreadClient } from "./ThreadClient";
 import type { Metadata } from "next";
+import "./xf-thread.css";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ id: string; slug: string }> };
+type Props = {
+  params: Promise<{ id: string; slug: string }>;
+};
 
 const authorSelect = {
   id: true,
@@ -83,48 +87,54 @@ export default async function ThreadPage({ params }: Props) {
     },
   };
 
+  const threadSlug = slug || thread.slug;
+
   return (
     <main className="thread-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <nav className="thread-crumb">
-        <Link href="/">Forums</Link>
-        <span>›</span>
-        <Link href="/forums">Forums</Link>
-        <span>›</span>
-        {thread.category.group && (
-          <>
-            <span>{thread.category.group.name}</span>
-            <span>›</span>
-          </>
-        )}
-        <Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link>
-        <span>›</span>
-      </nav>
+      <div className="p-pre-body">
+        <ul className="p-breadcrumbs">
+          <li><Link href="/">Forums</Link></li>
+          {thread.category.group && <li><span>{thread.category.group.name}</span></li>}
+          <li><Link href={`/c/${thread.category.slug}`}>{thread.category.name}</Link></li>
+        </ul>
 
-      <header className="thread-header">
-        <div className="thread-states">
-          {thread.isPinned && <span className="tag">Pinned</span>}
-          {thread.isLocked && <span className="tag">Locked</span>}
-          {thread.isSolved && <span className="tag solved">Solved</span>}
-          {thread.isFeatured && <span className="tag">Featured</span>}
+        <div className="p-body-header">
+          <div className="p-title">
+            <h1 className="p-title-value">{thread.title}</h1>
+          </div>
+          <div className="p-description">
+            <ul className="listInline listInline--bullet">
+              <li>
+                <span className="u-srOnly">Thread starter</span>
+                <Link href={`/u/${thread.author.username}`}>{thread.author.username}</Link>
+              </li>
+              <li>
+                <span className="u-srOnly">Start date</span>
+                <time dateTime={thread.createdAt.toISOString()}>
+                  {formatPostDate(thread.createdAt.toISOString())}
+                </time>
+              </li>
+              <li>{thread.views} views</li>
+              <li>{thread.replyCount} replies</li>
+            </ul>
+          </div>
+          {(thread.isPinned || thread.isLocked || thread.isSolved || thread.isFeatured) && (
+            <div className="thread-states" style={{ marginTop: 10 }}>
+              {thread.isPinned && <span className="tag">Pinned</span>}
+              {thread.isLocked && <span className="tag">Locked</span>}
+              {thread.isSolved && <span className="tag solved">Solved</span>}
+              {thread.isFeatured && <span className="tag">Featured</span>}
+            </div>
+          )}
         </div>
-        <h1>{thread.title}</h1>
-        <p className="thread-meta">
-          <Link href={`/u/${thread.author.username}`}>{thread.author.username}</Link>
-          <span>·</span>
-          <time dateTime={thread.createdAt.toISOString()}>{formatPostDate(thread.createdAt.toISOString())}</time>
-          <span>·</span>
-          <span>{thread.views} views</span>
-          <span>·</span>
-          <span>{thread.replyCount} replies</span>
-        </p>
-      </header>
+      </div>
 
-      <div className="thread-frame">
+      <Suspense fallback={<div className="muted" style={{ padding: 16 }}>Loading thread…</div>}>
         <ThreadClient
           threadId={thread.id}
-          slug={slug || thread.slug}
+          slug={threadSlug}
           initialPosts={JSON.parse(JSON.stringify(posts))}
           locked={thread.isLocked}
           canModerate={isMod(session?.role)}
@@ -133,7 +143,7 @@ export default async function ThreadPage({ params }: Props) {
           following={Array.isArray(thread.follows) && thread.follows.length > 0}
           poll={thread.poll ? JSON.parse(JSON.stringify(thread.poll)) : null}
         />
-      </div>
+      </Suspense>
     </main>
   );
 }

@@ -62,6 +62,13 @@ export function avatarFrameClass(role: string) {
   return "post-avatar-frame member";
 }
 
+export function avatarRankClass(role: string) {
+  const r = role.toLowerCase();
+  if (isStaffRole(r)) return "message-avatar-rank-STAFF";
+  if (r === "vip") return "message-avatar-rank-VIP";
+  return "message-avatar-rank";
+}
+
 export function flattenThreadPosts(posts: ThreadPost[]): ThreadPost[] {
   const byId = new Map<number, ThreadPost>();
   const collect = (list: ThreadPost[]) => {
