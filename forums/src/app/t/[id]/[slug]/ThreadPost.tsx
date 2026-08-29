@@ -184,8 +184,12 @@ export function ThreadPostCard({
                       title={r.label}
                       onClick={() => onReact(post.id, r.type)}
                     >
-                      {r.label}
-                      {count > 0 && <span>{count}</span>}
+                      <span
+                        className="reaction-sprite"
+                        style={{ backgroundPosition: `0 ${-r.sprite * 16}px` }}
+                        aria-hidden
+                      />
+                      {count > 0 && <span className="reaction-count">{count}</span>}
                     </button>
                   );
                 })}

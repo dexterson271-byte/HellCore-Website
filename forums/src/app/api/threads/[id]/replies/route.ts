@@ -60,12 +60,8 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         data: {
           replyCount: { increment: 1 },
           lastActivityAt: new Date(),
-          searchText: { set: undefined },
+          searchText: `${thread.title}\n${thread.searchText || ""}\n${content}`.slice(0, 20000),
         },
-      });
-      await tx.thread.update({
-        where: { id: threadId },
-        data: { searchText: `${thread.title}\n${thread.searchText || ""}\n${content}`.slice(0, 20000) },
       });
       await tx.category.update({
         where: { id: thread.categoryId },

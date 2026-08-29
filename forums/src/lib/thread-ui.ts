@@ -1,12 +1,22 @@
 import { roleColor, roleLabel } from "./roles";
 
+/** Sprite sheet: /reactions.png — 16×16 icons stacked vertically (15 frames). */
 export const THREAD_REACTIONS = [
-  { type: "LIKE", label: "Like" },
-  { type: "LOVE", label: "Love" },
-  { type: "FIRE", label: "Fire" },
-  { type: "FUNNY", label: "Funny" },
-  { type: "WOW", label: "Wow" },
-  { type: "DISLIKE", label: "Dislike" },
+  { type: "DIAMOND", label: "Diamond", sprite: 0 },
+  { type: "AGREE", label: "Agree", sprite: 1 },
+  { type: "BUG", label: "Bug", sprite: 2 },
+  { type: "FISH", label: "Fish", sprite: 3 },
+  { type: "DISLIKE", label: "Disagree", sprite: 4 },
+  { type: "USEFUL", label: "Useful", sprite: 5 },
+  { type: "FUNNY", label: "Funny", sprite: 6 },
+  { type: "HYPE", label: "Hype", sprite: 7 },
+  { type: "COIN", label: "Coin", sprite: 8 },
+  { type: "LOVE", label: "Emerald", sprite: 9 },
+  { type: "LIKE", label: "Like", sprite: 10 },
+  { type: "CREATIVE", label: "Creative", sprite: 11 },
+  { type: "THINK", label: "Think", sprite: 12 },
+  { type: "FIRE", label: "Ruby", sprite: 13 },
+  { type: "WOW", label: "Wow", sprite: 14 },
 ] as const;
 
 export type ThreadAuthor = {

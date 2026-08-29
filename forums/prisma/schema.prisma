@@ -25,6 +25,15 @@ enum ReactionType {
   FUNNY
   WOW
   DISLIKE
+  AGREE
+  BUG
+  FISH
+  HYPE
+  COIN
+  THINK
+  DIAMOND
+  USEFUL
+  CREATIVE
 }
 
 enum NotificationType {
